@@ -1,0 +1,106 @@
+/* TableResponsive Component Styles */
+
+/* Desktop Table - visible on larger screens */
+.table-desktop {
+    display: block;
+    overflow-x: auto;
+}
+
+/* Mobile Cards - hidden on larger screens */
+.cards-mobile {
+    display: none;
+}
+
+/* Mobile Card Styling */
+.mobile-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+}
+
+.mobile-card.clickable {
+    cursor: pointer;
+}
+
+.mobile-card.clickable:hover {
+    background-color: var(--hover-bg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.mobile-card.clickable:active {
+    transform: translateY(0);
+}
+
+.card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 8px 0;
+    gap: 12px;
+}
+
+.card-row:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    min-width: 100px;
+}
+
+.card-value {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    text-align: right;
+    flex: 1;
+    word-break: break-word;
+}
+
+.card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    justify-content: flex-end;
+}
+
+.card-actions button {
+    min-width: auto;
+}
+
+/* Responsive Breakpoint */
+@media (max-width: 767px) {
+
+    /* Hide desktop table on mobile */
+    .table-desktop {
+        display: none;
+    }
+
+    /* Show mobile cards */
+    .cards-mobile {
+        display: block;
+    }
+}
+
+/* Tablet - keep table but make it scrollable */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .table-desktop {
+        overflow-x: auto;
+    }
+
+    .table {
+        font-size: 0.875rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 10px 8px;
+    }
+}

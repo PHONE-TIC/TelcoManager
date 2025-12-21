@@ -1,0 +1,273 @@
+/* Barcode Scanner Overlay */
+.barcode-scanner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.95);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.barcode-scanner-container {
+    background-color: var(--card-bg);
+    border-radius: 16px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.scanner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.scanner-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-primary);
+}
+
+.scanner-viewport {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background-color: #000;
+    overflow: hidden;
+}
+
+.scanner-video {
+    width: 100%;
+    height: 100%;
+    background: #1a1a2e;
+}
+
+.scanner-video-native {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+}
+
+.scanner-video-container {
+    width: 100%;
+    height: 300px;
+    background: #000;
+    position: relative;
+    overflow: hidden;
+}
+
+.scanner-video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.scanner-video-container canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.scanner-hint {
+    text-align: center;
+    padding: 10px;
+    color: var(--primary-color);
+    font-weight: 500;
+    margin: 0;
+}
+
+.scanner-video video,
+.scanner-video canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Manual Input */
+.manual-input {
+    padding: 15px;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.manual-input p {
+    margin: 0 0 10px 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.manual-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+.manual-input-row .form-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.manual-input-row .btn {
+    padding: 10px 16px;
+}
+
+.scanner-overlay-frame {
+    display: none;
+}
+
+.scanner-overlay-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+.scanner-overlay-frame::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 200px;
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+}
+
+.scanner-laser {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            var(--primary-color) 50%,
+            transparent 100%);
+    animation: scan 2s ease-in-out infinite;
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+@keyframes scan {
+
+    0%,
+    100% {
+        transform: translateY(-100px);
+        opacity: 0;
+    }
+
+    50% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.scanner-error {
+    padding: 20px;
+    text-align: center;
+    color: #ef4444;
+}
+
+.scanner-error p {
+    margin: 0 0 15px 0;
+}
+
+.scanner-instructions {
+    padding: 20px;
+    text-align: center;
+    background-color: var(--bg-secondary);
+}
+
+.scanner-instructions p {
+    margin: 5px 0;
+    color: var(--text-primary);
+}
+
+.scanner-tip {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.scanner-actions {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.scanner-actions .btn {
+    flex: 1;
+    max-width: 200px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 767px) {
+    .barcode-scanner-container {
+        width: 100%;
+        max-width: 100%;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .scanner-viewport {
+        flex: 1;
+        height: auto;
+    }
+}
+
+/* Dark mode enhancements */
+:root[data-theme='dark'] .scanner-overlay-frame::before {
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+}

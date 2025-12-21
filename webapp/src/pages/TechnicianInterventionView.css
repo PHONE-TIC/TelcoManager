@@ -1,0 +1,496 @@
+/* TechnicianInterventionView.css */
+
+.technician-view {
+    padding: 16px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Header */
+.tech-header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tech-header .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tech-header h1 {
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: 600;
+    text-align: center;
+}
+
+.tech-header .intervention-number {
+    color: var(--primary-color);
+    font-weight: 700;
+    margin-right: 6px;
+}
+
+.tech-header .btn-back {
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    align-self: flex-start;
+}
+
+.tech-header .btn-success {
+    width: 100%;
+    padding: 14px;
+    font-size: 1rem;
+}
+
+/* Messages */
+.message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
+.message.error {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+.message.success {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #86efac;
+}
+
+/* Step Tabs */
+.step-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.step-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+    min-width: 60px;
+}
+
+.step-tab .step-icon {
+    font-size: 1.25rem;
+    margin-bottom: 4px;
+}
+
+.step-tab .step-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.step-tab.active {
+    border-color: var(--primary-color);
+    background: var(--card-bg, var(--bg-color));
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.step-tab.active .step-label {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.step-tab.completed {
+    background: #dcfce7;
+    border-color: #16a34a;
+}
+
+.step-tab.completed .step-label {
+    color: #16a34a;
+}
+
+/* Step Content */
+.step-content {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Step Navigation */
+.step-nav {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.step-nav .btn {
+    flex: 1;
+    padding: 12px;
+}
+
+/* Info Cards */
+.technician-view .info-card {
+    background: var(--card-bg, var(--bg-color));
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.technician-view .info-card h3 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.technician-view .info-card h4 {
+    margin: 16px 0 8px 0;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.technician-view .info-card p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.technician-view .info-value {
+    color: var(--text-primary);
+}
+
+.technician-view .info-value strong {
+    color: var(--text-primary);
+}
+
+.technician-view .info-value small {
+    color: var(--text-secondary);
+}
+
+/* Address Display */
+.address-info {
+    margin-bottom: 16px;
+}
+
+.address-line {
+    padding: 8px 0;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.address-line:last-child {
+    border-bottom: none;
+}
+
+/* No Equipment Option */
+.no-equipment-option {
+    margin-top: 20px;
+    padding: 20px;
+    background: var(--bg-secondary, #f3f4f6);
+    border-radius: 12px;
+    text-align: center;
+    border: 2px dashed var(--border-color);
+}
+
+.no-equipment-option p {
+    margin: 0 0 12px 0;
+    color: var(--text-secondary);
+}
+
+.no-equipment-option .btn {
+    width: 100%;
+}
+
+/* Phone Link */
+.phone-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.phone-link:hover {
+    text-decoration: underline;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Required Field Indicator */
+.required {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.field-required {
+    border-color: #f59e0b !important;
+}
+
+.field-hint {
+    margin: 8px 0 0 0;
+    font-size: 0.875rem;
+    color: #f59e0b;
+}
+
+/* Equipment */
+.equipment-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.equipment-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 20px 16px;
+    border: 2px solid;
+    border-radius: 16px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.equipment-btn:active {
+    transform: scale(0.98);
+}
+
+.eq-btn-icon {
+    font-size: 2rem;
+}
+
+.eq-btn-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: inherit;
+}
+
+.eq-btn-hint {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+/* Install Button - Green */
+.install-btn {
+    border-color: #10b981;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.install-btn:hover {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+/* Retrait Button - Orange */
+.retrait-btn {
+    border-color: #f59e0b;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.retrait-btn:hover {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+.equipment-actions .btn {
+    flex: 1;
+    min-width: 140px;
+}
+
+.equipment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.equipment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+}
+
+.equipment-item.install {
+    background: #dcfce7;
+    border-color: #86efac;
+}
+
+.equipment-item.retrait {
+    background: #fef3c7;
+    border-color: #fcd34d;
+}
+
+.equipment-item.saved {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.btn-remove {
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.saved-equipment {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* Closure Section */
+.closure-section {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    border: 2px solid #86efac;
+}
+
+.closure-section h3 {
+    margin: 0 0 8px 0;
+    color: #16a34a;
+}
+
+.closure-section .hint {
+    margin: 0 0 16px 0;
+    font-size: 0.875rem;
+    color: #15803d;
+}
+
+/* Buttons */
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+.btn-lg {
+    padding: 14px 20px !important;
+    font-size: 1.1rem !important;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-outline:hover {
+    background: var(--bg-color);
+}
+
+/* Info Grid */
+.technician-view .info-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.technician-view .info-item label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.technician-view .info-value {
+    color: var(--text-primary);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 480px) {
+    .technician-view {
+        padding: 12px;
+    }
+
+    .step-tab {
+        padding: 8px 10px;
+        min-width: 50px;
+    }
+
+    .step-tab .step-icon {
+        font-size: 1.1rem;
+    }
+
+    .step-tab .step-label {
+        font-size: 0.65rem;
+    }
+
+    .form-input,
+    .form-textarea {
+        padding: 10px;
+        font-size: 16px;
+        /* Prevent iOS zoom */
+    }
+}

@@ -1,0 +1,272 @@
+// Schéma Prisma pour la base de données PostgreSQL
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modèle Client
+model Client {
+  id              String             @id @default(uuid())
+  nom             String
+  sousLieu        String?            // Agence, Magasin, etc.
+  rue             String
+  codePostal      String             @map("code_postal")
+  ville           String
+  contact         String
+  telephone       String
+  email           String?            // Email du contact
+  notes           String?            // Notes et commentaires
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  
+  // Relations
+  interventions   Intervention[]
+  equipements     ClientEquipment[]
+
+  @@map("clients")
+}
+
+// Modèle Technicien
+model Technicien {
+  id              String         @id @default(uuid())
+  nom             String
+  username        String         @unique
+  passwordHash    String         @map("password_hash")
+  role            String         @default("technicien") // technicien, admin
+  active          Boolean        @default(true)
+  lastLogin       DateTime?      @map("last_login")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  interventions   Intervention[]
+  activityLogs    ActivityLog[]
+  vehicleStock    TechnicianStock[]
+  pushSubscriptions PushSubscription[]
+  stockMovementsPerformed StockMovement[] @relation("MovementPerformer")
+  stockMovementsReceived  StockMovement[] @relation("TransferTarget")
+
+  @@map("techniciens")
+}
+
+// Modèle Push Subscription pour les notifications web push
+model PushSubscription {
+  id              String         @id @default(uuid())
+  technicienId    String         @map("technicien_id")
+  endpoint        String         @unique
+  p256dh          String         // clé publique
+  auth            String         // secret d'authentification
+  userAgent       String?        @map("user_agent")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  technicien      Technicien     @relation(fields: [technicienId], references: [id], onDelete: Cascade)
+
+  @@index([technicienId])
+  @@map("push_subscriptions")
+}
+
+// Modèle Intervention
+model Intervention {
+  id                  String                    @id @default(uuid())
+  numero              String                    @unique
+  compteur            Int                       @default(autoincrement()) // Séquence interne
+  clientId            String                    @map("client_id")
+  technicienId        String?                   @map("technicien_id")
+  titre               String
+  description         String?                   @db.Text
+  datePlanifiee       DateTime                  @map("date_planifiee")
+  datePriseEnCharge   DateTime?                 @map("date_prise_en_charge")
+  heureArrivee        DateTime?                 @map("heure_arrivee")
+  heureDepart         DateTime?                 @map("heure_depart")
+  dateRealisee        DateTime?                 @map("date_realisee")
+  statut              String                    @default("planifiee") // planifiee, en_cours, terminee, annulee
+  notes               String?                   @db.Text
+  signature           String?                   @db.Text // Signature Client
+  signatureTechnicien String?                   @db.Text // Base64 data URI
+
+  commentaireTechnicien String?                   @db.Text
+  lockedAt              DateTime?                 @map("locked_at")
+  lockedBy              String?                   @map("locked_by")
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  
+  // Relations
+  client              Client                    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  technicien          Technicien?               @relation(fields: [technicienId], references: [id], onDelete: SetNull)
+  equipements         InterventionEquipment[]
+
+  @@index([clientId])
+  @@index([technicienId])
+  @@index([datePlanifiee])
+  @@map("interventions")
+}
+
+// Modèle Stock
+model Stock {
+  id                  String                    @id @default(uuid())
+  nomMateriel         String                    @map("nom_materiel")
+  reference           String
+  numeroSerie         String                    @default("") @map("numero_serie")
+  codeBarre           String?                   @unique @map("code_barre")
+  categorie           String
+  fournisseur         String?                   @map("fournisseur")
+  statut              String                    @default("courant") // courant, hs (hors service)
+  quantite            Int                       @default(1)
+  lowStockThreshold   Int?                      @default(5) @map("low_stock_threshold")
+  dateEntree          DateTime                  @default(now()) @map("date_entree")
+  notes               String?                   @db.Text
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+  
+  // Relations
+  clientEquipements   ClientEquipment[]
+  interventionEquipements InterventionEquipment[]
+  technicianStocks    TechnicianStock[]
+  inventoryItems      InventoryItem[]
+  movements           StockMovement[]
+
+  @@index([statut])
+  @@index([codeBarre])
+  @@map("stock")
+}
+
+// Modèle Mouvement de Stock (historique)
+model StockMovement {
+  id              String       @id @default(uuid())
+  stockId         String       @map("stock_id")
+  type            String       // entree, sortie, transfert, ajustement, hs
+  quantite        Int          // Quantité du mouvement (positif ou négatif)
+  quantiteAvant   Int          @map("quantite_avant")
+  quantiteApres   Int          @map("quantite_apres")
+  reason          String?      // Raison du mouvement
+  technicienId    String?      @map("technicien_id") // Technicien cible (pour transferts)
+  performedById   String       @map("performed_by_id") // Qui a effectué le mouvement
+  createdAt       DateTime     @default(now()) @map("created_at")
+  
+  // Relations
+  stock           Stock        @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  technicien      Technicien?  @relation("TransferTarget", fields: [technicienId], references: [id], onDelete: SetNull)
+  performedBy     Technicien   @relation("MovementPerformer", fields: [performedById], references: [id], onDelete: Cascade)
+
+  @@index([stockId])
+  @@index([technicienId])
+  @@index([performedById])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+// Modèle Équipement Client (matériel installé chez le client)
+model ClientEquipment {
+  id                  String     @id @default(uuid())
+  clientId            String     @map("client_id")
+  stockId             String     @map("stock_id")
+  referenceMateriel   String     @map("reference_materiel")
+  dateInstallation    DateTime   @default(now()) @map("date_installation")
+  statut              String     @default("installe") // installe, retire, hs
+  notes               String?    @db.Text
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+  
+  // Relations
+  client              Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  stock               Stock      @relation(fields: [stockId], references: [id])
+
+  @@index([clientId])
+  @@index([stockId])
+  @@map("client_equipments")
+}
+
+// Modèle Équipement d'Intervention (matériel utilisé lors d'une intervention)
+model InterventionEquipment {
+  id                  String        @id @default(uuid())
+  interventionId      String        @map("intervention_id")
+  stockId             String?       @map("stock_id")
+  action              String        // installe, retire, remplace
+  quantite            Int           @default(1)
+  
+  // Champs pour matériel externe/inconnu (Retrait)
+  nom                 String?
+  marque              String?
+  modele              String?
+  serialNumber        String?       @map("serial_number")
+
+  notes               String?       @db.Text
+  createdAt           DateTime      @default(now()) @map("created_at")
+  
+  // Relations
+  intervention        Intervention  @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+  stock               Stock?        @relation(fields: [stockId], references: [id])
+
+  @@index([interventionId])
+  @@index([stockId])
+  @@map("intervention_equipments")
+}
+
+// Modèle Stock Véhicule Technicien
+model TechnicianStock {
+  id            String      @id @default(uuid())
+  technicienId  String      @map("technicien_id")
+  stockId       String      @map("stock_id")
+  quantite      Int         @default(1)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  technicien    Technicien  @relation(fields: [technicienId], references: [id], onDelete: Cascade)
+  stock         Stock       @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@unique([technicienId, stockId])
+  @@index([technicienId])
+  @@index([stockId])
+  @@map("technician_stocks")
+}
+
+// Modèle Session d'Inventaire
+model InventorySession {
+  id              String           @id @default(uuid())
+  date            DateTime         @default(now())
+  status          String           @default("draft") // draft, completed
+  notes           String?          @db.Text
+  items           InventoryItem[]
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@map("inventory_sessions")
+}
+
+// Modèle Item d'Inventaire
+model InventoryItem {
+  id              String           @id @default(uuid())
+  sessionId       String           @map("session_id")
+  stockId         String           @map("stock_id")
+  expectedQuantity Int              @default(0) // Quantité théorique au moment de l'inventaire
+  countedQuantity  Int?             // Quantité réelle comptée
+  notes           String?          @db.Text
+  
+  // Relations
+  session         InventorySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  stock           Stock            @relation(fields: [stockId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([stockId])
+  @@map("inventory_items")
+}
+
+// Modèle Journal d'activité
+model ActivityLog {
+  id           String     @id @default(uuid())
+  technicienId String     @map("technicien_id")
+  action       String     // LOGIN, CREATE_USER, etc.
+  details      String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  technicien   Technicien @relation(fields: [technicienId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}

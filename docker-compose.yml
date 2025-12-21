@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: telco_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-stock_intervention}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - app_network
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: telco_backend
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-stock_intervention}?schema=public
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-supersecretkey}
+      NODE_ENV: production
+    ports:
+      - "3002:3001"
+    depends_on:
+      - postgres
+    networks:
+      - app_network
+    restart: always
+
+  frontend:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+    container_name: telco_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app_network
+    restart: always
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

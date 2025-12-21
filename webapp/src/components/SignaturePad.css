@@ -1,0 +1,105 @@
+/* Signature Pad Styles */
+
+.signature-pad-container {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.signature-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.signature-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.btn-clear-signature {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-clear-signature:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.signature-canvas-wrapper {
+    position: relative;
+    background: #fff;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    touch-action: none;
+}
+
+.signature-canvas-wrapper.readonly {
+    border-style: solid;
+    background: #f9f9f9;
+}
+
+.signature-canvas {
+    display: block;
+    width: 100%;
+    height: 150px;
+    cursor: crosshair;
+}
+
+.signature-canvas-wrapper.readonly .signature-canvas {
+    cursor: default;
+}
+
+.signature-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ccc;
+    font-size: 1.25rem;
+    font-style: italic;
+    pointer-events: none;
+    user-select: none;
+}
+
+.signature-hint {
+    margin: 8px 0 0 0;
+    font-size: 0.875rem;
+    color: #10b981;
+    text-align: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .signature-canvas {
+        height: 120px;
+    }
+
+    .signature-pad-container {
+        padding: 12px;
+    }
+}
+
+/* Touch optimization */
+@media (hover: none) and (pointer: coarse) {
+    .signature-canvas-wrapper {
+        border-width: 3px;
+    }
+
+    .signature-canvas {
+        height: 180px;
+    }
+}

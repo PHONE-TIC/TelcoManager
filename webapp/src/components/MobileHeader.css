@@ -1,0 +1,69 @@
+/* Mobile Header Styles */
+
+.mobile-header {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: var(--sidebar-bg);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1000;
+    padding: 0 70px;
+    /* Equal padding on both sides for truly centered logo */
+    align-items: center;
+    justify-content: center;
+    /* Center logo */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.header-logo {
+    height: 40px;
+    width: auto;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: absolute;
+    right: 15px;
+}
+
+.header-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.header-btn:hover {
+    background-color: var(--hover-bg);
+}
+
+.header-btn:active {
+    transform: scale(0.95);
+}
+
+/* Show on mobile */
+@media (max-width: 767px) {
+    .mobile-header {
+        display: flex;
+    }
+}
