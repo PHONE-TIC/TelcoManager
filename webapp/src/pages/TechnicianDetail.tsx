@@ -130,15 +130,22 @@ function TechnicianDetail() {
                     <button onClick={() => navigate('/techniciens')} className="btn btn-back">
                         ← Retour à la liste
                     </button>
-                    <h1>🔧 {technician.nom}</h1>
-                    <div className="flex items-center gap-3 mb-2">
-                        <UserAvatar name={technician.nom} size="lg" />
-                        <span className={`badge ${technician.role === 'admin' ? 'badge-danger' :
-                            technician.role === 'gestionnaire' ? 'bg-red-100 text-red-900' :
-                                'badge-info'
-                            }`}>
-                            {technician.role}
-                        </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '24px' }}>
+                        <UserAvatar name={technician.nom} size="xl" />
+                        <div>
+                            <h1 style={{ margin: 0 }}>{technician.nom}</h1>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                                <span className={`badge ${technician.role === 'admin' ? 'badge-danger' :
+                                    technician.role === 'gestionnaire' ? 'bg-red-100 text-red-900' :
+                                        'badge-info'
+                                    }`}>
+                                    {technician.role}
+                                </span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                    @{technician.username}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
 import TableResponsive from '../components/TableResponsive';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Client {
     id: string;
@@ -34,6 +35,24 @@ function Clients() {
         show: false,
         client: null
     });
+
+    // UNYC sync state
+    const { user } = useAuth();
+    const [syncing, setSyncing] = useState(false);
+
+    const handleUnycSync = async () => {
+        if (syncing) return;
+        setSyncing(true);
+        try {
+            const result = await apiService.syncUnycCustomers();
+            alert(result.message || 'Synchronisation terminée');
+            loadClients();
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Erreur lors de la synchronisation UNYC');
+        } finally {
+            setSyncing(false);
+        }
+    };
 
     // Get unique cities for filter dropdown
     const uniqueCities = [...new Set(clients.map(c => c.ville))].sort();
@@ -201,6 +220,28 @@ function Clients() {
                     >
                         📥 Exporter
                     </button>
+                    {user?.role === 'admin' && (
+                        <button
+                            onClick={handleUnycSync}
+                            disabled={syncing}
+                            title="Synchroniser les clients depuis UNYC Atlas"
+                            style={{
+                                padding: '10px 16px',
+                                borderRadius: '8px',
+                                border: '1px solid #6366f1',
+                                backgroundColor: syncing ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.1)',
+                                color: '#6366f1',
+                                fontWeight: 500,
+                                cursor: syncing ? 'wait' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            {syncing ? '⏳ Sync...' : '🔄 UNYC'}
+                        </button>
+                    )}
                     <label style={{
                         padding: '10px 16px',
                         borderRadius: '8px',
@@ -375,9 +416,63 @@ function Clients() {
                             key: 'contact',
                             label: 'Contact',
                             render: (client) => (
-                                <div className="flex flex-col">
-                                    <span className="text-gray-900">{client.contact}</span>
-                                    <span className="text-sm text-gray-500">{client.telephone}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div className="flex flex-col" style={{ minWidth: '120px' }}>
+                                        <span className="text-gray-900">{client.contact}</span>
+                                        <span className="text-sm text-gray-500">{client.telephone}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '4px', width: '72px', justifyContent: 'flex-start' }}>
+                                        {client.telephone && (
+                                            <button
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    border: '1.5px solid #10b981',
+                                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                                    color: '#10b981',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    window.location.href = `tel:${client.telephone}`;
+                                                }}
+                                                title={`Appeler ${client.telephone}`}
+                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#10b981'; e.currentTarget.style.color = 'white'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.1)'; e.currentTarget.style.color = '#10b981'; }}
+                                            >
+                                                📞
+                                            </button>
+                                        )}
+                                        {client.email && (
+                                            <button
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    border: '1.5px solid #f59e0b',
+                                                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                                    color: '#f59e0b',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    window.location.href = `mailto:${client.email}`;
+                                                }}
+                                                title={`Envoyer un email à ${client.email}`}
+                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f59e0b'; e.currentTarget.style.color = 'white'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(245, 158, 11, 0.1)'; e.currentTarget.style.color = '#f59e0b'; }}
+                                            >
+                                                📧
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             )
                         },
@@ -394,57 +489,6 @@ function Clients() {
                     ]}
                     actions={(client) => (
                         <div style={{ display: 'flex', gap: '4px' }}>
-                            {/* Quick Actions */}
-                            {client.telephone && (
-                                <button
-                                    style={{
-                                        padding: '8px',
-                                        borderRadius: '8px',
-                                        border: '1.5px solid rgba(255,255,255,0.25)',
-                                        backgroundColor: 'rgba(255,255,255,0.05)',
-                                        color: '#10b981', // Greenish
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.location.href = `tel:${client.telephone}`;
-                                    }}
-                                    title={`Appeler ${client.telephone}`}
-                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#10b981'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#10b981'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#10b981'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
-                                >
-                                    📞
-                                </button>
-                            )}
-                            {client.email && (
-                                <button
-                                    style={{
-                                        padding: '8px',
-                                        borderRadius: '8px',
-                                        border: '1.5px solid rgba(255,255,255,0.25)',
-                                        backgroundColor: 'rgba(255,255,255,0.05)',
-                                        color: '#f59e0b', // Amber
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.location.href = `mailto:${client.email}`;
-                                    }}
-                                    title={`Envoyer un email à ${client.email}`}
-                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f59e0b'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#f59e0b'; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#f59e0b'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
-                                >
-                                    📧
-                                </button>
-                            )}
                             <button
                                 style={{
                                     padding: '8px',

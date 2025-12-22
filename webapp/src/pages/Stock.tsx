@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
+import { useAuth } from '../contexts/AuthContext';
 
 function Stock() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [stock, setStock] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -26,6 +28,29 @@ function Stock() {
         notes: '',
     });
     const [error, setError] = useState<string | null>(null);
+    const [serialNumbersCount, setSerialNumbersCount] = useState(0);
+
+    // Parse serial numbers from comma or newline separated input
+    const parseSerialNumbers = (input: string): string[] => {
+        return input
+            .split(/[,\n]/)
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+    };
+
+    // Handle serial numbers change with auto-quantity update
+    const handleSerialNumbersChange = (value: string) => {
+        const serialNumbers = parseSerialNumbers(value);
+        const count = serialNumbers.length;
+        setSerialNumbersCount(count);
+
+        setFormData(prev => ({
+            ...prev,
+            numeroSerie: value,
+            // Auto-update quantity only for new items (not editing) and only if > 0 serial numbers
+            quantite: !selectedItem && count > 0 ? count : prev.quantite
+        }));
+    };
 
     useEffect(() => {
         loadStock();
@@ -147,6 +172,22 @@ function Stock() {
         } catch (error) {
             console.error('Erreur:', error);
             alert('Erreur lors du déplacement');
+        }
+    };
+
+    const handleDelete = async (id: string, nom: string) => {
+        if (!confirm(`⚠️ Êtes-vous sûr de vouloir supprimer définitivement "${nom}" ?\n\nCette action est irréversible.`)) return;
+
+        try {
+            await apiService.deleteStock(id);
+            loadStock();
+        } catch (error: any) {
+            console.error('Erreur:', error);
+            if (error.response?.status === 403) {
+                alert('Accès refusé - Seuls les administrateurs peuvent supprimer des articles.');
+            } else {
+                alert('Erreur lors de la suppression');
+            }
         }
     };
 
@@ -451,6 +492,29 @@ function Stock() {
                                                         ⚠️
                                                     </button>
                                                 )}
+                                                {/* Delete Button (Admin only) */}
+                                                {user?.role === 'admin' && (
+                                                    <button
+                                                        style={{
+                                                            padding: '8px',
+                                                            borderRadius: '8px',
+                                                            border: '1.5px solid rgba(255,255,255,0.25)',
+                                                            backgroundColor: 'rgba(255,255,255,0.05)',
+                                                            color: 'var(--text-primary)',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                        onClick={() => handleDelete(item.id, item.nomMateriel)}
+                                                        title="Supprimer définitivement"
+                                                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#dc2626'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#dc2626'; }}
+                                                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -522,15 +586,35 @@ function Stock() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Numéro de Série *</label>
-                                    <input
-                                        type="text"
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Numéro(s) de série
+                                        {!selectedItem && serialNumbersCount > 0 && (
+                                            <span style={{
+                                                marginLeft: '8px',
+                                                padding: '2px 8px',
+                                                borderRadius: '12px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                backgroundColor: '#dbeafe',
+                                                color: '#1e40af'
+                                            }}>
+                                                {serialNumbersCount} détecté{serialNumbersCount > 1 ? 's' : ''}
+                                            </span>
+                                        )}
+                                    </label>
+                                    <textarea
                                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                                         value={formData.numeroSerie}
-                                        onChange={(e) => setFormData({ ...formData, numeroSerie: e.target.value })}
-                                        placeholder="Ex: FCW1234ABCD"
-                                        required
+                                        onChange={(e) => handleSerialNumbersChange(e.target.value)}
+                                        placeholder={selectedItem ? "Ex: FCW1234ABCD" : "Un numéro par ligne ou séparés par des virgules\nEx: SN001, SN002, SN003"}
+                                        rows={selectedItem ? 1 : 3}
+                                        style={{ resize: 'vertical', minHeight: selectedItem ? '40px' : '70px' }}
                                     />
+                                    {!selectedItem && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            💡 La quantité s'ajuste automatiquement au nombre de numéros de série
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -667,8 +751,8 @@ function Stock() {
                                     <label className="text-xs text-gray-500 uppercase">Quantité</label>
                                     <div>
                                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${detailItem.quantite <= 0 ? 'bg-red-50 text-red-600' :
-                                                detailItem.quantite <= 2 ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-green-100 text-green-800'
+                                            detailItem.quantite <= 2 ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-green-100 text-green-800'
                                             }`}>
                                             {detailItem.quantite} unité{detailItem.quantite > 1 ? 's' : ''}
                                         </span>

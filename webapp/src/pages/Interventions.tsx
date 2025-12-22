@@ -52,7 +52,8 @@ function Interventions() {
         datePlanifiee: '',
         titre: '',
         description: '',
-        statut: 'planifiee'
+        statut: 'planifiee',
+        type: 'SAV'
     });
 
     const timeInputRef = useRef<HTMLInputElement>(null);
@@ -225,6 +226,7 @@ function Interventions() {
             description: '',
             datePlanifiee: '',
             statut: 'planifiee',
+            type: 'SAV'
         });
     };
 
@@ -384,7 +386,7 @@ function Interventions() {
     // Calendar events mapping
     const calendarEvents = interventions.map(int => ({
         id: int.id,
-        title: `[${moment(int.datePlanifiee).format('HH:mm')}] ${int.titre} - ${int.client?.nom} (${getStatusBadge(int.statut).props.children})`,
+        title: `[${int.type === 'Installation' ? 'Install' : 'SAV'}] [${moment(int.datePlanifiee).format('HH:mm')}] ${int.titre} - ${int.client?.nom} (${getStatusBadge(int.statut).props.children})`,
         start: new Date(int.datePlanifiee),
         end: new Date(new Date(int.datePlanifiee).getTime() + 2 * 60 * 60 * 1000), // Assumed 2h duration
         resource: int,
@@ -654,6 +656,7 @@ function Interventions() {
                                     <tr>
                                         <th>N°</th>
                                         {getSortableHeader('Date planifiée', 'datePlanifiee')}
+                                        <th>Type</th>
                                         <th>Titre</th>
                                         {getSortableHeader('Client', 'client')}
                                         {user?.role === 'admin' && getSortableHeader('Technicien', 'technicien')}
@@ -677,6 +680,11 @@ function Interventions() {
                                                     </div>
                                                 </td>
                                                 <td>{new Date(intervention.datePlanifiee).toLocaleString('fr-FR')}</td>
+                                                <td>
+                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${intervention.type === 'Installation' ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'}`}>
+                                                        {intervention.type || 'SAV'}
+                                                    </span>
+                                                </td>
                                                 <td className="font-medium">{intervention.titre}</td>
                                                 <td>{intervention.client?.nom || <span className="text-gray-400">-</span>}</td>
                                                 {user?.role === 'admin' && (
@@ -815,6 +823,7 @@ function Interventions() {
                                     <tr>
                                         <th>N°</th>
                                         {getSortableHeader('Date planifiée', 'datePlanifiee')}
+                                        <th>Type</th>
                                         <th>Titre</th>
                                         {getSortableHeader('Client', 'client')}
                                         {getSortableHeader('Technicien', 'technicien')}
@@ -838,6 +847,11 @@ function Interventions() {
                                                     </div>
                                                 </td>
                                                 <td>{new Date(intervention.datePlanifiee).toLocaleString('fr-FR')}</td>
+                                                <td>
+                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${intervention.type === 'Installation' ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'}`}>
+                                                        {intervention.type || 'SAV'}
+                                                    </span>
+                                                </td>
                                                 <td className="font-medium">{intervention.titre}</td>
                                                 <td>{intervention.client?.nom || <span className="text-gray-400">-</span>}</td>
                                                 <td>
@@ -890,17 +904,8 @@ function Interventions() {
                 <div className="desktop-only">
                     {viewMode === 'calendar' && !showForm && (
                         <div className="fade-in">
-                            {user?.role === 'admin' && (
-                                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-                                    <button
-                                        className="btn btn-primary"
-                                        onClick={() => setShowForm(true)}
-                                    >
-                                        + Nouvelle intervention
-                                    </button>
-                                </div>
-                            )}
-                            <div key={calendarKey} className={transitionClass}>
+
+                            <div key={calendarKey} className={transitionClass} style={{ width: '100%', overflow: 'hidden' }}>
                                 <Calendar
                                     localizer={localizer}
                                     culture='fr'
@@ -911,7 +916,7 @@ function Interventions() {
                                     events={calendarEvents}
                                     startAccessor="start"
                                     endAccessor="end"
-                                    style={{ height: 600 }}
+                                    style={{ height: 'calc(100vh - 400px)', minHeight: '450px', maxHeight: '700px' }}
                                     date={calendarDate}
                                     onNavigate={handleNavigate}
                                     view={calendarView}
@@ -1033,6 +1038,31 @@ function Interventions() {
                                                 onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
                                                 placeholder="Ex: Installation Fibre Optique"
                                             />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Type d'intervention *</label>
+                                            <div style={{ display: 'flex', gap: '20px', marginTop: '5px' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="radio"
+                                                        name="type"
+                                                        value="SAV"
+                                                        checked={formData.type !== 'Installation'} // Default to SAV if empty
+                                                        onChange={() => setFormData({ ...formData, type: 'SAV' })}
+                                                    />
+                                                    <span>SAV</span>
+                                                </label>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                                    <input
+                                                        type="radio"
+                                                        name="type"
+                                                        value="Installation"
+                                                        checked={formData.type === 'Installation'}
+                                                        onChange={() => setFormData({ ...formData, type: 'Installation' })}
+                                                    />
+                                                    <span>Installation</span>
+                                                </label>
+                                            </div>
                                         </div>
                                         <div className="form-group">
                                             <label className="form-label">Description *</label>

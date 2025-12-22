@@ -36,6 +36,7 @@ interface Intervention {
         nom: string;
         username: string;
     };
+    technicienNom?: string; // Fallback name when technicien is deleted
     equipements?: any[];
 }
 
@@ -459,6 +460,12 @@ const InterventionDetail: React.FC = () => {
                                             <strong>{intervention.technicien.nom}</strong>
                                             <br />
                                             <small>@{intervention.technicien.username}</small>
+                                        </>
+                                    ) : intervention.technicienNom ? (
+                                        <>
+                                            <strong>{intervention.technicienNom}</strong>
+                                            <br />
+                                            <small style={{ color: '#ef4444' }}>👤 Utilisateur supprimé</small>
                                         </>
                                     ) : (
                                         <em className="text-muted">Non assigné</em>

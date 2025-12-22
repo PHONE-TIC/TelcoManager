@@ -209,6 +209,10 @@ class ApiService {
         return response.data;
     }
 
+    async deleteStock(id: string) {
+        await this.api.delete(`/stock/${id}`);
+    }
+
     // Stock Movements
     async getStockMovements(stockId: string, params?: any) {
         const response = await this.api.get(`/stock/${stockId}/movements`, { params });
@@ -320,6 +324,17 @@ class ApiService {
                 filters: JSON.stringify(params.filters || {})
             }
         });
+        return response.data;
+    }
+
+    // UNYC Integration
+    async testUnycConnection() {
+        const response = await this.api.get('/unyc/test-connection');
+        return response.data;
+    }
+
+    async syncUnycCustomers() {
+        const response = await this.api.post('/unyc/sync-customers');
         return response.data;
     }
 }

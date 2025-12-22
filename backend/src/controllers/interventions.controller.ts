@@ -128,7 +128,15 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { clientId, technicienId, titre, description, datePlanifiee, statut = 'planifiee' } = req.body;
+        const { clientId, technicienId, titre, description, datePlanifiee, statut = 'planifiee', type = 'SAV' } = req.body;
+
+        // Fetch client and technician names to save them for future reference
+        const client = await prisma.client.findUnique({ where: { id: clientId }, select: { nom: true } });
+        let technicienNom: string | null = null;
+        if (technicienId) {
+            const technicien = await prisma.technicien.findUnique({ where: { id: technicienId }, select: { nom: true } });
+            technicienNom = technicien?.nom || null;
+        }
 
         const tempNumero = `TEMP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -136,11 +144,14 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
         const initialIntervention = await prisma.intervention.create({
             data: {
                 clientId,
+                clientNom: client?.nom || null,
                 technicienId,
+                technicienNom,
                 titre,
                 description,
                 datePlanifiee: new Date(datePlanifiee),
                 statut,
+                type,
                 numero: tempNumero,
             },
         });
@@ -212,15 +223,28 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
             }
         }
 
-        const { technicienId, titre, description, datePlanifiee, dateRealisee, statut, notes, signature } = req.body;
+        const { technicienId, titre, description, datePlanifiee, dateRealisee, statut, type, notes, signature } = req.body;
+
+        // If technician is being changed, fetch the new technician's name
+        let technicienNom: string | null | undefined = undefined;
+        if (technicienId !== undefined && technicienId !== existingIntervention.technicienId) {
+            if (technicienId) {
+                const technicien = await prisma.technicien.findUnique({ where: { id: technicienId }, select: { nom: true } });
+                technicienNom = technicien?.nom || null;
+            } else {
+                technicienNom = null;
+            }
+        }
 
         const data: any = {
             ...(technicienId !== undefined && { technicienId }),
+            ...(technicienNom !== undefined && { technicienNom }),
             ...(titre && { titre }),
             ...(description !== undefined && { description }),
             ...(datePlanifiee && { datePlanifiee: new Date(datePlanifiee) }),
             ...(dateRealisee && { dateRealisee: new Date(dateRealisee) }),
             ...(statut && { statut }),
+            ...(type && { type }),
             ...(notes !== undefined && { notes }),
             ...(signature !== undefined && { signature }),
         };
@@ -575,4 +599,3 @@ export const unlockIntervention = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const addEquipementToIntervention = manageEquipement; // Alias pour compatibilité

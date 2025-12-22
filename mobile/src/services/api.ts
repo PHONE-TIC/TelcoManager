@@ -106,4 +106,36 @@ export const stockService = {
     }
 };
 
+export const inventoryService = {
+    getSessions: async () => {
+        const response = await api.get('/inventory');
+        return response.data;
+    },
+
+    getSession: async (id: string) => {
+        const response = await api.get(`/inventory/${id}`);
+        return response.data;
+    },
+
+    createSession: async (notes?: string) => {
+        const response = await api.post('/inventory', { notes });
+        return response.data;
+    },
+
+    updateItems: async (sessionId: string, items: any[]) => {
+        const response = await api.put(`/inventory/${sessionId}/items`, { items });
+        return response.data;
+    },
+
+    finalizeSession: async (sessionId: string) => {
+        const response = await api.post(`/inventory/${sessionId}/finalize`);
+        return response.data;
+    },
+
+    deleteSession: async (sessionId: string) => {
+        const response = await api.delete(`/inventory/${sessionId}`);
+        return response.data;
+    }
+};
+
 export default api;

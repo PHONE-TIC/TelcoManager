@@ -1,5 +1,5 @@
 {
-  "name": "stock-intervention-backend",
+  "name": "telcomanager-backend",
   "version": "1.0.0",
   "description": "Backend API pour le système de gestion de stock et d'interventions",
   "main": "dist/index.js",

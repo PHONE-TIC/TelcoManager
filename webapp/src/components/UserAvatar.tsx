@@ -15,20 +15,20 @@ const UserAvatar: React.FC<UserAvatarProps> = ({ name, size = 'md', className = 
         return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
     }, [name]);
 
-    // Generate deterministic color based on name
-    const bgColor = useMemo(() => {
-        const colors = [
-            '#ef4444', // red-500
-            '#f97316', // orange-500
-            '#f59e0b', // amber-500
-            '#84cc16', // lime-500
-            '#10b981', // emerald-500
-            '#06b6d4', // cyan-500
-            '#3b82f6', // blue-500
-            '#6366f1', // indigo-500
-            '#8b5cf6', // violet-500
-            '#d946ef', // fuchsia-500
-            '#f43f5e', // rose-500
+    // Generate deterministic gradient colors based on name
+    const gradientColors = useMemo(() => {
+        const colorPairs = [
+            ['#ef4444', '#dc2626'], // red
+            ['#f97316', '#ea580c'], // orange
+            ['#f59e0b', '#d97706'], // amber
+            ['#84cc16', '#65a30d'], // lime
+            ['#10b981', '#059669'], // emerald
+            ['#06b6d4', '#0891b2'], // cyan
+            ['#3b82f6', '#2563eb'], // blue
+            ['#6366f1', '#4f46e5'], // indigo
+            ['#8b5cf6', '#7c3aed'], // violet
+            ['#d946ef', '#c026d3'], // fuchsia
+            ['#ec4899', '#db2777'], // pink
         ];
 
         let hash = 0;
@@ -36,20 +36,38 @@ const UserAvatar: React.FC<UserAvatarProps> = ({ name, size = 'md', className = 
             hash = name.charCodeAt(i) + ((hash << 5) - hash);
         }
 
-        return colors[Math.abs(hash) % colors.length];
+        return colorPairs[Math.abs(hash) % colorPairs.length];
     }, [name]);
 
-    const sizeClasses = {
-        sm: 'w-8 h-8 text-xs',
-        md: 'w-10 h-10 text-sm',
-        lg: 'w-12 h-12 text-base',
-        xl: 'w-16 h-16 text-xl',
+    const sizeStyles: Record<string, { width: string; height: string; fontSize: string; borderWidth: string }> = {
+        sm: { width: '40px', height: '40px', fontSize: '14px', borderWidth: '2px' },
+        md: { width: '52px', height: '52px', fontSize: '18px', borderWidth: '3px' },
+        lg: { width: '64px', height: '64px', fontSize: '22px', borderWidth: '3px' },
+        xl: { width: '80px', height: '80px', fontSize: '28px', borderWidth: '4px' },
     };
+
+    const currentSize = sizeStyles[size];
 
     return (
         <div
-            className={`rounded-full flex items-center justify-center font-bold text-white shadow-sm ${sizeClasses[size]} ${className}`}
-            style={{ backgroundColor: bgColor }}
+            className={className}
+            style={{
+                width: currentSize.width,
+                height: currentSize.height,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: currentSize.fontSize,
+                color: 'white',
+                background: `linear-gradient(145deg, ${gradientColors[0]} 0%, ${gradientColors[1]} 100%)`,
+                boxShadow: `0 4px 14px ${gradientColors[0]}40, 0 2px 6px rgba(0,0,0,0.15)`,
+                border: `${currentSize.borderWidth} solid rgba(255,255,255,0.25)`,
+                textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                letterSpacing: '0.5px',
+                flexShrink: 0,
+            }}
             title={name}
         >
             {initials}
@@ -58,3 +76,4 @@ const UserAvatar: React.FC<UserAvatarProps> = ({ name, size = 'md', className = 
 };
 
 export default UserAvatar;
+

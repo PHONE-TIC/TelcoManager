@@ -9,6 +9,7 @@ import PlanningScreen from '../screens/PlanningScreen';
 import InterventionDetailScreen from '../screens/InterventionDetailScreen';
 import SignatureScreen from '../screens/SignatureScreen';
 import ScannerScreen from '../screens/ScannerScreen';
+import InventoryScreen from '../screens/InventoryScreen';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { View, ActivityIndicator, Text } from 'react-native';
@@ -65,6 +66,7 @@ function MainTabs() {
                     if (route.name === 'DashboardTab') iconName = '📋';
                     if (route.name === 'PlanningTab') iconName = '📅';
                     if (route.name === 'StockTab') iconName = '📦';
+                    if (route.name === 'InventoryTab') iconName = '🔍';
 
                     return (
                         <Text style={{
@@ -91,9 +93,14 @@ function MainTabs() {
                 options={{ title: 'Planning' }}
             />
             <Tab.Screen
+                name="InventoryTab"
+                component={InventoryScreen}
+                options={{ title: 'Inventaire' }}
+            />
+            <Tab.Screen
                 name="StockTab"
                 component={StockScreen}
-                options={{ title: 'Mon Stock' }}
+                options={{ title: 'Stock' }}
             />
         </Tab.Navigator>
     );

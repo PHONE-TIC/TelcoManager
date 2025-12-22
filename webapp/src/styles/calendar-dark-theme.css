@@ -152,3 +152,136 @@
 [data-theme="dark"] .rbc-calendar * {
     border-color: var(--border-color) !important;
 }
+
+/* ===== RESPONSIVE CALENDAR STYLES ===== */
+
+/* 1. Force container constraints */
+.rbc-calendar {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* 2. Reset min-widths globally within calendar */
+.rbc-calendar *,
+.rbc-calendar *::before,
+.rbc-calendar *::after {
+    box-sizing: border-box !important;
+}
+
+/* 3. Handle Month View Layout (Flexbox based) */
+/* 3. Handle Month View Layout (Flexbox based) */
+/* The row needs to be a flex container that fits width */
+.rbc-month-row {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    /* CRITICAL for flex containers to shrink */
+    flex: 1 1 0px !important;
+    overflow: hidden !important;
+    min-height: 80px;
+}
+
+/* 4. Force columns (days) to share space equally */
+/* Target header cells and background cells ONLY */
+.rbc-header,
+.rbc-day-bg,
+.rbc-time-header-cell,
+.rbc-day-slot {
+    flex: 1 1 0px !important;
+    /* Grow, Shrink, Start at 0 */
+    width: 0 !important;
+    /* Force initial width 0 to rely on flex-grow */
+    min-width: 0 !important;
+    /* Allow shrinking below content size */
+    max-width: none !important;
+    overflow: hidden !important;
+}
+
+/* 5. Fix internal content layers to match column width */
+/* Content needs to be full width overlay */
+.rbc-row-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    z-index: 4;
+    pointer-events: none;
+    /* Let clicks pass through if needed, but segments handle clicks */
+}
+
+/* Ensure row segments have pointer events */
+.rbc-row-segment {
+    pointer-events: auto;
+    /* Do NOT force flex: 1 here, let big-calendar handle width % */
+}
+
+.rbc-row-bg {
+    width: 100% !important;
+    z-index: 1;
+}
+
+/* 6. Typography adjustments for small spaces */
+.rbc-header {
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 13px !important;
+    padding: 8px 0 !important;
+    /* Reduce padding */
+    text-align: center !important;
+}
+
+.rbc-event-content {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* 7. Toolbar responsiveness */
+.rbc-toolbar {
+    flex-wrap: wrap !important;
+    gap: 10px;
+    margin-bottom: 20px !important;
+    justify-content: center;
+}
+
+.rbc-toolbar-label {
+    flex: 1 0 100% !important;
+    /* Move label to own line on very small screens if needed, or adjust below media query */
+    order: 3;
+    /* text order */
+    text-align: center;
+    width: 100%;
+    margin: 10px 0;
+}
+
+/* Order buttons roughly */
+.rbc-btn-group {
+    flex: 1 0 auto;
+    display: flex;
+    justify-content: center;
+}
+
+/* Media Queries for Fine Tuning */
+@media (min-width: 768px) {
+    .rbc-toolbar-label {
+        flex: 1 !important;
+        order: unset;
+        /* natural order */
+        margin: 0;
+        width: auto;
+    }
+}
+
+@media (max-width: 1024px) {
+    .rbc-header {
+        font-size: 11px !important;
+    }
+
+    .rbc-date-cell {
+        font-size: 11px !important;
+    }
+
+    .rbc-event {
+        padding: 0 2px !important;
+    }
+}

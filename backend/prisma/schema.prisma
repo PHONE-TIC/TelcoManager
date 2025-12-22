@@ -1,6 +1,7 @@
 // Schéma Prisma pour la base de données PostgreSQL
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -77,7 +78,9 @@ model Intervention {
   numero              String                    @unique
   compteur            Int                       @default(autoincrement()) // Séquence interne
   clientId            String                    @map("client_id")
+  clientNom           String?                   @map("client_nom") // Nom sauvegardé pour affichage après suppression
   technicienId        String?                   @map("technicien_id")
+  technicienNom       String?                   @map("technicien_nom") // Nom sauvegardé pour affichage après suppression
   titre               String
   description         String?                   @db.Text
   datePlanifiee       DateTime                  @map("date_planifiee")
@@ -86,6 +89,7 @@ model Intervention {
   heureDepart         DateTime?                 @map("heure_depart")
   dateRealisee        DateTime?                 @map("date_realisee")
   statut              String                    @default("planifiee") // planifiee, en_cours, terminee, annulee
+  type                String                    @default("SAV") // SAV, Installation
   notes               String?                   @db.Text
   signature           String?                   @db.Text // Signature Client
   signatureTechnicien String?                   @db.Text // Base64 data URI
@@ -97,7 +101,7 @@ model Intervention {
   updatedAt             DateTime                  @updatedAt @map("updated_at")
   
   // Relations
-  client              Client                    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client              Client                    @relation(fields: [clientId], references: [id], onDelete: Restrict)
   technicien          Technicien?               @relation(fields: [technicienId], references: [id], onDelete: SetNull)
   equipements         InterventionEquipment[]
 
@@ -146,13 +150,13 @@ model StockMovement {
   quantiteApres   Int          @map("quantite_apres")
   reason          String?      // Raison du mouvement
   technicienId    String?      @map("technicien_id") // Technicien cible (pour transferts)
-  performedById   String       @map("performed_by_id") // Qui a effectué le mouvement
+  performedById   String?      @map("performed_by_id") // Qui a effectué le mouvement
   createdAt       DateTime     @default(now()) @map("created_at")
   
   // Relations
   stock           Stock        @relation(fields: [stockId], references: [id], onDelete: Cascade)
   technicien      Technicien?  @relation("TransferTarget", fields: [technicienId], references: [id], onDelete: SetNull)
-  performedBy     Technicien   @relation("MovementPerformer", fields: [performedById], references: [id], onDelete: Cascade)
+  performedBy     Technicien?  @relation("MovementPerformer", fields: [performedById], references: [id], onDelete: SetNull)
 
   @@index([stockId])
   @@index([technicienId])
@@ -165,6 +169,7 @@ model StockMovement {
 model ClientEquipment {
   id                  String     @id @default(uuid())
   clientId            String     @map("client_id")
+  clientNom           String?    @map("client_nom") // Nom sauvegardé pour affichage après suppression
   stockId             String     @map("stock_id")
   referenceMateriel   String     @map("reference_materiel")
   dateInstallation    DateTime   @default(now()) @map("date_installation")
@@ -174,7 +179,7 @@ model ClientEquipment {
   updatedAt           DateTime   @updatedAt @map("updated_at")
   
   // Relations
-  client              Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client              Client     @relation(fields: [clientId], references: [id], onDelete: Restrict)
   stock               Stock      @relation(fields: [stockId], references: [id])
 
   @@index([clientId])
@@ -261,12 +266,12 @@ model InventoryItem {
 // Modèle Journal d'activité
 model ActivityLog {
   id           String     @id @default(uuid())
-  technicienId String     @map("technicien_id")
+  technicienId String?    @map("technicien_id")
   action       String     // LOGIN, CREATE_USER, etc.
   details      String?
   createdAt    DateTime   @default(now()) @map("created_at")
 
-  technicien   Technicien @relation(fields: [technicienId], references: [id], onDelete: Cascade)
+  technicien   Technicien? @relation(fields: [technicienId], references: [id], onDelete: SetNull)
 
   @@map("activity_logs")
 }

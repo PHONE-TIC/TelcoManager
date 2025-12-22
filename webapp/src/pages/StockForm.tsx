@@ -11,6 +11,7 @@ function StockForm() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [existingCategories, setExistingCategories] = useState<string[]>([]);
+    const [serialNumbersCount, setSerialNumbersCount] = useState(0);
     const [formData, setFormData] = useState({
         nomMateriel: '',
         reference: '',
@@ -23,6 +24,28 @@ function StockForm() {
         notes: '',
         statut: 'courant',
     });
+
+    // Parse serial numbers from comma or newline separated input
+    const parseSerialNumbers = (input: string): string[] => {
+        return input
+            .split(/[,\n]/)
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+    };
+
+    // Handle serial numbers change with auto-quantity update
+    const handleSerialNumbersChange = (value: string) => {
+        const serialNumbers = parseSerialNumbers(value);
+        const count = serialNumbers.length;
+        setSerialNumbersCount(count);
+
+        setFormData(prev => ({
+            ...prev,
+            numeroSerie: value,
+            // Auto-update quantity only for new items (not editing) and only if > 0 serial numbers
+            quantite: !isEditing && count > 0 ? count : prev.quantite
+        }));
+    };
 
     useEffect(() => {
         loadCategories();
@@ -182,16 +205,40 @@ function StockForm() {
                             />
                         </div>
 
-                        {/* Numéro de série */}
+                        {/* Numéro de série - Multiple entries */}
                         <div>
-                            <label style={labelStyle}>Numéro de série</label>
-                            <input
-                                type="text"
+                            <label style={labelStyle}>
+                                Numéro(s) de série
+                                {!isEditing && serialNumbersCount > 0 && (
+                                    <span style={{
+                                        marginLeft: '8px',
+                                        padding: '2px 8px',
+                                        borderRadius: '12px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        backgroundColor: '#dbeafe',
+                                        color: '#1e40af'
+                                    }}>
+                                        {serialNumbersCount} détecté{serialNumbersCount > 1 ? 's' : ''}
+                                    </span>
+                                )}
+                            </label>
+                            <textarea
                                 value={formData.numeroSerie}
-                                onChange={(e) => handleChange('numeroSerie', e.target.value)}
-                                placeholder="Ex: FCW1234ABCD"
-                                style={inputStyle}
+                                onChange={(e) => handleSerialNumbersChange(e.target.value)}
+                                placeholder={isEditing ? "Ex: FCW1234ABCD" : "Un numéro par ligne ou séparés par des virgules\nEx: SN001, SN002, SN003"}
+                                rows={isEditing ? 1 : 3}
+                                style={{
+                                    ...inputStyle,
+                                    resize: 'vertical',
+                                    minHeight: isEditing ? '44px' : '80px'
+                                }}
                             />
+                            {!isEditing && (
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                    💡 La quantité s'ajuste automatiquement au nombre de numéros de série
+                                </p>
+                            )}
                         </div>
 
                         {/* Code-barres */}

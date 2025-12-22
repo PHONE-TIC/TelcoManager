@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import path from 'path';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
@@ -14,6 +15,7 @@ import technicianStockRoutes from './routes/technician-stock.routes';
 import searchRoutes from './routes/search.routes';
 import pushRoutes from './routes/push.routes';
 import stockMovementsRoutes from './routes/stockMovements.routes';
+import unycRoutes from './routes/unyc.routes';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -55,6 +57,19 @@ app.use('/api/technician-stock', technicianStockRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api', stockMovementsRoutes);
+app.use('/api/unyc', unycRoutes);
+
+// Servir les fichiers statiques du frontend
+app.use(express.static(path.join(__dirname, '../client')));
+
+// Pour toutes les autres requêtes (SPA), renvoyer index.html
+app.get('*', (req: Request, res: Response) => {
+    // Si c'est une requête API qui n'a pas matché, renvoyer 404
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'Route non trouvée' });
+    }
+    res.sendFile(path.join(__dirname, '../client/index.html'));
+});
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
@@ -65,10 +80,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     });
 });
 
-// 404 handler
-app.use((req: Request, res: Response) => {
-    res.status(404).json({ error: 'Route non trouvée' });
-});
+
 
 // Démarrer le serveur
 const server = app.listen(PORT, () => {

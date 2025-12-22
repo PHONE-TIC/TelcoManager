@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, param } from 'express-validator';
 import * as stockController from '../controllers/stock.controller';
-import { authenticate, requireGestionnaireOrAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdmin, requireGestionnaireOrAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -58,8 +58,8 @@ router.put(
     stockController.updateStock
 );
 
-// Supprimer un article de stock
-router.delete('/:id', param('id').isUUID(), stockController.deleteStock);
+// Supprimer un article de stock (Admin uniquement)
+router.delete('/:id', requireAdmin, param('id').isUUID(), stockController.deleteStock);
 
 // Déplacer du stock vers HS
 router.post(

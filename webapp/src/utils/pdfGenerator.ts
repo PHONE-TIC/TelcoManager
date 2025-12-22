@@ -33,6 +33,7 @@ interface Intervention {
     signature?: string;
     signatureTechnicien?: string;
     signatureClient?: string;
+    type?: string;
     client: {
         nom: string;
         contact: string;
@@ -130,13 +131,19 @@ export const generateInterventionPDF = async (intervention: Intervention) => {
             checkX += 42;
         });
 
-        y += 6;
+        y += 8;
 
-        // Technician line
+        // Technician line & Type
         doc.setFont('helvetica', 'bold');
         doc.text('Technicien : ', margin, y);
         doc.setFont('helvetica', 'normal');
         doc.text(intervention.technicien?.nom?.toUpperCase() || 'NON ASSIGNÉ', margin + 22, y);
+
+        // Type on the right side of the same line
+        doc.setFont('helvetica', 'bold');
+        doc.text('Type :', pageWidth / 2 + 20, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text((intervention.type || 'SAV').toUpperCase(), pageWidth / 2 + 35, y);
 
         y += 5;
 
