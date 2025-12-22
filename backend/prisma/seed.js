@@ -1,10 +1,10 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🌱 Démarrage du seed (JS)...');
+    console.log('🌱 Démarrage du seed (JS - Admin Only)...');
 
     const forceReset = process.env.SEED_ON_START === 'true';
     if (forceReset) {
