@@ -24,6 +24,14 @@ services:
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:-supersecretkey}
       NODE_ENV: production
+      # UNYC Sync Configuration (Requis pour la synchro)
+      UNYC_BASE_URL: ${UNYC_BASE_URL:-https://atlas-public-api.web.production.unyc.io}
+      UNYC_IAM_URL: ${UNYC_IAM_URL:-https://accounts.unyc.io/realms/production}
+      UNYC_CLIENT_ID: ${UNYC_CLIENT_ID:-public-api}
+      UNYC_USERNAME: ${UNYC_USERNAME}
+      UNYC_PASSWORD: ${UNYC_PASSWORD}
+      # Optionnel: Reset DB au démarrage (true/false)
+      # SEED_ON_START: "false"
     ports:
       - "8081:3000"
     depends_on:
