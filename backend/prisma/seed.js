@@ -22,7 +22,11 @@ async function main() {
 
     const admin = await prisma.technicien.upsert({
         where: { username: 'admin' },
-        update: {},
+        update: {
+            passwordHash: adminPassword,
+            role: 'admin',
+            active: true
+        },
         create: {
             nom: 'Administrateur',
             username: 'admin',
@@ -35,6 +39,8 @@ async function main() {
     console.log(`   ✅ Admin créé : ${admin.nom}`);
 
     console.log('\n🎉 Seed terminé avec succès !');
+    console.log('\n📌 Compte de connexion :');
+    console.log('   Admin: admin / admin123');
 }
 
 main()
