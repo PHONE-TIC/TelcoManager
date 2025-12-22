@@ -3,10 +3,15 @@ set -e
 
 echo "🚀 Starting TelcoManager App..."
 
-# Run migrations (use push if migrations are missing, or deploy if they exist)
-# Using 'db push' here because we don't have a migrations folder in the source
+# Run migrations
 echo "🛠️  Syncing database schema..."
 npx prisma db push
+
+# Optional: Run seed if requested
+if [ "$SEED_ON_START" = "true" ]; then
+  echo "🌱 Seeding database as requested..."
+  node prisma/seed.js
+fi
 
 # Start the application
 echo "🏁 Starting server..."
