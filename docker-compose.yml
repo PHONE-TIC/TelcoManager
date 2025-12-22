@@ -24,10 +24,10 @@ services:
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:-supersecretkey}
       NODE_ENV: production
-      # Push Notifications
+      # Push Notifications (Générés via 'npx web-push generate-vapid-keys')
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
-      VAPID_SUBJECT: ${VAPID_SUBJECT}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@example.com}
       # UNYC Sync Configuration (Requis pour la synchro)
       UNYC_BASE_URL: ${UNYC_BASE_URL:-https://atlas-public-api.web.production.unyc.io}
       UNYC_IAM_URL: ${UNYC_IAM_URL:-https://accounts.unyc.io/realms/production}

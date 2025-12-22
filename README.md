@@ -5,6 +5,7 @@ Une solution complète pour gérer les stocks, les interventions techniques et l
 ## 🎯 Fonctionnalités
 
 ### Web Application (Single Container)
+
 - **Tableau de bord** : Vue d'ensemble avec statistiques en temps réel.
 - **Gestion des clients** : Création, modification, fiches détaillées avec historique.
 - **Gestion des techniciens** : Comptes utilisateurs avec rôles (admin/technicien).
@@ -14,6 +15,7 @@ Une solution complète pour gérer les stocks, les interventions techniques et l
 - **Authentification** : Sécurisée via JWT.
 
 ### Application Mobile (Prochainement)
+
 - Authentification technicien.
 - Planning mensuel.
 - Gestion des interventions.
@@ -35,6 +37,7 @@ telcomanager/
 ## 🚀 Démarrage Rapide
 
 ### Prérequis
+
 - Docker et Docker Compose
 
 ### Déploiement avec Docker (Recommandé)
@@ -47,6 +50,7 @@ telcomanager/
    ```
 
    Cela démarrera :
+
    - **TelcoManager App** (Frontend + API) sur le port **8081**
    - **PostgreSQL** sur le port **5435**
 
@@ -62,16 +66,19 @@ telcomanager/
 
 ### Variables d'Environnement
 
-| Variable | Description |
-|----------|-------------|
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Configuration PostgreSQL |
-| `JWT_SECRET` | Clé secrète pour les tokens JWT |
-| `UNYC_BASE_URL` | URL de l'API UNYC Atlas (ex: https://atlas-public-api...) |
-| `UNYC_IAM_URL` | URL de l'IAM UNYC (ex: https://accounts.unyc.io...) |
-| `UNYC_CLIENT_ID` | Client ID UNYC (ex: public-api) |
-| `UNYC_USERNAME` | Identifiant de connexion UNYC |
-| `UNYC_PASSWORD` | Mot de passe de connexion UNYC |
-| `SEED_ON_START` | `true` pour forcer la réinitialisation de la DB (Admin password reset) |
+| Variable                              | Description                                                            |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Configuration PostgreSQL                                               |
+| `JWT_SECRET`                          | Clé secrète pour les tokens JWT                                        |
+| `UNYC_BASE_URL`                       | URL de l'API UNYC Atlas (ex: https://atlas-public-api...)              |
+| `UNYC_IAM_URL`                        | URL de l'IAM UNYC (ex: https://accounts.unyc.io...)                    |
+| `UNYC_CLIENT_ID`                      | Client ID UNYC (ex: public-api)                                        |
+| `UNYC_USERNAME`                       | Identifiant de connexion UNYC                                          |
+| `UNYC_PASSWORD`                       | Mot de passe de connexion UNYC                                         |
+| `VAPID_PUBLIC_KEY`                    | Clé publique pour les notifications Push                               |
+| `VAPID_PRIVATE_KEY`                   | Clé privée pour les notifications Push                                 |
+| `VAPID_SUBJECT`                       | Email de contact pour le service Push (ex: mailto:admin@...)           |
+| `SEED_ON_START`                       | `true` pour forcer la réinitialisation de la DB (Admin password reset) |
 
 ## 📦 Images Docker
 
@@ -91,6 +98,7 @@ docker compose up -d
 Si vous souhaitez développer sans Docker :
 
 1. **Backend**
+
    ```bash
    cd backend
    npm install
