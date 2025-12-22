@@ -20,13 +20,15 @@ async function main() {
 
     const adminPassword = await bcrypt.hash('admin123', 10);
 
+    const forceReset = process.env.SEED_ON_START === 'true';
+
     const admin = await prisma.technicien.upsert({
         where: { username: 'admin' },
-        update: {
+        update: forceReset ? {
             passwordHash: adminPassword,
             role: 'admin',
             active: true
-        },
+        } : {},
         create: {
             nom: 'Administrateur',
             username: 'admin',

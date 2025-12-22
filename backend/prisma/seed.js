@@ -4,29 +4,35 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🌱 Démarrage du seed (JS - Admin Only)...');
+    console.log('🌱 Démarrage du seed (JS)...');
 
-    console.log('🧹 Nettoyage des données existantes...');
-    try {
-        await prisma.intervention.deleteMany({});
-        await prisma.client.deleteMany({});
-        console.log('   ✅ Tables nettoyées');
-    } catch (e) {
-        console.log('   ℹ️  Tables déjà vides ou erreur mineure de nettoyage');
+    const forceReset = process.env.SEED_ON_START === 'true';
+    if (forceReset) {
+        console.log('⚠️  Mode RESET activé : Réinitialisation forcée du mot de passe admin.');
+        console.log('🧹 Nettoyage des données existantes...');
+        try {
+            await prisma.intervention.deleteMany({});
+            await prisma.client.deleteMany({});
+            console.log('   ✅ Tables nettoyées');
+        } catch (e) {
+            console.log('   ℹ️  Tables déjà vides ou erreur mineure de nettoyage');
+        }
+    } else {
+        console.log('ℹ️  Mode STANDARD : Création de l\'admin si inexistant (mot de passe préservé).');
     }
 
     // Créer uniquement l'admin
-    console.log('👨‍🔧 Création de l\'administrateur...');
+    console.log('👨‍🔧 Vérification/Création de l\'administrateur...');
 
     const adminPassword = await bcrypt.hash('admin123', 10);
 
     const admin = await prisma.technicien.upsert({
         where: { username: 'admin' },
-        update: {
+        update: forceReset ? {
             passwordHash: adminPassword,
             role: 'admin',
             active: true
-        },
+        } : {}, // Ne rien mettre à jour si l'admin existe et qu'on n'est pas en mode reset
         create: {
             nom: 'Administrateur',
             username: 'admin',
@@ -36,11 +42,9 @@ async function main() {
         }
     });
 
-    console.log(`   ✅ Admin créé : ${admin.nom}`);
+    console.log(`   ✅ Admin prêt : ${admin.nom}`);
 
     console.log('\n🎉 Seed terminé avec succès !');
-    console.log('\n📌 Compte de connexion :');
-    console.log('   Admin: admin / admin123');
 }
 
 main()

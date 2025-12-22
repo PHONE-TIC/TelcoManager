@@ -7,11 +7,9 @@ echo "🚀 Starting TelcoManager App..."
 echo "🛠️  Syncing database schema..."
 npx prisma db push
 
-# Optional: Run seed if requested
-if [ "$SEED_ON_START" = "true" ]; then
-  echo "🌱 Seeding database as requested..."
-  node prisma/seed.js
-fi
+# Always run seed (idempotent: create if missing, reset if SEED_ON_START=true)
+echo "🌱 Checking database state..."
+node prisma/seed.js
 
 # Start the application
 echo "🏁 Starting server..."
