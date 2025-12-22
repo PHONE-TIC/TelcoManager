@@ -60,6 +60,19 @@ telcomanager/
 - **Username** : `admin`
 - **Password** : `admin123`
 
+### Variables d'Environnement
+
+| Variable | Description |
+|----------|-------------|
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Configuration PostgreSQL |
+| `JWT_SECRET` | Clé secrète pour les tokens JWT |
+| `UNYC_BASE_URL` | URL de l'API UNYC Atlas (ex: https://atlas-public-api...) |
+| `UNYC_IAM_URL` | URL de l'IAM UNYC (ex: https://accounts.unyc.io...) |
+| `UNYC_CLIENT_ID` | Client ID UNYC (ex: public-api) |
+| `UNYC_USERNAME` | Identifiant de connexion UNYC |
+| `UNYC_PASSWORD` | Mot de passe de connexion UNYC |
+| `SEED_ON_START` | `true` pour forcer la réinitialisation de la DB (Admin password reset) |
+
 ## 📦 Images Docker
 
 Les images sont hébergées sur Docker Hub :
