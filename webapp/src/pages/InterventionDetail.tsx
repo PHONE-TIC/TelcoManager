@@ -441,6 +441,7 @@ const InterventionDetail: React.FC = () => {
         !isClosedIntervention(intervention.statut) && (
           <InterventionWorkflow
             intervention={intervention} // Pass full object including client data
+            photos={photos} // Pass photos for upload
             onStatusChange={loadIntervention}
             readOnly={isClosedIntervention(intervention.statut)}
           />

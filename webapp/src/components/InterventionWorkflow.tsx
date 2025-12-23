@@ -2,7 +2,6 @@ import { useState } from "react";
 import { apiService } from "../services/api.service";
 import SignaturePad from "./SignaturePad";
 import BarcodeScanner from "./BarcodeScanner";
-import PhotoCapture from "./PhotoCapture";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
 import "./InterventionWorkflow.css";
 
@@ -26,12 +25,14 @@ interface Equipment {
 
 interface InterventionWorkflowProps {
   intervention: any; // Using any to avoid complex type duplication for now, or import shared type
+  photos: Photo[]; // Photos passed from parent component
   onStatusChange: () => void;
   readOnly?: boolean;
 }
 
 export default function InterventionWorkflow({
   intervention,
+  photos, // Receive photos from parent (InterventionDetail)
   onStatusChange,
   readOnly = false,
 }: InterventionWorkflowProps) {
@@ -60,8 +61,8 @@ export default function InterventionWorkflow({
     initialSignature || null
   );
 
-  // Photos
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  // Photos are now passed from parent, no local state needed
+  // const [photos, setPhotos] = useState<Photo[]>([]);
 
   // Equipment
   const [equipments, setEquipments] = useState<Equipment[]>([]);
@@ -548,16 +549,7 @@ export default function InterventionWorkflow({
         />
       )}
 
-      {/* === PHOTOS === */}
-      {statut === "en_cours" && (
-        <div className="workflow-section">
-          <PhotoCapture
-            photos={photos}
-            onPhotoAdd={(p) => setPhotos([...photos, p])}
-            onPhotoRemove={(id) => setPhotos(photos.filter((p) => p.id !== id))}
-          />
-        </div>
-      )}
+      {/* === PHOTOS are now in InterventionDetail, not duplicated here === */}
 
       {/* === SCANNERS === */}
       {showScanner && (
