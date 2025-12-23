@@ -696,7 +696,16 @@ export const uploadArtifacts = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const files = req.files as Express.Multer.File[];
 
+    console.log(`[Upload] Processing artifacts for intervention ${id}`);
+    if (files) {
+      console.log(`[Upload] Received ${files.length} files`);
+      files.forEach((f) =>
+        console.log(` - ${f.originalname} (${f.size} bytes)`)
+      );
+    }
+
     if (!files || files.length === 0) {
+      console.warn(`[Upload] No files received for ${id}`);
       return res.status(400).json({ error: "Aucun fichier fourni" });
     }
 

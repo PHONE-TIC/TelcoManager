@@ -6,16 +6,29 @@ import { Request } from "express";
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const interventionId = req.params.id;
+    // Use /app/uploads if it exists (Docker), otherwise fallback to cwd/uploads
+    let rootDir = process.cwd();
+    if (fs.existsSync("/app/uploads")) {
+      rootDir = "/app";
+    }
+
     const uploadPath = path.join(
-      process.cwd(),
+      rootDir,
       "uploads",
       "interventions",
       interventionId
     );
 
+    console.log(`[Multer] Uploading to: ${uploadPath}`);
+
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
+      try {
+        fs.mkdirSync(uploadPath, { recursive: true });
+      } catch (err) {
+        console.error(`[Multer] Error creating directory ${uploadPath}:`, err);
+        return cb(err as Error, "");
+      }
     }
 
     cb(null, uploadPath);
@@ -40,6 +53,7 @@ const fileFilter = (
   ) {
     cb(null, true);
   } else {
+    console.warn(`[Multer] Rejected file type: ${file.mimetype}`);
     cb(
       new Error(
         "Format de fichier non supporté. Seuls les images et PDF sont acceptés."
@@ -52,7 +66,7 @@ export const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 10, // Max 10 files
+    fileSize: 50 * 1024 * 1024, // 50MB limit to be safe
+    files: 20, // Max 20 files
   },
 });

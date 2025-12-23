@@ -175,6 +175,10 @@ export default function InterventionWorkflow({
         }
 
         if (photos.length > 0 || pdfBlob) {
+          console.log("Uploading artifacts:", {
+            photos: photos.length,
+            hasPdf: !!pdfBlob,
+          });
           showMessage("Envoi des fichiers en cours...");
           await apiService.uploadInterventionArtifacts(
             interventionId,
