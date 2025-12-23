@@ -46,6 +46,9 @@ RUN chmod +x start.sh
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# Create uploads directory for persistent storage
+RUN mkdir -p uploads
+
 # Expose port
 EXPOSE 3000
 

@@ -15,6 +15,7 @@ services:
     restart: always
 
   app:
+    image: phonetic76/telcomanager-app:latest
     build:
       context: .
       dockerfile: Dockerfile.combined
@@ -42,6 +43,8 @@ services:
       - postgres
     networks:
       - app_network
+    volumes:
+      - uploads_data:/app/uploads
     restart: always
 
 networks:
@@ -50,3 +53,4 @@ networks:
 
 volumes:
   postgres_data:
+  uploads_data:
