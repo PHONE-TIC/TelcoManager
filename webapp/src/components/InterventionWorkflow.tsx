@@ -122,14 +122,24 @@ export default function InterventionWorkflow({
       });
 
       // === UPLOAD ARTIFACTS (Photos + PDF) ===
+      console.log("=== UPLOAD ARTIFACTS START ===");
+      console.log("Photos received:", photos.length, photos);
+
       try {
         const formData = new FormData();
 
         // 1. Convert Photos to Blobs
+        console.log("Converting photos to blobs...");
         for (let i = 0; i < photos.length; i++) {
           const photo = photos[i];
+          console.log(
+            `Processing photo ${i + 1}:`,
+            photo.type,
+            photo.dataUrl?.substring(0, 50)
+          );
           const res = await fetch(photo.dataUrl);
           const blob = await res.blob();
+          console.log(`Photo ${i + 1} blob size:`, blob.size);
           const ext =
             photo.type === "before"
               ? "avant"
@@ -138,6 +148,10 @@ export default function InterventionWorkflow({
               : "autre";
           formData.append("files", blob, `photo_${ext}_${i + 1}.jpg`);
         }
+        console.log(
+          "Photos converted. FormData entries:",
+          [...formData.entries()].length
+        );
 
         // 2. Generate PDF Blob
         // Use the passed intervention object updated with local state
@@ -150,11 +164,19 @@ export default function InterventionWorkflow({
           statut: "terminee",
         };
 
+        console.log(
+          "Generating PDF with intervention data:",
+          latestIntervention.numero
+        );
         const pdfBlob = await generateInterventionPDF(
           latestIntervention,
           true,
           photos
         ); // true = return Blob
+        console.log(
+          "PDF generated:",
+          pdfBlob ? `Blob size ${(pdfBlob as Blob).size}` : "null/void"
+        );
 
         if (pdfBlob && pdfBlob instanceof Blob) {
           formData.append(
@@ -162,20 +184,29 @@ export default function InterventionWorkflow({
             pdfBlob,
             `Rapport_${latestIntervention.numero || "Intervention"}.pdf`
           );
+          console.log("PDF added to FormData");
         }
+
+        console.log("Final FormData entries:", [...formData.entries()].length);
 
         if (photos.length > 0 || pdfBlob) {
           console.log("Uploading artifacts:", {
             photos: photos.length,
             hasPdf: !!pdfBlob,
+            formDataSize: [...formData.entries()].length,
           });
           showMessage("Envoi des fichiers en cours...");
 
           try {
-            await apiService.uploadInterventionArtifacts(
+            console.log(
+              "Calling uploadInterventionArtifacts for:",
+              interventionId
+            );
+            const uploadResult = await apiService.uploadInterventionArtifacts(
               interventionId,
               formData
             );
+            console.log("Upload successful:", uploadResult);
           } catch (e) {
             console.error("Critical upload error:", e);
             alert(
@@ -186,6 +217,8 @@ export default function InterventionWorkflow({
             // Since status is already updated, we can't revert easily.
             throw e; // Pass to outer catch
           }
+        } else {
+          console.log("No files to upload (photos.length=0 and no PDF)");
         }
       } catch (uploadError) {
         console.error("Upload process failed", uploadError);
