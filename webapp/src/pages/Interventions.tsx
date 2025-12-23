@@ -550,8 +550,13 @@ function Interventions() {
   const filteredInterventions = interventions
     .filter((intervention) => {
       // For list view, filter to show only today's interventions
-      const interventionDate = new Date(intervention.datePlanifiee);
-      const isToday = interventionDate >= today && interventionDate < tomorrow;
+      // Use moment.utc since dates are stored in UTC
+      const interventionDate = moment.utc(intervention.datePlanifiee);
+      const todayStart = moment.utc().startOf("day");
+      const tomorrowStart = moment.utc().add(1, "day").startOf("day");
+      const isToday =
+        interventionDate.isSameOrAfter(todayStart) &&
+        interventionDate.isBefore(tomorrowStart);
 
       if (!isToday) return false;
 
@@ -569,8 +574,8 @@ function Interventions() {
     .sort((a, b) => {
       // Sort by time (earliest first)
       return (
-        new Date(a.datePlanifiee).getTime() -
-        new Date(b.datePlanifiee).getTime()
+        moment.utc(a.datePlanifiee).valueOf() -
+        moment.utc(b.datePlanifiee).valueOf()
       );
     });
 
