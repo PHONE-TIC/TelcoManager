@@ -25,26 +25,25 @@ interface Equipment {
 }
 
 interface InterventionWorkflowProps {
-  interventionId: string;
-  statut: string;
-  heureArrivee?: string;
-  heureDepart?: string;
-  commentaireTechnicien?: string;
-  signature?: string;
+  intervention: any; // Using any to avoid complex type duplication for now, or import shared type
   onStatusChange: () => void;
   readOnly?: boolean;
 }
 
 export default function InterventionWorkflow({
-  interventionId,
-  statut,
-  heureArrivee: initialHeureArrivee,
-  heureDepart: initialHeureDepart,
-  commentaireTechnicien: initialComment,
-  signature: initialSignature,
+  intervention,
   onStatusChange,
   readOnly = false,
 }: InterventionWorkflowProps) {
+  // Extract initial values from the full object
+  const {
+    id: interventionId,
+    statut,
+    heureArrivee: initialHeureArrivee,
+    heureDepart: initialHeureDepart,
+    commentaireTechnicien: initialComment,
+    signature: initialSignature,
+  } = intervention;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -140,28 +139,18 @@ export default function InterventionWorkflow({
         }
 
         // 2. Generate PDF Blob
-        // Note: We need a full intervention object for the PDF.
-        // We'll construct a partial one with what we have + hours/comment
-        // Ideally, we should fetch the latest or merge props.
-        // For now, let's assumme basic info is enough or we fetch it.
-        // Better approach: Let backend generate the PDF?
-        // Or user requested "folder with report AND photos".
-        // Since frontend has the PDF generator, we use it.
+        // Use the passed intervention object updated with local state
+        const latestIntervention = {
+          ...intervention,
+          heureArrivee: new Date(heureArrivee).toISOString(),
+          heureDepart: new Date(heureDepart).toISOString(),
+          commentaireTechnicien: commentaire,
+          signature,
+          statut: "terminee",
+        };
 
-        // HACK: We need to reconstruct the intervention object for the PDF
-        // We'll fetch the latest version to be sure
-        const latestIntervention = await apiService.getInterventionById(
-          interventionId
-        );
         const pdfBlob = await generateInterventionPDF(
-          {
-            ...latestIntervention,
-            heureArrivee: new Date(heureArrivee).toISOString(),
-            heureDepart: new Date(heureDepart).toISOString(),
-            commentaireTechnicien: commentaire,
-            signature,
-            statut: "terminee", // Ensure it says closed
-          },
+          latestIntervention,
           true,
           photos
         ); // true = return Blob
@@ -180,14 +169,29 @@ export default function InterventionWorkflow({
             hasPdf: !!pdfBlob,
           });
           showMessage("Envoi des fichiers en cours...");
-          await apiService.uploadInterventionArtifacts(
-            interventionId,
-            formData
-          );
+
+          try {
+            await apiService.uploadInterventionArtifacts(
+              interventionId,
+              formData
+            );
+          } catch (e) {
+            console.error("Critical upload error:", e);
+            alert(
+              "ERREUR CRITIQUE: L'envoi des photos a échoué ! Notez l'erreur et contactez le support.\n\n" +
+                (e as any).message
+            );
+            // We re-throw or handle specific logic?
+            // Since status is already updated, we can't revert easily.
+            throw e; // Pass to outer catch
+          }
         }
       } catch (uploadError) {
-        console.error("Upload failed", uploadError);
-        // Don't block closure if upload fails, but warn
+        console.error("Upload process failed", uploadError);
+        alert(
+          "Attention: La clôture est validée MAIS les fichiers n'ont pas été transmis.\n" +
+            (uploadError as any).message
+        );
         showMessage("Clôture réussie, mais échec envoi fichiers", true);
         onStatusChange();
         return;

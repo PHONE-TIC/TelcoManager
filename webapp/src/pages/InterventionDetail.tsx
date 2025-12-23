@@ -440,12 +440,7 @@ const InterventionDetail: React.FC = () => {
       {user?.role === "technicien" &&
         !isClosedIntervention(intervention.statut) && (
           <InterventionWorkflow
-            interventionId={intervention.id}
-            statut={intervention.statut}
-            heureArrivee={intervention.heureArrivee}
-            heureDepart={intervention.heureDepart}
-            commentaireTechnicien={intervention.commentaireTechnicien}
-            signature={intervention.signature}
+            intervention={intervention} // Pass full object including client data
             onStatusChange={loadIntervention}
             readOnly={isClosedIntervention(intervention.statut)}
           />
