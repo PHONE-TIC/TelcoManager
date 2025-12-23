@@ -179,7 +179,10 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
         technicienNom,
         titre,
         description,
-        datePlanifiee: new Date(datePlanifiee),
+        // DatePlanifiee comes as "2024-12-23T16:00" (local time format)
+        // We want to store it as if it's the exact time the user entered
+        // Since we're storing in UTC, we need to treat the input as UTC to preserve the intended hour
+        datePlanifiee: new Date(datePlanifiee + ":00.000Z"),
         statut,
         type,
         numero: tempNumero,
@@ -296,7 +299,13 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
       ...(technicienNom !== undefined && { technicienNom }),
       ...(titre && { titre }),
       ...(description !== undefined && { description }),
-      ...(datePlanifiee && { datePlanifiee: new Date(datePlanifiee) }),
+      ...(datePlanifiee && {
+        datePlanifiee: new Date(
+          datePlanifiee.includes("Z")
+            ? datePlanifiee
+            : datePlanifiee + ":00.000Z"
+        ),
+      }),
       ...(dateRealisee && { dateRealisee: new Date(dateRealisee) }),
       ...(statut && { statut }),
       ...(type && { type }),
