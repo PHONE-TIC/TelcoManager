@@ -332,7 +332,7 @@ const TechnicianInterventionView: React.FC = () => {
         };
 
         const pdfBlob = await generateInterventionPDF(
-          pdfIntervention,
+          pdfIntervention as any, // Type assertion needed since we're building a partial object
           true,
           photos
         );
