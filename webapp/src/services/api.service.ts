@@ -175,14 +175,10 @@ class ApiService {
   }
 
   async uploadInterventionArtifacts(id: string, formData: FormData) {
+    // Don't set Content-Type - browser will set it with correct boundary for FormData
     const response = await this.api.post(
       `/interventions/${id}/artifacts`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      formData
     );
     return response.data;
   }
