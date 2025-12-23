@@ -66,9 +66,18 @@ const ORANGE: [number, number, number] = [237, 125, 49];
 const LIGHT_ORANGE: [number, number, number] = [253, 234, 218];
 const BLACK: [number, number, number] = [0, 0, 0];
 
+export interface Photo {
+  id: string;
+  dataUrl: string;
+  type: "before" | "after" | "other";
+  caption?: string;
+  timestamp: Date;
+}
+
 export const generateInterventionPDF = async (
   intervention: Intervention,
-  returnBlob = false
+  returnBlob = false,
+  photos: Photo[] = []
 ): Promise<Blob | void> => {
   try {
     if (!logoBase64) {
@@ -383,6 +392,72 @@ export const generateInterventionPDF = async (
     );
     doc.text("générales de vente figurant au verso.", sigX + 2, y + 53);
 
+    // ==========================================
+    // PHOTOS PAGE
+    // ==========================================
+    if (photos && photos.length > 0) {
+      doc.addPage();
+      y = 15;
+
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(ORANGE[0], ORANGE[1], ORANGE[2]);
+      doc.text("Photos d'intervention", margin, y);
+      y += 10;
+
+      const photoWidth = 80;
+      const photoHeight = 60;
+      let x = margin;
+
+      // Reset font for captions
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+
+      photos.forEach((photo, index) => {
+        // Check for page break
+        if (y + photoHeight + 10 > pageHeight - 15) {
+          doc.addPage();
+          y = 15;
+          x = margin;
+        }
+
+        try {
+          // Add image
+          doc.addImage(photo.dataUrl, "JPEG", x, y, photoWidth, photoHeight);
+
+          // Caption
+          doc.setFontSize(9);
+          const typeLabel =
+            photo.type === "before"
+              ? "Avant"
+              : photo.type === "after"
+              ? "Après"
+              : "Autre";
+          const caption = `${typeLabel} - ${new Date(
+            photo.timestamp
+          ).toLocaleTimeString()}`;
+          doc.text(caption, x, y + photoHeight + 5);
+
+          // Move position
+          if (index % 2 === 0) {
+            // First column, move to second
+            x += photoWidth + 10;
+          } else {
+            // Second column, move to next row
+            x = margin;
+            y += photoHeight + 15;
+          }
+        } catch (e) {
+          console.warn("Error adding photo to PDF", e);
+        }
+      });
+    }
+
+    // ==========================================
+    // FOOTER (Repeated for all pages or just last?
+    // Current implementation draws on ONE page.
+    // If we added pages, we are on the last page.
+    // Let's stick to drawing on the current (last) page only for now.
     // ==========================================
     // FOOTER
     // ==========================================

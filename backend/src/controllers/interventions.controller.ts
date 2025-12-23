@@ -132,11 +132,9 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
   try {
     // Only admins can create interventions
     if (req.user?.role !== "admin") {
-      return res
-        .status(403)
-        .json({
-          error: "Seuls les administrateurs peuvent créer des interventions",
-        });
+      return res.status(403).json({
+        error: "Seuls les administrateurs peuvent créer des interventions",
+      });
     }
 
     const errors = validationResult(req);
@@ -258,11 +256,9 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
         existingIntervention.statut === "terminee" ||
         existingIntervention.statut === "annulee"
       ) {
-        return res
-          .status(403)
-          .json({
-            error: "Les interventions clôturées ne peuvent pas être modifiées",
-          });
+        return res.status(403).json({
+          error: "Les interventions clôturées ne peuvent pas être modifiées",
+        });
       }
     }
 
@@ -722,5 +718,46 @@ export const uploadArtifacts = async (req: AuthRequest, res: Response) => {
     res
       .status(500)
       .json({ error: "Erreur lors de la sauvegarde des fichiers" });
+  }
+};
+
+// Get Artifacts (List files)
+import fs from "fs";
+import path from "path";
+
+export const getArtifacts = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const uploadDir = path.join(__dirname, `../../uploads/interventions/${id}`);
+
+    if (!fs.existsSync(uploadDir)) {
+      return res.json([]);
+    }
+
+    const files = fs.readdirSync(uploadDir);
+    const artifacts = files.map((file) => {
+      // Construct full URL (assuming /uploads is served statically)
+      // file format: timestamp_originalName
+      // simple heuristic for type:
+      let type = "autre";
+      if (file.toLowerCase().endsWith(".pdf")) type = "rapport";
+      else if (file.includes("avant")) type = "photo_avant";
+      else if (file.includes("apres")) type = "photo_apres";
+      else if (file.match(/\.(jpg|jpeg|png|gif)$/i)) type = "photo_autre";
+
+      return {
+        filename: file,
+        url: `/uploads/interventions/${id}/${file}`,
+        type,
+        createdAt: fs.statSync(path.join(uploadDir, file)).birthtime,
+      };
+    });
+
+    res.json(artifacts);
+  } catch (error) {
+    console.error("Erreur getArtifacts:", error);
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération des fichiers" });
   }
 };

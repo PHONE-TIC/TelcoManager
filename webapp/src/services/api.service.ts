@@ -177,11 +177,13 @@ class ApiService {
   async uploadInterventionArtifacts(id: string, formData: FormData) {
     const response = await this.api.post(
       `/interventions/${id}/artifacts`,
-      formData,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-      }
+      formData
     );
+    return response.data;
+  }
+
+  async getInterventionArtifacts(id: string) {
+    const response = await this.api.get(`/interventions/${id}/artifacts`);
     return response.data;
   }
 

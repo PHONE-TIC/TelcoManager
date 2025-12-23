@@ -13,12 +13,7 @@ echo "=== 🐳 Connecting to Docker Hub ==="
 echo "=== 🏗️  Building images ==="
 docker compose build
 
-echo "=== 🏷️  Tagging images for $DOCKER_USER ==="
-# Tag App
-docker tag ${PROJECT_NAME}-app:latest $DOCKER_USER/$PROJECT_NAME-app:latest
-echo "Tagged $DOCKER_USER/$PROJECT_NAME-app:latest"
-
 echo "=== 🚀 Pushing images to Docker Hub ==="
-docker push $DOCKER_USER/$PROJECT_NAME-app:latest
+docker compose push
 
 echo "=== ✅ Done! Images published successfully. ==="

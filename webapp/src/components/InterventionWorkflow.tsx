@@ -162,7 +162,8 @@ export default function InterventionWorkflow({
             signature,
             statut: "terminee", // Ensure it says closed
           },
-          true
+          true,
+          photos
         ); // true = return Blob
 
         if (pdfBlob && pdfBlob instanceof Blob) {

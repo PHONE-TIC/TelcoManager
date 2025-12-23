@@ -141,4 +141,13 @@ router.post(
   interventionController.uploadArtifacts
 );
 
+// Get Artifacts
+router.get(
+  "/:id/artifacts",
+  authenticate, // Anyone authenticated can see artifacts? Or check role?
+  // Let's use authenticate for now, as Tech/Admin access is mainly handled by middleware
+  param("id").isUUID(),
+  interventionController.getArtifacts
+);
+
 export default router;
