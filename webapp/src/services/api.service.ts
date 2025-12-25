@@ -175,10 +175,18 @@ class ApiService {
   }
 
   async uploadInterventionArtifacts(id: string, formData: FormData) {
-    // Don't set Content-Type - browser will set it with correct boundary for FormData
-    const response = await this.api.post(
-      `/interventions/${id}/artifacts`,
-      formData
+    // Use axios directly (not this.api) to avoid default Content-Type: application/json
+    // which interferes with FormData's multipart/form-data boundary
+    const token = sessionStorage.getItem("token");
+    const response = await axios.post(
+      `/api/interventions/${id}/artifacts`,
+      formData,
+      {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+          // Don't set Content-Type - let browser set it with boundary
+        },
+      }
     );
     return response.data;
   }
@@ -201,7 +209,7 @@ class ApiService {
     }
   ) {
     const response = await this.api.post(
-      `/interventions/${id}/equipement`,
+      `/interventions/${id}/equipements`,
       data
     );
     return response.data;
@@ -220,6 +228,13 @@ class ApiService {
 
   async getStockByBarcode(codeBarre: string) {
     const response = await this.api.get(`/stock/barcode/${codeBarre}`);
+    return response.data;
+  }
+
+  async getStockBySerial(numeroSerie: string) {
+    const response = await this.api.get(
+      `/stock/serial/${encodeURIComponent(numeroSerie)}`
+    );
     return response.data;
   }
 
@@ -273,6 +288,20 @@ class ApiService {
     return response.data;
   }
 
+  async bulkTransfer(data: {
+    sourceType: "warehouse" | "technician";
+    sourceId?: string;
+    destType: "warehouse" | "technician";
+    destId?: string;
+    items: { stockId: string; quantite: number }[];
+  }) {
+    const response = await this.api.post(
+      "/stock-movements/bulk-transfer",
+      data
+    );
+    return response.data;
+  }
+
   // Inventaire
   async scanBarcode(codeBarre: string) {
     const response = await this.api.post("/inventaire/scan", { codeBarre });
@@ -323,11 +352,12 @@ class ApiService {
   async updateVehicleItemQuantity(
     technicienId: string,
     stockId: string,
-    quantite: number
+    quantite: number,
+    etat?: string
   ) {
     const response = await this.api.put(
       `/technician-stock/${technicienId}/${stockId}`,
-      { quantite }
+      { quantite, ...(etat && { etat }) }
     );
     return response.data;
   }
@@ -335,6 +365,37 @@ class ApiService {
   async removeItemFromVehicle(technicienId: string, stockId: string) {
     const response = await this.api.delete(
       `/technician-stock/${technicienId}/${stockId}`
+    );
+    return response.data;
+  }
+
+  async assignToClient(
+    technicienId: string,
+    stockId: string,
+    clientId: string
+  ) {
+    const response = await this.api.post(
+      `/technician-stock/${technicienId}/${stockId}/assign`,
+      { clientId }
+    );
+    return response.data;
+  }
+
+  async retrieveFromClient(
+    technicienId: string,
+    stockId: string,
+    etat: "ok" | "hs"
+  ) {
+    const response = await this.api.post(
+      `/technician-stock/${technicienId}/${stockId}/retrieve`,
+      { etat }
+    );
+    return response.data;
+  }
+
+  async transferHsToGeneralStock(technicienId: string, stockId: string) {
+    const response = await this.api.post(
+      `/technician-stock/${technicienId}/${stockId}/transfer-hs`
     );
     return response.data;
   }

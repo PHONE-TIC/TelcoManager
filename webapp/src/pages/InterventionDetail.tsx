@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
@@ -27,6 +27,7 @@ interface Intervention {
     nom: string;
     contact: string;
     telephone: string;
+    email?: string;
     rue?: string;
     codePostal?: string;
     ville?: string;
@@ -75,6 +76,10 @@ const InterventionDetail: React.FC = () => {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
+  const [loadedAttachments, setLoadedAttachments] = useState<
+    Array<{ name: string; url: string; type: string }>
+  >([]);
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -144,14 +149,46 @@ const InterventionDetail: React.FC = () => {
         const artifacts = await apiService.getInterventionArtifacts(id!);
         const loadedPhotos = artifacts
           .filter((f: any) => f.type.startsWith("photo_"))
-          .map((f: any) => ({
-            id: f.filename,
-            dataUrl: f.url,
-            type: f.type.replace("photo_", "") as "avant" | "apres" | "autre",
-            timestamp: new Date(f.createdAt),
-            caption: f.filename,
-          }));
+          .map((f: any) => {
+            // Map French types from backend to English types expected by PhotoCapture
+            let photoType: "before" | "after" | "other" = "other";
+            if (f.type === "photo_avant") photoType = "before";
+            else if (f.type === "photo_apres") photoType = "after";
+
+            return {
+              id: f.filename,
+              dataUrl: f.url,
+              type: photoType,
+              timestamp: new Date(f.createdAt),
+              caption: f.filename,
+            };
+          });
         setPhotos(loadedPhotos);
+
+        // Load non-photo attachments (documents, PDFs, etc.)
+        const otherFiles = artifacts
+          .filter(
+            (f: any) => !f.type.startsWith("photo_") && f.type !== "rapport_pdf"
+          )
+          .map((f: any) => ({
+            name: f.filename,
+            url: f.url,
+            type: f.type,
+          }));
+        setLoadedAttachments(otherFiles);
+
+        // Check for existing report
+        const report = artifacts.find(
+          (f: any) =>
+            f.type === "rapport_pdf" ||
+            (f.filename &&
+              (f.filename.startsWith("Rapport_") ||
+                f.filename.startsWith("Bon-Intervention-")) &&
+              f.filename.endsWith(".pdf"))
+        );
+        if (report) {
+          setReportUrl(report.url);
+        }
       } catch (e) {
         console.warn("Failed to load artifacts", e);
       }
@@ -329,10 +366,16 @@ const InterventionDetail: React.FC = () => {
               {/* PDF uniquement pour interventions terminées */}
               {isClosedIntervention(intervention.statut) && (
                 <button
-                  onClick={() => void generateInterventionPDF(intervention)}
+                  onClick={() => {
+                    if (reportUrl) {
+                      window.open(reportUrl, "_blank");
+                    } else {
+                      void generateInterventionPDF(intervention);
+                    }
+                  }}
                   className="btn btn-secondary btn-export-pdf"
                 >
-                  📄 PDF
+                  📄 {reportUrl ? "Voir le rapport" : "Télécharger PDF"}
                 </button>
               )}
               {/* Bouton Prendre en charge pour techniciens (en haut à droite) */}
@@ -878,16 +921,106 @@ const InterventionDetail: React.FC = () => {
         </div>
       )}
 
-      {/* Photos d'intervention */}
-      <PhotoCapture
-        photos={photos}
-        onPhotoAdd={(photo) => setPhotos([...photos, photo])}
-        onPhotoRemove={(id) => setPhotos(photos.filter((p) => p.id !== id))}
-        readOnly={
-          intervention.statut === "terminee" ||
-          intervention.statut === "annulee"
-        }
-      />
+      {/* Photos et Fichiers joints - côte à côte */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          gap: "15px",
+          marginTop: "15px",
+          alignItems: "stretch",
+        }}
+      >
+        {/* Photos d'intervention */}
+        <div
+          style={{
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <PhotoCapture
+            photos={photos}
+            onPhotoAdd={(photo) => setPhotos([...photos, photo])}
+            onPhotoRemove={(id) => setPhotos(photos.filter((p) => p.id !== id))}
+            readOnly={
+              intervention.statut === "terminee" ||
+              intervention.statut === "annulee"
+            }
+            style={{ height: "100%", margin: 0 }}
+          />
+        </div>
+
+        {/* Fichiers joints */}
+        {loadedAttachments.length > 0 && (
+          <div className="info-card" style={{ height: "100%", margin: 0 }}>
+            <h3 style={{ marginBottom: "10px", color: "var(--primary-color)" }}>
+              📎 Fichiers joints ({loadedAttachments.length})
+            </h3>
+            <div>
+              {loadedAttachments.map((file, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 15px",
+                    backgroundColor: "var(--bg-secondary)",
+                    borderRadius: "8px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    <span style={{ fontSize: "20px" }}>
+                      {file.name.endsWith(".pdf")
+                        ? "📄"
+                        : file.name.match(/\.(jpg|jpeg|png|gif)$/i)
+                        ? "🖼️"
+                        : file.name.match(/\.(doc|docx)$/i)
+                        ? "📝"
+                        : file.name.match(/\.(xls|xlsx)$/i)
+                        ? "📊"
+                        : "📁"}
+                    </span>
+                    <span
+                      style={{
+                        fontWeight: "500",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {file.name}
+                    </span>
+                  </div>
+                  <a
+                    href={file.url}
+                    download={file.name}
+                    className="btn btn-secondary"
+                    style={{
+                      fontSize: "12px",
+                      padding: "6px 12px",
+                      flexShrink: 0,
+                      marginLeft: "10px",
+                    }}
+                  >
+                    ⬇️
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

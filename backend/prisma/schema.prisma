@@ -25,8 +25,9 @@ model Client {
   updatedAt       DateTime           @updatedAt @map("updated_at")
   
   // Relations
-  interventions   Intervention[]
-  equipements     ClientEquipment[]
+  interventions     Intervention[]
+  equipements       ClientEquipment[]
+  technicianStocks  TechnicianStock[]
 
   @@map("clients")
 }
@@ -219,16 +220,21 @@ model TechnicianStock {
   technicienId  String      @map("technicien_id")
   stockId       String      @map("stock_id")
   quantite      Int         @default(1)
+  etat          String      @default("ok") // "ok" ou "hs"
+  clientId      String?     @map("client_id") // Client à qui le matériel est assigné
+  assignedAt    DateTime?   @map("assigned_at") // Date d'assignation au client
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
   // Relations
   technicien    Technicien  @relation(fields: [technicienId], references: [id], onDelete: Cascade)
   stock         Stock       @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  client        Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
   @@unique([technicienId, stockId])
   @@index([technicienId])
   @@index([stockId])
+  @@index([clientId])
   @@map("technician_stocks")
 }
 

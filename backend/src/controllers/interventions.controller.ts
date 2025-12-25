@@ -108,6 +108,7 @@ export const getInterventionById = async (req: AuthRequest, res: Response) => {
                 nomMateriel: true,
                 reference: true,
                 categorie: true,
+                numeroSerie: true,
               },
             },
           },
@@ -179,10 +180,8 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
         technicienNom,
         titre,
         description,
-        // DatePlanifiee comes as "2024-12-23T16:00" (local time format)
-        // We want to store it as if it's the exact time the user entered
-        // Since we're storing in UTC, we need to treat the input as UTC to preserve the intended hour
-        datePlanifiee: new Date(datePlanifiee + ":00.000Z"),
+        // Parse date as-is, JavaScript will handle timezone naturally
+        datePlanifiee: new Date(datePlanifiee),
         statut,
         type,
         numero: tempNumero,
@@ -299,13 +298,7 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
       ...(technicienNom !== undefined && { technicienNom }),
       ...(titre && { titre }),
       ...(description !== undefined && { description }),
-      ...(datePlanifiee && {
-        datePlanifiee: new Date(
-          datePlanifiee.includes("Z")
-            ? datePlanifiee
-            : datePlanifiee + ":00.000Z"
-        ),
-      }),
+      ...(datePlanifiee && { datePlanifiee: new Date(datePlanifiee) }),
       ...(dateRealisee && { dateRealisee: new Date(dateRealisee) }),
       ...(statut && { statut }),
       ...(type && { type }),
@@ -520,34 +513,45 @@ export const manageEquipement = async (req: AuthRequest, res: Response) => {
       const stock = await prisma.stock.findUnique({ where: { id: stockId } });
       if (!stock) return res.status(404).json({ error: "Article non trouvé" });
 
-      // 1. Décrémenter stock véhicule technicien
-      if (intervention.technicienId) {
-        try {
-          const techStock = await prisma.technicianStock.findUnique({
-            where: {
-              technicienId_stockId: {
-                technicienId: intervention.technicienId,
-                stockId,
-              },
+      // 1. Décrémenter stock véhicule technicien (OBLIGATOIRE)
+      if (!intervention.technicienId) {
+        return res.status(400).json({
+          error:
+            "Impossible d'installer : aucun technicien assigné à l'intervention.",
+        });
+      }
+
+      try {
+        const techStock = await prisma.technicianStock.findUnique({
+          where: {
+            technicienId_stockId: {
+              technicienId: intervention.technicienId,
+              stockId,
             },
+          },
+        });
+
+        if (!techStock || techStock.quantite < quantite) {
+          return res.status(400).json({
+            error:
+              "Stock insuffisant dans le véhicule du technicien. Veuillez effectuer un transfert depuis l'entrepôt.",
           });
+        }
 
-          if (!techStock || techStock.quantite < quantite) {
-            // Warning but proceed? Or block?
-            // For now, let's block to prevent negative stock
-            return res
-              .status(400)
-              .json({ error: "Stock insuffisant dans le véhicule" });
-          }
-
+        // Decrementer et supprimer si 0
+        if (techStock.quantite - quantite <= 0) {
+          await prisma.technicianStock.delete({
+            where: { id: techStock.id },
+          });
+        } else {
           await prisma.technicianStock.update({
             where: { id: techStock.id },
             data: { quantite: { decrement: quantite } },
           });
-        } catch (e) {
-          console.warn("Tech stock update error:", e);
-          return res.status(400).json({ error: "Erreur stock technicien" });
         }
+      } catch (e) {
+        console.warn("Tech stock update error:", e);
+        return res.status(400).json({ error: "Erreur stock technicien" });
       }
 
       // 2. Créer équipement client
@@ -588,7 +592,7 @@ export const manageEquipement = async (req: AuthRequest, res: Response) => {
         },
       });
 
-      // If stockId Provided (known item), we update ClientEquipment status and potentially increment Central Stock (if OK)
+      // If stockId Provided (known item), we update ClientEquipment status and RETURN TO TECH STOCK
       if (stockId) {
         const clientEq = await prisma.clientEquipment.findFirst({
           where: {
@@ -610,12 +614,41 @@ export const manageEquipement = async (req: AuthRequest, res: Response) => {
           });
         }
 
-        // Si RETRAIT OK et item connu, retour stock central
-        if (etat === "ok") {
-          await prisma.stock.update({
-            where: { id: stockId },
-            data: { quantite: { increment: quantite } },
+        // Retour dans le stock du technicien (Traçabilité)
+        if (intervention.technicienId) {
+          await prisma.technicianStock.upsert({
+            where: {
+              technicienId_stockId: {
+                technicienId: intervention.technicienId,
+                stockId,
+              },
+            },
+            update: {
+              quantite: { increment: quantite },
+              etat: etat === "hs" ? "hs" : "ok", // Mise à jour de l'état si retourné
+            },
+            create: {
+              technicienId: intervention.technicienId,
+              stockId,
+              quantite,
+              etat: etat === "hs" ? "hs" : "ok",
+            },
           });
+        } else {
+          // Fallback (ne devrait pas arriver si process respecté, mais au cas où admin retire)
+          console.warn(
+            "Retrait sans technicien : retour stock central (fallback)"
+          );
+          if (etat === "ok") {
+            await prisma.stock.update({
+              where: { id: stockId },
+              data: { quantite: { increment: quantite } },
+            });
+          } else {
+            // Handle HS return to central... complicated without existing HS item logic.
+            // Leaving as gap or assuming OK reuse.
+            // But prioritizing Tech flow as requested.
+          }
         }
       }
     }
@@ -746,7 +779,8 @@ import path from "path";
 export const getArtifacts = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const uploadDir = path.join(__dirname, `../../uploads/interventions/${id}`);
+    // Use process.cwd() for consistent path resolution
+    const uploadDir = path.join(process.cwd(), `uploads/interventions/${id}`);
 
     if (!fs.existsSync(uploadDir)) {
       return res.json([]);

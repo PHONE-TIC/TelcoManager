@@ -8,10 +8,15 @@ Une solution complète pour gérer les stocks, les interventions techniques et l
 
 - **Tableau de bord** : Vue d'ensemble avec statistiques en temps réel.
 - **Gestion des clients** : Création, modification, fiches détaillées avec historique.
-- **Gestion des techniciens** : Comptes utilisateurs avec rôles (admin/technicien).
+- **Gestion des techniciens** : Comptes utilisateurs avec rôles (admin/gestionnaire/technicien).
 - **Planification des interventions** : Création et assignation aux techniciens.
-- **Gestion du stock** : Stock courant et stock HS (hors service).
-- **Module inventaire** : Scan de codes-barres pour inventaire rapide.
+- **Gestion du stock** : Stock courant et stock HS (hors service) avec permissions par rôle.
+- **Module inventaire** :
+  - Scan de codes-barres / numéros de série pour comptage rapide.
+  - Auto-incrément des quantités lors du scan.
+  - Révision des écarts avant finalisation.
+  - Export PDF des résultats d'inventaire.
+- **Recherche globale** : Recherche unifiée sur interventions, clients, techniciens et stock.
 - **Authentification** : Sécurisée via JWT.
 
 ### Application Mobile (Prochainement)

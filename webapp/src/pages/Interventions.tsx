@@ -41,14 +41,14 @@ function Interventions() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
+
   const [statusFilter, setStatusFilter] = useState<
     "all" | "planifiee" | "en_cours" | "terminee" | "annulee"
   >("all");
 
   // Column sorting state
-  const [sortColumn, setSortColumn] = useState<string>("datePlanifiee");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortColumn, setSortColumn] = useState<string>("id");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Conflict detection state
   const [showConflictModal, setShowConflictModal] = useState(false);
@@ -480,10 +480,30 @@ function Interventions() {
           valA = a.technicien?.nom?.toLowerCase() || "zzz";
           valB = b.technicien?.nom?.toLowerCase() || "zzz";
           break;
+        case "id":
+        case "numero":
+          // Try to extract number from "RDV2025005" format
+          const extractNum = (str: string) => {
+            if (!str) return 0;
+            const match = str.toString().match(/\d+/);
+            return match ? parseInt(match[0], 10) : 0;
+          };
+          const numA = extractNum(a.numero || a.id);
+          const numB = extractNum(b.numero || b.id);
+
+          if (numA !== 0 && numB !== 0) {
+            valA = numA;
+            valB = numB;
+          } else {
+            valA = a.numero || a.id || "";
+            valB = b.numero || b.id || "";
+          }
+          break;
         default:
           valA = a[sortColumn];
           valB = b[sortColumn];
       }
+
       if (valA < valB) return sortDirection === "asc" ? -1 : 1;
       if (valA > valB) return sortDirection === "asc" ? 1 : -1;
       return 0;
@@ -506,16 +526,16 @@ function Interventions() {
     setCalendarKey((prev) => prev + 1);
   };
 
-  // Calendar events mapping - use moment.utc to match how dates are stored
+  // Calendar events mapping - use local time (moment without UTC)
   const calendarEvents = interventions.map((int) => ({
     id: int.id,
-    title: `[${int.type === "Installation" ? "Install" : "SAV"}] [${moment
-      .utc(int.datePlanifiee)
-      .format("HH:mm")}] ${int.titre} - ${int.client?.nom} (${
+    title: `[${int.type === "Installation" ? "Install" : "SAV"}] [${moment(
+      int.datePlanifiee
+    ).format("HH:mm")}] ${int.titre} - ${int.client?.nom} (${
       getStatusBadge(int.statut).props.children
     })`,
-    start: moment.utc(int.datePlanifiee).toDate(),
-    end: moment.utc(int.datePlanifiee).add(2, "hours").toDate(), // Assumed 2h duration
+    start: new Date(int.datePlanifiee),
+    end: new Date(new Date(int.datePlanifiee).getTime() + 2 * 60 * 60 * 1000), // Assumed 2h duration
     resource: int,
   }));
 
@@ -550,32 +570,18 @@ function Interventions() {
   const filteredInterventions = interventions
     .filter((intervention) => {
       // For list view, filter to show only today's interventions
-      // Use moment.utc since dates are stored in UTC
-      const interventionDate = moment.utc(intervention.datePlanifiee);
-      const todayStart = moment.utc().startOf("day");
-      const tomorrowStart = moment.utc().add(1, "day").startOf("day");
-      const isToday =
-        interventionDate.isSameOrAfter(todayStart) &&
-        interventionDate.isBefore(tomorrowStart);
+      const interventionDate = new Date(intervention.datePlanifiee);
+      const isToday = interventionDate >= today && interventionDate < tomorrow;
 
       if (!isToday) return false;
 
-      // Then apply search filter (for admins)
-      if (!searchTerm) return true;
-      const search = searchTerm.toLowerCase();
-      const numeroFormatted = String(intervention.numero || "");
-      return (
-        numeroFormatted.toLowerCase().includes(search) ||
-        intervention.titre.toLowerCase().includes(search) ||
-        intervention.client?.nom.toLowerCase().includes(search) ||
-        intervention.technicien?.nom.toLowerCase().includes(search)
-      );
+      return true;
     })
     .sort((a, b) => {
       // Sort by time (earliest first)
       return (
-        moment.utc(a.datePlanifiee).valueOf() -
-        moment.utc(b.datePlanifiee).valueOf()
+        new Date(a.datePlanifiee).getTime() -
+        new Date(b.datePlanifiee).getTime()
       );
     });
 
@@ -586,16 +592,7 @@ function Interventions() {
       if (statusFilter !== "all" && intervention.statut !== statusFilter)
         return false;
 
-      // Apply search filter
-      if (!searchTerm) return true;
-      const search = searchTerm.toLowerCase();
-      const numeroFormatted = String(intervention.numero || "");
-      return (
-        numeroFormatted.toLowerCase().includes(search) ||
-        intervention.titre.toLowerCase().includes(search) ||
-        intervention.client?.nom.toLowerCase().includes(search) ||
-        intervention.technicien?.nom.toLowerCase().includes(search)
-      );
+      return true;
     })
     .sort((a, b) => {
       // Sort by date (most recent first)
@@ -824,40 +821,7 @@ function Interventions() {
               <div
                 className="relative"
                 style={{ minWidth: "300px", maxWidth: "400px" }}
-              >
-                <span
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2"
-                  style={{ fontSize: "16px" }}
-                >
-                  🔍
-                </span>
-                <input
-                  type="text"
-                  placeholder="Rechercher par numéro, titre, client..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 14px 10px 40px",
-                    backgroundColor: "var(--bg-secondary, #f5f5f5)",
-                    border: "1px solid var(--border-color, #e5e5e5)",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    color: "var(--text-primary)",
-                    outline: "none",
-                    transition: "all 0.2s",
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--primary-color)";
-                    e.currentTarget.style.boxShadow =
-                      "0 0 0 2px rgba(249, 115, 22, 0.2)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border-color)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                />
-              </div>
+              ></div>
             )}
           </div>
         )}
@@ -969,9 +933,8 @@ function Interventions() {
                             Aucune intervention aujourd'hui
                           </h3>
                           <p className="text-gray-500 mt-2">
-                            {searchTerm
-                              ? "Aucune intervention correspondante"
-                              : "Utilisez le calendrier pour voir toutes les interventions"}
+                            "Utilisez le calendrier pour voir toutes les
+                            interventions"
                           </p>
                         </div>
                       </td>
@@ -1151,10 +1114,12 @@ function Interventions() {
                         </td>
                         <td>
                           <span
-                            className={`px-2 py-1 rounded text-xs font-semibold ${
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
                               intervention.type === "Installation"
-                                ? "bg-purple-100 text-purple-800"
-                                : "bg-indigo-100 text-indigo-800"
+                                ? "bg-blue-100 text-blue-800"
+                                : intervention.type === "SAV"
+                                ? "bg-orange-100 text-orange-800"
+                                : "bg-gray-100 text-gray-800"
                             }`}
                           >
                             {intervention.type || "SAV"}
@@ -1205,9 +1170,7 @@ function Interventions() {
                             Aucune intervention
                           </h3>
                           <p className="text-gray-500 mt-2">
-                            {searchTerm
-                              ? "Aucune intervention correspondante à votre recherche"
-                              : "Aucune intervention enregistrée"}
+                            "Aucune intervention enregistrée"
                           </p>
                         </div>
                       </td>

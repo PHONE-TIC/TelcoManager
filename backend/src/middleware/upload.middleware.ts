@@ -4,40 +4,29 @@ import fs from "fs";
 import { Request } from "express";
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req: Request, file, cb) => {
     const interventionId = req.params.id;
-    // Use /app/uploads if it exists (Docker), otherwise fallback to cwd/uploads
-    let rootDir = process.cwd();
-    if (fs.existsSync("/app/uploads")) {
-      rootDir = "/app";
+    if (!interventionId) {
+      return cb(new Error("Intervention ID is required"), "");
     }
 
     const uploadPath = path.join(
-      rootDir,
+      process.cwd(),
       "uploads",
       "interventions",
       interventionId
     );
 
-    console.log(`[Multer] Uploading to: ${uploadPath}`);
-
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadPath)) {
-      try {
-        fs.mkdirSync(uploadPath, { recursive: true });
-      } catch (err) {
-        console.error(`[Multer] Error creating directory ${uploadPath}:`, err);
-        return cb(err as Error, "");
-      }
+      fs.mkdirSync(uploadPath, { recursive: true });
     }
 
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    // Keep original name but prepend timestamp to avoid collisions
-    // Clean filename to remove special chars
-    const cleanName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
-    cb(null, `${Date.now()}-${cleanName}`);
+    // Keep original filename simply
+    cb(null, file.originalname);
   },
 });
 
@@ -46,18 +35,18 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  // Accept images and PDFs
-  if (
-    file.mimetype.startsWith("image/") ||
-    file.mimetype === "application/pdf"
-  ) {
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    console.warn(`[Multer] Rejected file type: ${file.mimetype}`);
     cb(
-      new Error(
-        "Format de fichier non supporté. Seuls les images et PDF sont acceptés."
-      )
+      new Error("Invalid file type. Only JPEG, PNG, WEBP and PDF are allowed.")
     );
   }
 };
@@ -66,7 +55,6 @@ export const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit to be safe
-    files: 20, // Max 20 files
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
   },
 });

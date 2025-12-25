@@ -19,10 +19,11 @@ async function loadLogo(): Promise<string | null> {
   }
 }
 
+// Update Interface to include new fields
 interface Intervention {
   numero?: number;
   titre: string;
-  description?: string;
+  description?: string; // Not used in Objet anymore, but part of type
   datePlanifiee: string;
   dateRealisee?: string;
   statut: string;
@@ -42,6 +43,7 @@ interface Intervention {
     rue?: string;
     codePostal?: string;
     ville?: string;
+    email?: string;
   };
   technicien?: {
     id?: string;
@@ -49,6 +51,18 @@ interface Intervention {
     username?: string;
   };
   equipements?: any[];
+}
+
+// Extra data passed from Workflow
+interface ExtraData {
+  billing?: {
+    maintenance: boolean;
+    garantie: boolean;
+    facturable: boolean;
+  };
+  systemType?: string;
+  clientRemarks?: string;
+  clientSigner?: string;
 }
 
 // Company info
@@ -77,7 +91,8 @@ export interface Photo {
 export const generateInterventionPDF = async (
   intervention: Intervention,
   returnBlob = false,
-  photos: Photo[] = []
+  photos: Photo[] = [], // Kept in signature but ignored as requested
+  extraData: ExtraData = {}
 ): Promise<Blob | void> => {
   try {
     if (!logoBase64) {
@@ -121,31 +136,35 @@ export const generateInterventionPDF = async (
     y += 40;
 
     // ==========================================
-    // DOCUMENT TYPE CHECKBOXES
+    // DOCUMENT TYPE CHECKBOXES (Replaced by Billing Options)
     // ==========================================
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
 
     const checkItems = [
-      { label: "Rapport d'intervention", checked: true },
-      { label: "Dépannage", checked: false },
-      { label: "P.V. de mise en service", checked: false },
-      { label: "Bon de de livraison", checked: false },
+      {
+        label: "Contrat de maintenance",
+        checked: extraData.billing?.maintenance || false,
+      },
+      { label: "Garantie", checked: extraData.billing?.garantie || false },
+      { label: "Facturable", checked: extraData.billing?.facturable || false },
     ];
 
     let checkX = margin;
     checkItems.forEach((item) => {
       // Draw checkbox
-      doc.rect(checkX, y - 2.5, 3, 3);
+      doc.setDrawColor(BLACK[0], BLACK[1], BLACK[2]);
+      doc.rect(checkX, y - 4, 4, 4);
       if (item.checked) {
-        doc.line(checkX, y - 2.5, checkX + 3, y + 0.5);
-        doc.line(checkX + 3, y - 2.5, checkX, y + 0.5);
+        doc.setFont("helvetica", "bold");
+        doc.text("X", checkX + 1, y - 0.5);
       }
-      doc.text(item.label, checkX + 5, y);
-      checkX += 42;
+      doc.setFont("helvetica", "normal");
+      doc.text(item.label, checkX + 6, y);
+      checkX += 55;
     });
 
-    y += 8;
+    y += 10;
 
     // Technician line & Type
     doc.setFont("helvetica", "bold");
@@ -174,6 +193,15 @@ export const generateInterventionPDF = async (
         }`
       : intervention.client.adresse || "";
 
+    // Construct contact info string
+    const contactInfo = [
+      intervention.client.contact,
+      intervention.client.telephone,
+      intervention.client.email,
+    ]
+      .filter(Boolean)
+      .join(" - ");
+
     autoTable(doc, {
       startY: y,
       theme: "grid",
@@ -189,7 +217,13 @@ export const generateInterventionPDF = async (
         fontStyle: "bold",
       },
       head: [["Nom du client", "Lieu d'intervention", "Type de système"]],
-      body: [[intervention.client.nom || "", clientAddress, ""]],
+      body: [
+        [
+          intervention.client.nom || "",
+          clientAddress + (contactInfo ? "\n" + contactInfo : ""),
+          extraData.systemType || "",
+        ],
+      ],
       columnStyles: {
         0: { cellWidth: 60 },
         1: { cellWidth: 75 },
@@ -199,55 +233,63 @@ export const generateInterventionPDF = async (
 
     y = (doc as any).lastAutoTable.finalY;
 
+    // Time Calculation
+    let timeString = "";
+    if (intervention.heureArrivee && intervention.heureDepart) {
+      const start = new Date(intervention.heureArrivee);
+      const end = new Date(intervention.heureDepart);
+      const diffMs = end.getTime() - start.getTime();
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      timeString = `${hours}h ${minutes}m`;
+    }
+
     // Options row with checkboxes
     autoTable(doc, {
       startY: y,
       theme: "grid",
       styles: {
-        fontSize: 7,
-        cellPadding: 2,
+        fontSize: 10,
+        cellPadding: 3,
         lineColor: ORANGE,
         lineWidth: 0.3,
+        fontStyle: "bold",
       },
-      body: [
-        [
-          "[ ] Contrat maint.",
-          "[ ] Garantie",
-          "[ ] Facturable",
-          `Temps :\nTrajet :`,
-        ],
-      ],
+      body: [[`Temps : ${timeString}`]],
+      // Expand to full width
       columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 82 },
+        0: { cellWidth: "auto" }, // auto layout
       },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 2;
+    y = (doc as any).lastAutoTable.finalY + 5;
 
     // ==========================================
-    // OBJET & FOURNITURES (Side by side)
+    // OBJET & MATERIEL (Side by side)
     // ==========================================
     const objetWidth = 115;
     const fournituresWidth = pageWidth - margin * 2 - objetWidth - 2;
     const contentHeight = 100;
 
-    // Objet header
+    // Draw both headers backgrounds first to avoid color state issues
     doc.setFillColor(LIGHT_ORANGE[0], LIGHT_ORANGE[1], LIGHT_ORANGE[2]);
     doc.setDrawColor(ORANGE[0], ORANGE[1], ORANGE[2]);
     doc.setLineWidth(0.3);
+
+    // Objet Header Background
     doc.rect(margin, y, objetWidth, 6, "FD");
+
+    // Matériel Header Background
+    const fourX = margin + objetWidth + 2;
+    doc.rect(fourX, y, fournituresWidth, 6, "FD");
+
+    // Then add text
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
-    doc.text("Objet :", margin + 2, y + 4);
 
-    // Fournitures header
-    const fourX = margin + objetWidth + 2;
-    doc.rect(fourX, y, fournituresWidth, 6, "FD");
-    doc.text("Fournitures", fourX + 2, y + 4);
+    doc.text("Objet :", margin + 2, y + 4);
+    doc.text("Matériel et numéro de série", fourX + 2, y + 4);
 
     y += 6;
 
@@ -255,7 +297,7 @@ export const generateInterventionPDF = async (
     doc.setFillColor(255, 255, 255);
     doc.rect(margin, y, objetWidth, contentHeight, "D");
 
-    // Fournitures content box with Quantité column
+    // Matériel content box with Quantité column
     doc.rect(fourX, y, fournituresWidth, contentHeight, "D");
 
     // Quantité sub-header
@@ -272,43 +314,125 @@ export const generateInterventionPDF = async (
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
 
-    // Content: titre + description + commentaire
-    const objetContent = [
-      intervention.titre || "",
-      "",
-      intervention.description || "",
-      "",
-      intervention.commentaireTechnicien || "",
-    ].join("\n");
+    // Content: ONLY Commentaire Technicien as requested
+    const objetContent = intervention.commentaireTechnicien || "";
 
     const objetLines = doc.splitTextToSize(objetContent, objetWidth - 6);
-    let lineY = y + 5;
-    objetLines.slice(0, 22).forEach((line: string) => {
-      doc.text(line, margin + 2, lineY);
-      // Draw dotted line
-      doc.setLineDashPattern([0.5, 1], 0);
-      doc.line(margin + 2, lineY + 1, margin + objetWidth - 4, lineY + 1);
-      doc.setLineDashPattern([], 0);
-      lineY += 4.5;
-    });
+    const lineY = y + 5;
 
-    // Fill Fournitures
-    if (intervention.equipements && intervention.equipements.length > 0) {
-      let fourY = y + 5;
-      intervention.equipements.forEach((eq: any) => {
-        const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
-        const action = eq.action === "install" ? "(I)" : "(R)";
-        doc.text(`${action} ${name}`, fourX + 2, fourY);
-        doc.text(
-          String(eq.quantite || 1),
-          fourX + fournituresWidth - 12,
-          fourY
-        );
-        fourY += 5;
-      });
+    // Draw lines for structure - limit to 19 lines to stay within contentHeight
+    for (let i = 0; i < 19; i++) {
+      const currentLineY = y + 5 + i * 5;
+      if (i < objetLines.length) {
+        doc.text(objetLines[i], margin + 2, currentLineY);
+      }
+      // Dotted line - stop well before the right edge
+      doc.setLineDashPattern([0.5, 1], 0);
+      doc.line(
+        margin + 2,
+        currentLineY + 1,
+        margin + objetWidth - 6,
+        currentLineY + 1
+      );
+      doc.setLineDashPattern([], 0);
     }
 
-    y += contentHeight + 2;
+    // Fill Matériel - Split into Installed and Retrieved sections
+    if (intervention.equipements && intervention.equipements.length > 0) {
+      const installed = intervention.equipements.filter(
+        (eq: any) => eq.action === "install"
+      );
+      const retrieved = intervention.equipements.filter(
+        (eq: any) => eq.action === "retrait"
+      );
+
+      let fourY = y + 5;
+      const maxWidth = fournituresWidth - 26; // Leave space for quantity column
+
+      // Installed equipment section
+      if (installed.length > 0) {
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.text("[+] Installé:", fourX + 2, fourY);
+        fourY += 4;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+
+        installed.forEach((eq: any) => {
+          const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
+          const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
+
+          // Split name if too long
+          const nameLines = doc.splitTextToSize(name, maxWidth);
+          nameLines.forEach((line: string) => {
+            doc.text(line, fourX + 4, fourY);
+            fourY += 3.5;
+          });
+
+          // Serial number on new line if exists
+          if (serialNumber) {
+            doc.setFont("helvetica", "italic");
+            doc.text(`S/N: ${serialNumber}`, fourX + 4, fourY);
+            doc.setFont("helvetica", "normal");
+            fourY += 3.5;
+          }
+
+          // Quantity
+          doc.text(
+            String(eq.quantite || 1),
+            fourX + fournituresWidth - 12,
+            fourY - (serialNumber ? 3.5 : 0) - (nameLines.length - 1) * 3.5
+          );
+
+          fourY += 2; // Space between items
+        });
+      }
+
+      // Retrieved equipment section
+      if (retrieved.length > 0) {
+        fourY += 2; // Extra space between sections
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.text("[-] Repris:", fourX + 2, fourY);
+        fourY += 4;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+
+        retrieved.forEach((eq: any) => {
+          const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
+          const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
+          const etat = eq.etat ? ` (${eq.etat.toUpperCase()})` : "";
+
+          // Split name if too long
+          const nameLines = doc.splitTextToSize(name + etat, maxWidth);
+          nameLines.forEach((line: string) => {
+            doc.text(line, fourX + 4, fourY);
+            fourY += 3.5;
+          });
+
+          // Serial number on new line if exists
+          if (serialNumber) {
+            doc.setFont("helvetica", "italic");
+            doc.text(`S/N: ${serialNumber}`, fourX + 4, fourY);
+            doc.setFont("helvetica", "normal");
+            fourY += 3.5;
+          }
+
+          // Quantity
+          doc.text(
+            String(eq.quantite || 1),
+            fourX + fournituresWidth - 12,
+            fourY - (serialNumber ? 3.5 : 0) - (nameLines.length - 1) * 3.5
+          );
+
+          fourY += 2; // Space between items
+        });
+      }
+    }
+
+    y += contentHeight + 5;
 
     // ==========================================
     // REMARQUES & SIGNATURE (Side by side)
@@ -322,18 +446,18 @@ export const generateInterventionPDF = async (
     doc.rect(margin, y, remarquesWidth, 6, "FD");
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.text("Remarques :", margin + 2, y + 4);
+    doc.text("Remarques Client :", margin + 2, y + 4);
     doc.rect(margin, y + 6, remarquesWidth, bottomHeight, "D");
 
-    // Notes content
-    if (intervention.notes) {
+    // Notes content (CLIENT REMARKS)
+    if (extraData.clientRemarks) {
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       const notesLines = doc.splitTextToSize(
-        intervention.notes,
+        extraData.clientRemarks,
         remarquesWidth - 4
       );
-      notesLines.slice(0, 8).forEach((line: string, i: number) => {
+      notesLines.slice(0, 10).forEach((line: string, i: number) => {
         doc.text(line, margin + 2, y + 11 + i * 4);
       });
     }
@@ -359,26 +483,58 @@ export const generateInterventionPDF = async (
     doc.setFont("helvetica", "bold");
     doc.text("Nom de signature :", sigX + 2, y + 13);
     doc.setFont("helvetica", "normal");
-    doc.text(intervention.client.contact || "", sigX + 35, y + 13);
+    // Use the explicit clientSigner name provided in closure
+    doc.text(
+      extraData.clientSigner || intervention.client.contact || "",
+      sigX + 35,
+      y + 13
+    );
 
-    // Signature header
+    // Signature header - Technician
     doc.setFillColor(LIGHT_ORANGE[0], LIGHT_ORANGE[1], LIGHT_ORANGE[2]);
     doc.rect(sigX, y + 16, signatureWidth, 6, "FD");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
-    doc.text("Signature et cachet commercial du Client", sigX + 2, y + 20);
+    doc.text("Signature Technicien", sigX + 2, y + 20);
 
-    // Signature box
+    // Technician Signature box
     doc.setFillColor(255, 255, 255);
-    doc.rect(sigX, y + 22, signatureWidth, 24, "D");
+    doc.rect(sigX, y + 22, signatureWidth, 14, "D");
 
-    // Add signature image if available
+    // Add technician signature image if available
+    if (intervention.signatureTechnicien) {
+      try {
+        doc.addImage(
+          intervention.signatureTechnicien,
+          "PNG",
+          sigX + 3,
+          y + 23,
+          signatureWidth - 6,
+          12
+        );
+      } catch (e) {
+        console.warn("Could not add technician signature image");
+      }
+    }
+
+    // Signature header - Client
+    doc.setFillColor(LIGHT_ORANGE[0], LIGHT_ORANGE[1], LIGHT_ORANGE[2]);
+    doc.rect(sigX, y + 36, signatureWidth, 6, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.text("Signature Client", sigX + 2, y + 40);
+
+    // Client Signature box
+    doc.setFillColor(255, 255, 255);
+    doc.rect(sigX, y + 42, signatureWidth, 14, "D");
+
+    // Add client signature image if available
     if (intervention.signatureClient || intervention.signature) {
       try {
         const sigData = intervention.signatureClient || intervention.signature;
-        doc.addImage(sigData!, "PNG", sigX + 3, y + 24, signatureWidth - 6, 20);
+        doc.addImage(sigData!, "PNG", sigX + 3, y + 43, signatureWidth - 6, 12);
       } catch (e) {
-        console.warn("Could not add signature image");
+        console.warn("Could not add client signature image");
       }
     }
 
@@ -388,76 +544,15 @@ export const generateInterventionPDF = async (
     doc.text(
       "Reconnais avoir pris connaissance et accepter les conditions",
       sigX + 2,
-      y + 50
+      y + 60
     );
-    doc.text("générales de vente figurant au verso.", sigX + 2, y + 53);
+    doc.text("générales de vente figurant au verso.", sigX + 2, y + 63);
 
     // ==========================================
-    // PHOTOS PAGE
+    // NO PHOTOS generated
     // ==========================================
-    if (photos && photos.length > 0) {
-      doc.addPage();
-      y = 15;
+    console.log("Photos page skipped as requested.");
 
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(ORANGE[0], ORANGE[1], ORANGE[2]);
-      doc.text("Photos d'intervention", margin, y);
-      y += 10;
-
-      const photoWidth = 80;
-      const photoHeight = 60;
-      let x = margin;
-
-      // Reset font for captions
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
-
-      photos.forEach((photo, index) => {
-        // Check for page break
-        if (y + photoHeight + 10 > pageHeight - 15) {
-          doc.addPage();
-          y = 15;
-          x = margin;
-        }
-
-        try {
-          // Add image
-          doc.addImage(photo.dataUrl, "JPEG", x, y, photoWidth, photoHeight);
-
-          // Caption
-          doc.setFontSize(9);
-          const typeLabel =
-            photo.type === "before"
-              ? "Avant"
-              : photo.type === "after"
-              ? "Après"
-              : "Autre";
-          const caption = `${typeLabel} - ${new Date(
-            photo.timestamp
-          ).toLocaleTimeString()}`;
-          doc.text(caption, x, y + photoHeight + 5);
-
-          // Move position
-          if (index % 2 === 0) {
-            // First column, move to second
-            x += photoWidth + 10;
-          } else {
-            // Second column, move to next row
-            x = margin;
-            y += photoHeight + 15;
-          }
-        } catch (e) {
-          console.warn("Error adding photo to PDF", e);
-        }
-      });
-    }
-
-    // ==========================================
-    // FOOTER (Repeated for all pages or just last?
-    // Current implementation draws on ONE page.
-    // If we added pages, we are on the last page.
-    // Let's stick to drawing on the current (last) page only for now.
     // ==========================================
     // FOOTER
     // ==========================================

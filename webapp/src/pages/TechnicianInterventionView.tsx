@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
-import { formatDateTimeLocal } from "../utils/dateUtils";
+// formatDateTimeLocal not currently used
 import { getTravelEstimate } from "../services/geolocation.service";
 import type { TravelEstimate } from "../services/geolocation.service";
 import PhotoCapture from "../components/PhotoCapture";
@@ -29,6 +29,7 @@ interface Intervention {
     nom: string;
     contact: string;
     telephone: string;
+    email?: string;
     rue?: string;
     codePostal?: string;
     ville?: string;
@@ -46,6 +47,26 @@ interface Equipment {
   action: "install" | "retrait";
   etat?: "ok" | "hs";
   quantite: number;
+}
+
+interface VehicleStockItem {
+  id: string;
+  stockId: string;
+  quantite: number;
+  etat: "ok" | "hs";
+  clientId?: string | null;
+  assignedAt?: string | null;
+  stock: {
+    id: string;
+    nomMateriel: string;
+    reference?: string;
+    numeroSerie?: string;
+    codeBarre?: string;
+  };
+  client?: {
+    id: string;
+    nom: string;
+  } | null;
 }
 
 const STEPS = [
@@ -69,17 +90,21 @@ const TechnicianInterventionView: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
 
   // Form states
-  const [heureArrivee, setHeureArrivee] = useState("");
-  const [heureDepart, setHeureDepart] = useState("");
+  const [_heureArrivee, setHeureArrivee] = useState("");
+  const [_heureDepart, setHeureDepart] = useState("");
   const [commentaire, setCommentaire] = useState("");
   const [signatureTechnicien, setSignatureTechnicien] = useState<string | null>(
     null
   );
   const [signatureClient, setSignatureClient] = useState<string | null>(null);
   const [photos, setPhotos] = useState<any[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [loadedAttachments, setLoadedAttachments] = useState<
+    Array<{ name: string; url: string; type: string }>
+  >([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [showScanner, setShowScanner] = useState(false);
-  const [scanAction, setScanAction] = useState<"install" | "retrait">(
+  const [scanAction, _setScanAction] = useState<"install" | "retrait">(
     "install"
   );
   const [clientHistory, setClientHistory] = useState<any[]>([]);
@@ -87,8 +112,51 @@ const TechnicianInterventionView: React.FC = () => {
     null
   );
   const [loadingTravel, setLoadingTravel] = useState(false);
+  const [modalPhoto, setModalPhoto] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  // New fields for Wizard Flow
+  const [billing, setBilling] = useState({
+    maintenance: false,
+    garantie: false,
+    facturable: false,
+  });
+  const [systemType, setSystemType] = useState("");
+  const [clientRemarks, setClientRemarks] = useState("");
+  const [clientSigner, setClientSigner] = useState("");
 
-  // Global function to stop all camera streams
+  // Time-only state (HH:mm)
+  const [timeArrivee, setTimeArrivee] = useState("");
+  const [timeDepart, setTimeDepart] = useState("");
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
+
+  // Vehicle stock states for material assignment
+  const [vehicleStock, setVehicleStock] = useState<VehicleStockItem[]>([]);
+  const [showVehicleStockModal, setShowVehicleStockModal] = useState(false);
+  const [vehicleStockAction, setVehicleStockAction] = useState<
+    "install" | "retrait"
+  >("install");
+  const [selectedVehicleItem, setSelectedVehicleItem] =
+    useState<VehicleStockItem | null>(null);
+  const [showRetrieveConditionModal, setShowRetrieveConditionModal] =
+    useState(false);
+  const [loadingVehicleStock, setLoadingVehicleStock] = useState(false);
+
+  const initialPinchDistance = useRef<number | null>(null);
+  const initialZoomLevel = useRef<number>(1);
+
+  // Helper to extract HH:mm from ISO
+  const extractTime = (isoStr?: string) => {
+    if (!isoStr) return "";
+    try {
+      const d = new Date(isoStr);
+      return d.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  };
   const stopAllCameras = () => {
     console.log("Stopping all cameras globally...");
     // Find all video elements and stop their streams
@@ -123,10 +191,14 @@ const TechnicianInterventionView: React.FC = () => {
       setIntervention(data);
 
       // Pre-fill form with existing data
-      if (data.heureArrivee)
-        setHeureArrivee(formatDateTimeLocal(data.heureArrivee));
-      if (data.heureDepart)
-        setHeureDepart(formatDateTimeLocal(data.heureDepart));
+      if (data.heureArrivee) {
+        setHeureArrivee(data.heureArrivee); // Keep full ISO for reference
+        setTimeArrivee(extractTime(data.heureArrivee));
+      }
+      if (data.heureDepart) {
+        setHeureDepart(data.heureDepart);
+        setTimeDepart(extractTime(data.heureDepart));
+      }
       if (data.commentaireTechnicien)
         setCommentaire(data.commentaireTechnicien);
       if (data.signature) setSignatureClient(data.signature);
@@ -149,6 +221,66 @@ const TechnicianInterventionView: React.FC = () => {
           setClientHistory(history);
         } catch (histErr) {
           console.warn("Could not load client history:", histErr);
+        }
+      }
+
+      // Load artifacts (photos) for closed interventions
+      if (data.statut === "terminee" || data.statut === "annulee") {
+        try {
+          const artifacts = await apiService.getInterventionArtifacts(id);
+          const loadedPhotos = artifacts
+            .filter((f: any) => f.type.startsWith("photo_"))
+            .map((f: any) => {
+              // Map French types from backend to English types expected by PhotoCapture
+              let photoType: "before" | "after" | "other" = "other";
+              if (f.type === "photo_avant") photoType = "before";
+              else if (f.type === "photo_apres") photoType = "after";
+
+              return {
+                id: f.filename,
+                dataUrl: f.url,
+                type: photoType,
+                timestamp: new Date(f.createdAt),
+                caption: f.filename,
+              };
+            });
+          setPhotos(loadedPhotos);
+
+          // Load non-photo attachments (documents, PDFs, etc.)
+          const otherFiles = artifacts
+            .filter(
+              (f: any) =>
+                !f.type.startsWith("photo_") && f.type !== "rapport_pdf"
+            )
+            .map((f: any) => ({
+              name: f.filename,
+              url: f.url,
+              type: f.type,
+            }));
+          setLoadedAttachments(otherFiles);
+
+          // Check for existing report
+          // Try exact type match first, then filename convention
+          const report = artifacts.find(
+            (f: any) =>
+              f.type === "rapport_pdf" ||
+              (f.filename &&
+                (f.filename.startsWith("Rapport_") ||
+                  f.filename.startsWith("Bon-Intervention-")) &&
+                f.filename.endsWith(".pdf"))
+          );
+
+          if (report) {
+            console.log("Found existing PDF report:", report.url);
+            setReportUrl(report.url);
+          } else {
+            console.log(
+              "No existing PDF report found in artifacts:",
+              artifacts
+            );
+          }
+        } catch (artifactErr) {
+          console.warn("Could not load artifacts:", artifactErr);
         }
       }
 
@@ -196,15 +328,39 @@ const TechnicianInterventionView: React.FC = () => {
   };
 
   const handleSaveHours = async () => {
-    if (!id || !heureArrivee || !heureDepart) return;
+    if (!id) return;
+    if (!timeArrivee || !timeDepart) {
+      alert("⚠️ Veuillez renseigner l'heure d'arrivée et de départ.");
+      return false;
+    }
+
+    // Combine with today's date (or datePlanifiee if needed, assuming Today for realization)
+    const today = new Date();
+    const [hArr, mArr] = timeArrivee.split(":").map(Number);
+    const dateArr = new Date(today);
+    dateArr.setHours(hArr, mArr, 0, 0);
+
+    const [hDep, mDep] = timeDepart.split(":").map(Number);
+    const dateDep = new Date(today);
+    dateDep.setHours(hDep, mDep, 0, 0);
+
+    const isoArr = dateArr.toISOString();
+    const isoDep = dateDep.toISOString();
+
+    // Update local state ISOs for consistency
+    setHeureArrivee(isoArr);
+    setHeureDepart(isoDep);
+
     try {
       await apiService.validateInterventionHours(id, {
-        heureArrivee: new Date(heureArrivee).toISOString(),
-        heureDepart: new Date(heureDepart).toISOString(),
+        heureArrivee: isoArr,
+        heureDepart: isoDep,
       });
       showMessage("Heures enregistrées");
+      return true;
     } catch (err: any) {
       showMessage(err.response?.data?.error || "Erreur", true);
+      return false;
     }
   };
 
@@ -238,131 +394,278 @@ const TechnicianInterventionView: React.FC = () => {
       }
       setEquipments([]);
       showMessage("Matériel enregistré");
+      // Save current step before reloading intervention
+      const savedStep = currentStep;
       await loadIntervention();
+      // Restore current step after reload
+      setCurrentStep(savedStep);
     } catch (err: any) {
       showMessage(err.response?.data?.error || "Erreur", true);
     }
   };
 
+  // Load technician's vehicle stock
+  const loadVehicleStock = async () => {
+    if (!intervention?.technicien?.id) return;
+    setLoadingVehicleStock(true);
+    try {
+      const data = await apiService.getTechnicianStock(
+        intervention.technicien.id
+      );
+      setVehicleStock(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Erreur chargement stock véhicule:", error);
+      setVehicleStock([]);
+    } finally {
+      setLoadingVehicleStock(false);
+    }
+  };
+
+  // Open modal for installation (assigning material to client)
+  const handleOpenInstallModal = () => {
+    setVehicleStockAction("install");
+    loadVehicleStock();
+    setShowVehicleStockModal(true);
+  };
+
+  // Open modal for retrieval (getting material back from client)
+  const handleOpenRetraitModal = () => {
+    setVehicleStockAction("retrait");
+    loadVehicleStock();
+    setShowVehicleStockModal(true);
+  };
+
+  // Handle installation: assign item to client
+  const handleInstallItem = async (item: VehicleStockItem) => {
+    if (!intervention?.technicien?.id || !intervention?.client?.id) return;
+    try {
+      await apiService.assignToClient(
+        intervention.technicien.id,
+        item.stockId,
+        intervention.client.id
+      );
+      // Add to local equipments list for display
+      setEquipments([
+        ...equipments,
+        {
+          stockId: item.stockId,
+          nom: item.stock.nomMateriel,
+          action: "install",
+          quantite: 1,
+        },
+      ]);
+      setShowVehicleStockModal(false);
+      showMessage(
+        `${item.stock.nomMateriel} installé chez ${intervention.client.nom}`
+      );
+      loadVehicleStock(); // Refresh vehicle stock
+    } catch (error: any) {
+      console.error("Erreur installation:", error);
+      showMessage(
+        error.response?.data?.error || "Erreur lors de l'installation",
+        true
+      );
+    }
+  };
+
+  // Handle material selection for retrieval
+  const handleSelectForRetrieval = (item: VehicleStockItem) => {
+    setSelectedVehicleItem(item);
+    setShowVehicleStockModal(false);
+    setShowRetrieveConditionModal(true);
+  };
+
+  // Handle retrieval with condition (OK/HS)
+  const handleRetrieveItem = async (etat: "ok" | "hs") => {
+    if (!intervention?.technicien?.id || !selectedVehicleItem) return;
+    try {
+      await apiService.retrieveFromClient(
+        intervention.technicien.id,
+        selectedVehicleItem.stockId,
+        etat
+      );
+      // Add to local equipments list for display
+      setEquipments([
+        ...equipments,
+        {
+          stockId: selectedVehicleItem.stockId,
+          nom: selectedVehicleItem.stock.nomMateriel,
+          action: "retrait",
+          etat,
+          quantite: 1,
+        },
+      ]);
+      setShowRetrieveConditionModal(false);
+      setSelectedVehicleItem(null);
+      showMessage(
+        `${
+          selectedVehicleItem.stock.nomMateriel
+        } repris (${etat.toUpperCase()})`
+      );
+      loadVehicleStock(); // Refresh vehicle stock
+    } catch (error: any) {
+      console.error("Erreur reprise:", error);
+      showMessage(
+        error.response?.data?.error || "Erreur lors de la reprise",
+        true
+      );
+    }
+  };
+
+  // Handle removing equipment from the list - reverses the action
+  const handleRemoveEquipment = async (index: number) => {
+    const eq = equipments[index];
+    if (!eq.stockId || !intervention?.technicien?.id) {
+      // No stockId - just remove from local list
+      setEquipments(equipments.filter((_, idx) => idx !== index));
+      return;
+    }
+
+    try {
+      if (eq.action === "install") {
+        // Was installed (assigned to client) - retrieve back to technician stock
+        await apiService.retrieveFromClient(
+          intervention.technicien.id,
+          eq.stockId,
+          "ok" // Return as OK since we're canceling the assignment
+        );
+        showMessage(`${eq.nom} retiré et remis dans votre stock`);
+      } else if (eq.action === "retrait" && intervention?.client?.id) {
+        // Was retrieved from client - reassign back to client
+        await apiService.assignToClient(
+          intervention.technicien.id,
+          eq.stockId,
+          intervention.client.id
+        );
+        showMessage(`${eq.nom} réassigné au client`);
+      }
+
+      // Remove from local list
+      setEquipments(equipments.filter((_, idx) => idx !== index));
+      loadVehicleStock(); // Refresh vehicle stock
+    } catch (error: any) {
+      console.error("Erreur lors de la suppression:", error);
+      showMessage(
+        error.response?.data?.error || "Erreur lors de la suppression",
+        true
+      );
+    }
+  };
+
   const handleClose = async () => {
     if (!id) return;
-    if (!heureArrivee || !heureDepart) {
+    if (!timeArrivee || !timeDepart) {
       alert("⚠️ Veuillez saisir les heures d'arrivée et de départ");
       setCurrentStep(1);
       return;
     }
+    if (!clientSigner.trim()) {
+      alert("⚠️ Le nom du signataire est obligatoire");
+      setCurrentStep(5);
+      return;
+    }
+    if (!signatureClient) {
+      alert("⚠️ La signature du client est obligatoire");
+      setCurrentStep(5);
+      return;
+    }
 
     setLoading(true);
-    console.log("Closing intervention...", {
-      id,
-      heureArrivee,
-      heureDepart,
-      commentaire,
-    });
 
     try {
-      // Save hours
-      console.log("Saving hours...");
+      // Ensure times are saved (redundant check but safe)
+      const today = new Date();
+      const [hArr, mArr] = timeArrivee.split(":").map(Number);
+      const dateArr = new Date(today);
+      dateArr.setHours(hArr, mArr, 0, 0);
+
+      const [hDep, mDep] = timeDepart.split(":").map(Number);
+      const dateDep = new Date(today);
+      dateDep.setHours(hDep, mDep, 0, 0);
+
       await apiService.validateInterventionHours(id, {
-        heureArrivee: new Date(heureArrivee).toISOString(),
-        heureDepart: new Date(heureDepart).toISOString(),
+        heureArrivee: dateArr.toISOString(),
+        heureDepart: dateDep.toISOString(),
       });
 
-      // Save signatures (optional - may not be implemented in backend)
-      try {
-        if (signatureTechnicien) {
-          console.log("Saving technician signature...");
-          await apiService.signIntervention(id, {
-            type: "technicien",
-            signature: signatureTechnicien,
-          });
-        }
-        if (signatureClient) {
-          console.log("Saving client signature...");
-          await apiService.signIntervention(id, {
-            type: "client",
-            signature: signatureClient,
-          });
-        }
-      } catch (signErr) {
-        console.warn(
-          "Signature API not available, continuing without saving signatures",
-          signErr
-        );
+      // Save signatures
+      if (signatureTechnicien) {
+        await apiService.signIntervention(id, {
+          type: "technicien",
+          signature: signatureTechnicien,
+        });
+      }
+      if (signatureClient) {
+        await apiService.signIntervention(id, {
+          type: "client",
+          signature: signatureClient,
+        });
       }
 
       // Close intervention
-      console.log("Updating status to terminee...");
       await apiService.updateInterventionStatus(id, {
         statut: "terminee",
         commentaireTechnicien: commentaire,
       });
 
-      // === UPLOAD ARTIFACTS (Photos + PDF) ===
-      console.log("=== UPLOAD ARTIFACTS START ===");
-      console.log("Photos to upload:", photos.length);
+      // === UPLOAD ARTIFACTS ===
+      const formData = new FormData();
 
-      try {
-        const formData = new FormData();
-
-        // 1. Convert Photos to Blobs
-        for (let i = 0; i < photos.length; i++) {
-          const photo = photos[i];
-          console.log(`Converting photo ${i + 1}:`, photo.type);
-          const res = await fetch(photo.dataUrl);
-          const blob = await res.blob();
-          const ext =
-            photo.type === "before"
-              ? "avant"
-              : photo.type === "after"
-              ? "apres"
-              : "autre";
-          formData.append("files", blob, `photo_${ext}_${i + 1}.jpg`);
-        }
-
-        // 2. Generate PDF Blob
-        console.log("Generating PDF...");
-        const pdfIntervention = {
-          ...intervention,
-          heureArrivee: new Date(heureArrivee).toISOString(),
-          heureDepart: new Date(heureDepart).toISOString(),
-          commentaireTechnicien: commentaire,
-          signature: signatureClient,
-          statut: "terminee",
-        };
-
-        const pdfBlob = await generateInterventionPDF(
-          pdfIntervention as any, // Type assertion needed since we're building a partial object
-          true,
-          photos
-        );
-        console.log("PDF generated:", pdfBlob ? "OK" : "null");
-
-        if (pdfBlob && pdfBlob instanceof Blob) {
-          formData.append(
-            "files",
-            pdfBlob,
-            `Rapport_${intervention?.numero || "Intervention"}.pdf`
-          );
-        }
-
-        // 3. Upload files
-        if (photos.length > 0 || pdfBlob) {
-          console.log("Uploading artifacts...", {
-            photos: photos.length,
-            hasPdf: !!pdfBlob,
-          });
-          await apiService.uploadInterventionArtifacts(id, formData);
-          console.log("Upload successful!");
-        } else {
-          console.log("No artifacts to upload");
-        }
-      } catch (uploadErr) {
-        console.error("Upload failed but intervention is closed:", uploadErr);
-        // Don't fail the entire operation if upload fails
+      // 1. Photos
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i];
+        const res = await fetch(photo.dataUrl);
+        const blob = await res.blob();
+        const ext =
+          photo.type === "before"
+            ? "avant"
+            : photo.type === "after"
+            ? "apres"
+            : "autre";
+        formData.append("files", blob, `photo_${ext}_${i + 1}.jpg`);
       }
 
-      console.log("Intervention closed successfully!");
+      // 2. Attached Files
+      for (const file of attachedFiles) {
+        formData.append("files", file, file.name);
+      }
+
+      // 3. Generate PDF with EXTRA DATA
+      const pdfIntervention = {
+        ...intervention,
+        heureArrivee: dateArr.toISOString(),
+        heureDepart: dateDep.toISOString(),
+        commentaireTechnicien: commentaire,
+        signature: signatureClient,
+        statut: "terminee",
+      };
+
+      const extraData = {
+        billing,
+        systemType,
+        clientRemarks,
+        clientSigner,
+      };
+
+      const pdfBlob = await generateInterventionPDF(
+        pdfIntervention as any,
+        true,
+        photos,
+        extraData
+      );
+
+      if (pdfBlob && pdfBlob instanceof Blob) {
+        formData.append(
+          "files",
+          pdfBlob,
+          `Rapport_${intervention?.numero || "Intervention"}.pdf`
+        );
+      }
+
+      if (photos.length > 0 || pdfBlob || attachedFiles.length > 0) {
+        await apiService.uploadInterventionArtifacts(id, formData);
+      }
+
       alert("✅ Intervention clôturée avec succès !");
       navigate("/interventions");
     } catch (err: any) {
@@ -449,10 +752,21 @@ const TechnicianInterventionView: React.FC = () => {
             {getStatusBadge(intervention.statut)}
           </div>
           <button
-            onClick={() => void generateInterventionPDF(intervention)}
+            onClick={() => {
+              if (reportUrl) {
+                window.open(reportUrl, "_blank");
+              } else {
+                void generateInterventionPDF(intervention, false, [], {
+                  billing,
+                  systemType,
+                  clientRemarks,
+                  clientSigner,
+                });
+              }
+            }}
             className="btn btn-primary"
           >
-            📄 Télécharger PDF
+            📄 {reportUrl ? "Voir le rapport" : "Télécharger PDF"}
           </button>
         </div>
 
@@ -586,6 +900,188 @@ const TechnicianInterventionView: React.FC = () => {
             </div>
           )}
 
+          {/* Photos de l'intervention */}
+          {photos.length > 0 && (
+            <div className="info-card" style={{ marginBottom: "15px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "15px",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                }}
+              >
+                <h3 style={{ margin: 0, color: "var(--primary-color)" }}>
+                  📷 Photos de l'intervention ({photos.length})
+                </h3>
+                <button
+                  onClick={() => {
+                    photos.forEach((photo, index) => {
+                      const link = document.createElement("a");
+                      link.href = photo.dataUrl;
+                      link.download = `photo_${photo.type}_${index + 1}.jpg`;
+                      link.click();
+                    });
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: "14px", padding: "8px 12px" }}
+                >
+                  ⬇️ Tout télécharger
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                  gap: "12px",
+                }}
+              >
+                {photos.map((photo, index) => (
+                  <div
+                    key={photo.id}
+                    style={{
+                      position: "relative",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      backgroundColor: "var(--bg-secondary)",
+                    }}
+                  >
+                    <img
+                      src={photo.dataUrl}
+                      alt={photo.caption || "Photo"}
+                      style={{
+                        width: "100%",
+                        height: "120px",
+                        objectFit: "cover",
+                        cursor: "pointer",
+                        display: "block",
+                      }}
+                      onClick={() => {
+                        setModalPhoto(photo.dataUrl);
+                        setZoomLevel(1);
+                      }}
+                    />
+
+                    {/* Type badge */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "6px",
+                        left: "6px",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        background:
+                          photo.type === "before"
+                            ? "#f59e0b"
+                            : photo.type === "after"
+                            ? "#10b981"
+                            : "#6366f1",
+                        color: "white",
+                      }}
+                    >
+                      {photo.type === "before"
+                        ? "Avant"
+                        : photo.type === "after"
+                        ? "Après"
+                        : "Autre"}
+                    </div>
+
+                    {/* Download button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const link = document.createElement("a");
+                        link.href = photo.dataUrl;
+                        link.download = `photo_${photo.type}_${index + 1}.jpg`;
+                        link.click();
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "6px",
+                        right: "6px",
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "4px",
+                        border: "none",
+                        background: "rgba(255,255,255,0.9)",
+                        color: "#333",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "14px",
+                      }}
+                      title="Télécharger"
+                    >
+                      ⬇️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Fichiers joints */}
+          {loadedAttachments.length > 0 && (
+            <div className="info-card" style={{ marginBottom: "15px" }}>
+              <h3
+                style={{ marginBottom: "10px", color: "var(--primary-color)" }}
+              >
+                📎 Fichiers joints ({loadedAttachments.length})
+              </h3>
+              <div>
+                {loadedAttachments.map((file, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 15px",
+                      backgroundColor: "var(--bg-secondary)",
+                      borderRadius: "8px",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
+                    >
+                      <span style={{ fontSize: "20px" }}>
+                        {file.name.endsWith(".pdf")
+                          ? "📄"
+                          : file.name.match(/\.(jpg|jpeg|png|gif)$/i)
+                          ? "🖼️"
+                          : file.name.match(/\.(doc|docx)$/i)
+                          ? "📝"
+                          : file.name.match(/\.(xls|xlsx)$/i)
+                          ? "📊"
+                          : "📁"}
+                      </span>
+                      <span style={{ fontWeight: "500" }}>{file.name}</span>
+                    </div>
+                    <a
+                      href={file.url}
+                      download={file.name}
+                      className="btn btn-secondary"
+                      style={{ fontSize: "12px", padding: "6px 12px" }}
+                    >
+                      ⬇️ Télécharger
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Notes */}
           {intervention.notes && (
             <div className="info-card" style={{ marginBottom: "15px" }}>
@@ -598,6 +1094,172 @@ const TechnicianInterventionView: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Photo Modal with Zoom - for closed interventions view */}
+        {modalPhoto && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.9)",
+              zIndex: 9999,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={() => setModalPhoto(null)}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setModalPhoto(null)}
+              style={{
+                position: "absolute",
+                top: "20px",
+                right: "20px",
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                border: "none",
+                background: "rgba(255,255,255,0.2)",
+                color: "white",
+                fontSize: "24px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ✕
+            </button>
+
+            {/* Zoom controls */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: "30px",
+                display: "flex",
+                gap: "15px",
+                alignItems: "center",
+                background: "rgba(0,0,0,0.6)",
+                padding: "10px 20px",
+                borderRadius: "30px",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  border: "none",
+                  background: "rgba(255,255,255,0.2)",
+                  color: "white",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                }}
+              >
+                −
+              </button>
+              <span
+                style={{
+                  color: "white",
+                  fontSize: "14px",
+                  minWidth: "50px",
+                  textAlign: "center",
+                }}
+              >
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <button
+                onClick={() => setZoomLevel(Math.min(4, zoomLevel + 0.25))}
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "50%",
+                  border: "none",
+                  background: "rgba(255,255,255,0.2)",
+                  color: "white",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                }}
+              >
+                +
+              </button>
+              <button
+                onClick={() => setZoomLevel(1)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "20px",
+                  border: "none",
+                  background: "rgba(255,255,255,0.2)",
+                  color: "white",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                }}
+              >
+                Reset
+              </button>
+            </div>
+
+            {/* Image */}
+            <div
+              style={{
+                overflow: "auto",
+                maxWidth: "90vw",
+                maxHeight: "80vh",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={modalPhoto}
+                alt="Photo agrandie"
+                style={{
+                  transform: `scale(${zoomLevel})`,
+                  transformOrigin: "center center",
+                  transition: "transform 0.1s ease",
+                  maxWidth: zoomLevel === 1 ? "90vw" : "none",
+                  maxHeight: zoomLevel === 1 ? "80vh" : "none",
+                  objectFit: "contain",
+                  touchAction: "none", // Prevent default touch behavior
+                }}
+                onTouchStart={(e) => {
+                  if (e.touches.length === 2) {
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    initialPinchDistance.current = Math.sqrt(dx * dx + dy * dy);
+                    initialZoomLevel.current = zoomLevel;
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (e.touches.length === 2 && initialPinchDistance.current) {
+                    e.preventDefault();
+                    const dx = e.touches[0].clientX - e.touches[1].clientX;
+                    const dy = e.touches[0].clientY - e.touches[1].clientY;
+                    const currentDistance = Math.sqrt(dx * dx + dy * dy);
+                    const scale =
+                      currentDistance / initialPinchDistance.current;
+                    const newZoom = Math.min(
+                      4,
+                      Math.max(0.5, initialZoomLevel.current * scale)
+                    );
+                    setZoomLevel(newZoom);
+                  }
+                }}
+                onTouchEnd={() => {
+                  initialPinchDistance.current = null;
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -671,7 +1333,45 @@ const TechnicianInterventionView: React.FC = () => {
               className={`step-tab ${currentStep === index ? "active" : ""} ${
                 index < currentStep ? "completed" : ""
               }`}
-              onClick={() => setCurrentStep(index)}
+              onClick={() => {
+                // Validate fields when trying to go from step 3 (Rapport) to step 4 or 5
+                if (currentStep === 3 && index > 3) {
+                  // Validate comment
+                  if (!commentaire.trim()) {
+                    alert(
+                      "⚠️ Veuillez saisir un commentaire avant de continuer"
+                    );
+                    const textarea = document.querySelector(
+                      ".form-textarea"
+                    ) as HTMLTextAreaElement;
+                    if (textarea) {
+                      textarea.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
+                      setTimeout(() => textarea.focus(), 300);
+                    }
+                    return;
+                  }
+                  // Validate billing (at least one option selected)
+                  if (
+                    !billing.maintenance &&
+                    !billing.garantie &&
+                    !billing.facturable
+                  ) {
+                    alert(
+                      "⚠️ Veuillez sélectionner au moins une option de facturation"
+                    );
+                    return;
+                  }
+                  // Validate systemType
+                  if (!systemType.trim()) {
+                    alert("⚠️ Veuillez sélectionner un type de système");
+                    return;
+                  }
+                }
+                setCurrentStep(index);
+              }}
             >
               <span className="step-icon">{step.icon}</span>
               <span className="step-label">{step.label.split(" ")[1]}</span>
@@ -929,28 +1629,23 @@ const TechnicianInterventionView: React.FC = () => {
               <div className="form-group">
                 <label>Heure d'arrivée</label>
                 <input
-                  type="datetime-local"
-                  value={heureArrivee}
-                  onChange={(e) => setHeureArrivee(e.target.value)}
-                  className="form-input"
+                  type="time"
+                  value={timeArrivee}
+                  onChange={(e) => setTimeArrivee(e.target.value)}
+                  className="form-input time-input-large"
+                  style={{ fontSize: "1.5rem", textAlign: "center" }}
                 />
               </div>
               <div className="form-group">
                 <label>Heure de départ</label>
                 <input
-                  type="datetime-local"
-                  value={heureDepart}
-                  onChange={(e) => setHeureDepart(e.target.value)}
-                  className="form-input"
+                  type="time"
+                  value={timeDepart}
+                  onChange={(e) => setTimeDepart(e.target.value)}
+                  className="form-input time-input-large"
+                  style={{ fontSize: "1.5rem", textAlign: "center" }}
                 />
               </div>
-              <button
-                className="btn btn-secondary"
-                onClick={handleSaveHours}
-                disabled={!heureArrivee || !heureDepart}
-              >
-                💾 Enregistrer
-              </button>
             </div>
 
             <div className="step-nav">
@@ -962,7 +1657,10 @@ const TechnicianInterventionView: React.FC = () => {
               </button>
               <button
                 className="btn btn-primary"
-                onClick={() => setCurrentStep(2)}
+                onClick={async () => {
+                  const saved = await handleSaveHours();
+                  if (saved) setCurrentStep(2);
+                }}
               >
                 Suivant →
               </button>
@@ -975,28 +1673,31 @@ const TechnicianInterventionView: React.FC = () => {
           <div className="step-panel">
             <div className="info-card">
               <h3>🔧 Matériel</h3>
+              <p
+                style={{
+                  color: "var(--text-secondary)",
+                  marginBottom: "15px",
+                  fontSize: "0.9rem",
+                }}
+              >
+                Sélectionnez le matériel depuis votre stock véhicule
+              </p>
               <div className="equipment-actions">
                 <button
                   className="equipment-btn install-btn"
-                  onClick={() => {
-                    setScanAction("install");
-                    setShowScanner(true);
-                  }}
+                  onClick={handleOpenInstallModal}
                 >
                   <span className="eq-btn-icon">📥</span>
                   <span className="eq-btn-text">Installation</span>
-                  <span className="eq-btn-hint">Matériel posé</span>
+                  <span className="eq-btn-hint">Assigner au client</span>
                 </button>
                 <button
                   className="equipment-btn retrait-btn"
-                  onClick={() => {
-                    setScanAction("retrait");
-                    setShowScanner(true);
-                  }}
+                  onClick={handleOpenRetraitModal}
                 >
                   <span className="eq-btn-icon">📤</span>
                   <span className="eq-btn-text">Retrait</span>
-                  <span className="eq-btn-hint">Matériel repris</span>
+                  <span className="eq-btn-hint">Reprendre du client</span>
                 </button>
               </div>
 
@@ -1005,16 +1706,27 @@ const TechnicianInterventionView: React.FC = () => {
                   {equipments.map((eq, i) => (
                     <div key={i} className={`equipment-item ${eq.action}`}>
                       <span>
-                        {eq.action === "install" ? "📥" : "📤"} {eq.nom} x
-                        {eq.quantite}
+                        {eq.action === "install" ? "📥" : "📤"} {eq.nom}
+                        {eq.etat && (
+                          <span
+                            style={{
+                              marginLeft: "8px",
+                              padding: "2px 8px",
+                              borderRadius: "8px",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              backgroundColor:
+                                eq.etat === "ok" ? "#d1fae5" : "#fee2e2",
+                              color: eq.etat === "ok" ? "#065f46" : "#991b1b",
+                            }}
+                          >
+                            {eq.etat === "ok" ? "OK" : "HS"}
+                          </span>
+                        )}
                       </span>
                       <button
                         className="btn-remove"
-                        onClick={() =>
-                          setEquipments(
-                            equipments.filter((_, idx) => idx !== i)
-                          )
-                        }
+                        onClick={() => handleRemoveEquipment(i)}
                       >
                         ✕
                       </button>
@@ -1032,13 +1744,133 @@ const TechnicianInterventionView: React.FC = () => {
               {intervention.equipements &&
                 intervention.equipements.length > 0 && (
                   <div className="saved-equipment">
-                    <h4>Matériel enregistré</h4>
-                    {intervention.equipements.map((eq: any) => (
-                      <div key={eq.id} className="equipment-item saved">
-                        {eq.action === "install" ? "📥" : "📤"}{" "}
-                        {eq.stock?.nomMateriel || eq.nom} x{eq.quantite}
+                    {/* Installed Equipment Section */}
+                    {intervention.equipements.filter(
+                      (eq: any) => eq.action === "install"
+                    ).length > 0 && (
+                      <div style={{ marginBottom: "16px" }}>
+                        <h4
+                          style={{
+                            color: "var(--success-color, #10b981)",
+                            marginBottom: "10px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          📥 Matériel installé
+                        </h4>
+                        {intervention.equipements
+                          .filter((eq: any) => eq.action === "install")
+                          .map((eq: any) => (
+                            <div
+                              key={eq.id}
+                              className="equipment-item install"
+                              style={{ marginBottom: "8px" }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  width: "100%",
+                                }}
+                              >
+                                <span style={{ fontWeight: 600 }}>
+                                  {eq.stock?.nomMateriel || eq.nom}
+                                </span>
+                                {eq.stock?.numeroSerie && (
+                                  <span
+                                    style={{
+                                      fontSize: "0.9rem",
+                                      color: "var(--primary-color)",
+                                      fontFamily: "monospace",
+                                      backgroundColor: "var(--bg-secondary)",
+                                      padding: "2px 8px",
+                                      borderRadius: "4px",
+                                    }}
+                                  >
+                                    S/N: {eq.stock.numeroSerie}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                       </div>
-                    ))}
+                    )}
+
+                    {/* Retrieved Equipment Section */}
+                    {intervention.equipements.filter(
+                      (eq: any) => eq.action === "retrait"
+                    ).length > 0 && (
+                      <div>
+                        <h4
+                          style={{
+                            color: "var(--warning-color, #f59e0b)",
+                            marginBottom: "10px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          📤 Matériel repris
+                        </h4>
+                        {intervention.equipements
+                          .filter((eq: any) => eq.action === "retrait")
+                          .map((eq: any) => (
+                            <div
+                              key={eq.id}
+                              className="equipment-item retrait"
+                              style={{ marginBottom: "8px" }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  flex: 1,
+                                }}
+                              >
+                                <span style={{ fontWeight: 600 }}>
+                                  {eq.stock?.nomMateriel || eq.nom}
+                                </span>
+                                {eq.stock?.numeroSerie && (
+                                  <span
+                                    style={{
+                                      fontSize: "0.9rem",
+                                      color: "var(--primary-color)",
+                                      fontFamily: "monospace",
+                                      backgroundColor: "var(--bg-secondary)",
+                                      padding: "2px 8px",
+                                      borderRadius: "4px",
+                                    }}
+                                  >
+                                    S/N: {eq.stock.numeroSerie}
+                                  </span>
+                                )}
+                              </div>
+                              {eq.etat && (
+                                <span
+                                  style={{
+                                    padding: "4px 10px",
+                                    borderRadius: "8px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                    backgroundColor:
+                                      eq.etat === "ok"
+                                        ? "rgba(16, 185, 129, 0.2)"
+                                        : "rgba(239, 68, 68, 0.2)",
+                                    color:
+                                      eq.etat === "ok" ? "#10b981" : "#ef4444",
+                                  }}
+                                >
+                                  {eq.etat === "ok" ? "✅ OK" : "❌ HS"}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1080,6 +1912,63 @@ const TechnicianInterventionView: React.FC = () => {
           <div className="step-panel">
             <div className="info-card">
               <h3>📝 Rapport technicien</h3>
+
+              {/* Added Fields */}
+              {/* Added Fields */}
+              <div className="billing-section">
+                <label className="billing-label">
+                  Facturation <span className="required">*</span>
+                </label>
+                <div className="billing-options">
+                  <label className="billing-option">
+                    <input
+                      type="checkbox"
+                      checked={billing.maintenance}
+                      onChange={(e) =>
+                        setBilling({
+                          ...billing,
+                          maintenance: e.target.checked,
+                        })
+                      }
+                    />
+                    Maint.
+                  </label>
+                  <label className="billing-option">
+                    <input
+                      type="checkbox"
+                      checked={billing.garantie}
+                      onChange={(e) =>
+                        setBilling({ ...billing, garantie: e.target.checked })
+                      }
+                    />
+                    Garantie
+                  </label>
+                  <label className="billing-option">
+                    <input
+                      type="checkbox"
+                      checked={billing.facturable}
+                      onChange={(e) =>
+                        setBilling({ ...billing, facturable: e.target.checked })
+                      }
+                    />
+                    Factur.
+                  </label>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>
+                  Type de système <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex: Alarme, Vidéo..."
+                  value={systemType}
+                  onChange={(e) => setSystemType(e.target.value)}
+                />
+              </div>
+
               <div className="form-group">
                 <label>
                   Commentaire <span className="required">*</span>
@@ -1110,6 +1999,73 @@ const TechnicianInterventionView: React.FC = () => {
               }
             />
 
+            {/* Fichiers joints */}
+            <div className="info-card file-upload-section">
+              <h3>📎 Fichiers joints</h3>
+              <p className="file-upload-hint">
+                Ajoutez des documents, PDFs, ou autres fichiers liés à
+                l'intervention
+              </p>
+
+              <input
+                type="file"
+                id="file-upload"
+                multiple
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  setAttachedFiles([...attachedFiles, ...files]);
+                  e.target.value = ""; // Reset input
+                }}
+              />
+              <label
+                htmlFor="file-upload"
+                className="btn btn-secondary file-upload-label"
+              >
+                📁 Ajouter des fichiers
+              </label>
+
+              {attachedFiles.length > 0 && (
+                <div className="file-list">
+                  {attachedFiles.map((file, index) => (
+                    <div key={index} className="file-item">
+                      <div className="file-info">
+                        <span className="file-icon">
+                          {file.type.includes("pdf")
+                            ? "📄"
+                            : file.type.includes("image")
+                            ? "🖼️"
+                            : file.type.includes("word") ||
+                              file.type.includes("document")
+                            ? "📝"
+                            : file.type.includes("excel") ||
+                              file.type.includes("spreadsheet")
+                            ? "📊"
+                            : "📁"}
+                        </span>
+                        <div className="file-details">
+                          <div className="file-name">{file.name}</div>
+                          <div className="file-size">
+                            {(file.size / 1024).toFixed(1)} Ko
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        className="btn-remove-file"
+                        onClick={() =>
+                          setAttachedFiles(
+                            attachedFiles.filter((_, i) => i !== index)
+                          )
+                        }
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="step-nav">
               <button
                 className="btn btn-outline"
@@ -1120,6 +2076,7 @@ const TechnicianInterventionView: React.FC = () => {
               <button
                 className="btn btn-primary"
                 onClick={() => {
+                  // Validate comment
                   if (!commentaire.trim()) {
                     alert(
                       "⚠️ Veuillez saisir un commentaire avant de continuer"
@@ -1135,6 +2092,22 @@ const TechnicianInterventionView: React.FC = () => {
                       });
                       setTimeout(() => textarea.focus(), 300);
                     }
+                    return;
+                  }
+                  // Validate billing (at least one option selected)
+                  if (
+                    !billing.maintenance &&
+                    !billing.garantie &&
+                    !billing.facturable
+                  ) {
+                    alert(
+                      "⚠️ Veuillez sélectionner au moins une option de facturation"
+                    );
+                    return;
+                  }
+                  // Validate systemType
+                  if (!systemType.trim()) {
+                    alert("⚠️ Veuillez sélectionner un type de système");
                     return;
                   }
                   setCurrentStep(4);
@@ -1190,15 +2163,36 @@ const TechnicianInterventionView: React.FC = () => {
           <div className="step-panel">
             <div className="info-card">
               <h3>✍️ Signature du client</h3>
-              <p className="hint">
-                Faites signer le client pour valider l'intervention
-              </p>
+
+              <div className="form-group" style={{ marginBottom: "15px" }}>
+                <label>Remarques Client (Optionnel)</label>
+                <textarea
+                  className="form-textarea"
+                  rows={3}
+                  placeholder="Remarques éventuelles du client..."
+                  value={clientRemarks}
+                  onChange={(e) => setClientRemarks(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: "15px" }}>
+                <label>
+                  Nom du signataire <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Nom Prénom"
+                  value={clientSigner}
+                  onChange={(e) => setClientSigner(e.target.value)}
+                />
+              </div>
             </div>
 
             <SignaturePad
               onSignatureChange={setSignatureClient}
               initialSignature={signatureClient || undefined}
-              label="Signature du client"
+              label="Signature du client (Obligatoire)"
             />
 
             <div className="closure-section">
@@ -1243,6 +2237,577 @@ const TechnicianInterventionView: React.FC = () => {
           onScan={handleBarcodeScan}
           onClose={() => setShowScanner(false)}
         />
+      )}
+
+      {/* Photo Modal with Zoom */}
+      {modalPhoto && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.9)",
+            zIndex: 9999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setModalPhoto(null)}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setModalPhoto(null)}
+            style={{
+              position: "absolute",
+              top: "20px",
+              right: "20px",
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              border: "none",
+              background: "rgba(255,255,255,0.2)",
+              color: "white",
+              fontSize: "24px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ✕
+          </button>
+
+          {/* Zoom controls */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "30px",
+              display: "flex",
+              gap: "15px",
+              alignItems: "center",
+              background: "rgba(0,0,0,0.6)",
+              padding: "10px 20px",
+              borderRadius: "30px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                border: "none",
+                background: "rgba(255,255,255,0.2)",
+                color: "white",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+            >
+              −
+            </button>
+            <span
+              style={{
+                color: "white",
+                fontSize: "14px",
+                minWidth: "50px",
+                textAlign: "center",
+              }}
+            >
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button
+              onClick={() => setZoomLevel(Math.min(4, zoomLevel + 0.25))}
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                border: "none",
+                background: "rgba(255,255,255,0.2)",
+                color: "white",
+                fontSize: "20px",
+                cursor: "pointer",
+              }}
+            >
+              +
+            </button>
+            <button
+              onClick={() => setZoomLevel(1)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "20px",
+                border: "none",
+                background: "rgba(255,255,255,0.2)",
+                color: "white",
+                fontSize: "12px",
+                cursor: "pointer",
+              }}
+            >
+              Reset
+            </button>
+          </div>
+
+          {/* Image */}
+          <div
+            style={{
+              overflow: "auto",
+              maxWidth: "90vw",
+              maxHeight: "80vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={modalPhoto}
+              alt="Photo agrandie"
+              style={{
+                transform: `scale(${zoomLevel})`,
+                transformOrigin: "center center",
+                transition: "transform 0.2s ease",
+                maxWidth: zoomLevel === 1 ? "90vw" : "none",
+                maxHeight: zoomLevel === 1 ? "80vh" : "none",
+                objectFit: "contain",
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Vehicle Stock Selection Modal */}
+      {showVehicleStockModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowVehicleStockModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px",
+          }}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "500px",
+              maxHeight: "80vh",
+              backgroundColor: "var(--card-bg)",
+              borderRadius: "16px",
+              boxShadow: "var(--shadow-xl)",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              position: "relative",
+            }}
+          >
+            {/* Close button - top right corner */}
+            <button
+              className="modal-close"
+              onClick={() => setShowVehicleStockModal(false)}
+              style={{
+                position: "absolute",
+                top: "10px",
+                right: "10px",
+                background: "none",
+                border: "none",
+                fontSize: "24px",
+                cursor: "pointer",
+                color: "var(--text-secondary)",
+                padding: "5px 10px",
+                zIndex: 10,
+                borderRadius: "8px",
+                transition: "background-color 0.2s",
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")
+              }
+              onMouseOut={(e) =>
+                (e.currentTarget.style.backgroundColor = "transparent")
+              }
+            >
+              ✕
+            </button>
+            <div
+              className="modal-header"
+              style={{
+                padding: "20px",
+                paddingRight: "50px", // Space for close button
+                borderBottom: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-subtle)",
+                flexShrink: 0,
+              }}
+            >
+              <h3 style={{ margin: 0, color: "var(--text-primary)" }}>
+                {vehicleStockAction === "install"
+                  ? "📥 Installer du matériel"
+                  : "📤 Reprendre du matériel"}
+              </h3>
+            </div>
+            <div
+              className="modal-body"
+              style={{ overflowY: "auto", padding: "20px", flex: 1 }}
+            >
+              {loadingVehicleStock ? (
+                <div style={{ textAlign: "center", padding: "40px" }}>
+                  Chargement du stock véhicule...
+                </div>
+              ) : (
+                <>
+                  {vehicleStockAction === "install" ? (
+                    // Installation: show items that are OK and not assigned
+                    <>
+                      <p
+                        style={{
+                          color: "var(--text-secondary)",
+                          marginBottom: "15px",
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        Sélectionnez un article à installer chez{" "}
+                        <strong>{intervention?.client?.nom}</strong>
+                      </p>
+                      {(() => {
+                        const filteredItems = vehicleStock.filter(
+                          (item) => item.etat === "ok" && !item.clientId
+                        );
+                        return filteredItems.length === 0 ? (
+                          <div
+                            style={{
+                              textAlign: "center",
+                              padding: "30px",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            <p>
+                              "Tous les articles sont soit assignés à des
+                              clients, soit en état HS."
+                            </p>
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "10px",
+                            }}
+                          >
+                            {filteredItems.map((item) => (
+                              <div
+                                key={item.id}
+                                onClick={() => handleInstallItem(item)}
+                                style={{
+                                  padding: "15px",
+                                  backgroundColor: "var(--bg-secondary)",
+                                  borderRadius: "10px",
+                                  cursor: "pointer",
+                                  border: "2px solid transparent",
+                                  transition: "all 0.2s",
+                                }}
+                                onMouseOver={(e) =>
+                                  (e.currentTarget.style.borderColor =
+                                    "var(--primary-color)")
+                                }
+                                onMouseOut={(e) =>
+                                  (e.currentTarget.style.borderColor =
+                                    "transparent")
+                                }
+                              >
+                                <div style={{ fontWeight: 600 }}>
+                                  {item.stock.nomMateriel}
+                                </div>
+                                {item.stock.reference && (
+                                  <div
+                                    style={{
+                                      fontSize: "0.85rem",
+                                      color: "var(--text-secondary)",
+                                    }}
+                                  >
+                                    Réf: {item.stock.reference}
+                                  </div>
+                                )}
+                                {item.stock.numeroSerie && (
+                                  <div
+                                    style={{
+                                      fontSize: "0.85rem",
+                                      color: "var(--primary-color)",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    🔢 S/N: {item.stock.numeroSerie}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    // Retrait: show items assigned to THIS client
+                    <>
+                      <p
+                        style={{
+                          color: "var(--text-secondary)",
+                          marginBottom: "15px",
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        Sélectionnez un article à reprendre chez{" "}
+                        <strong>{intervention?.client?.nom}</strong>
+                      </p>
+                      {(() => {
+                        const filteredItems = vehicleStock.filter(
+                          (item) => item.clientId === intervention?.client?.id
+                        );
+                        return filteredItems.length === 0 ? (
+                          <div
+                            style={{
+                              textAlign: "center",
+                              padding: "30px",
+                              color: "var(--text-secondary)",
+                            }}
+                          >
+                            <p>
+                              "Il n'y a pas de matériel à reprendre chez ce
+                              client."
+                            </p>
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "10px",
+                            }}
+                          >
+                            {filteredItems.map((item) => (
+                              <div
+                                key={item.id}
+                                onClick={() => handleSelectForRetrieval(item)}
+                                style={{
+                                  padding: "15px",
+                                  backgroundColor: "var(--bg-secondary)",
+                                  borderRadius: "10px",
+                                  cursor: "pointer",
+                                  border: "2px solid transparent",
+                                  transition: "all 0.2s",
+                                }}
+                                onMouseOver={(e) =>
+                                  (e.currentTarget.style.borderColor =
+                                    "var(--primary-color)")
+                                }
+                                onMouseOut={(e) =>
+                                  (e.currentTarget.style.borderColor =
+                                    "transparent")
+                                }
+                              >
+                                <div style={{ fontWeight: 600 }}>
+                                  {item.stock.nomMateriel}
+                                </div>
+                                {item.stock.reference && (
+                                  <div
+                                    style={{
+                                      fontSize: "0.85rem",
+                                      color: "var(--text-secondary)",
+                                    }}
+                                  >
+                                    Réf: {item.stock.reference}
+                                  </div>
+                                )}
+                                {item.stock.numeroSerie && (
+                                  <div
+                                    style={{
+                                      fontSize: "0.85rem",
+                                      color: "var(--primary-color)",
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    🔢 S/N: {item.stock.numeroSerie}
+                                  </div>
+                                )}
+                                <div
+                                  style={{
+                                    fontSize: "0.8rem",
+                                    marginTop: "5px",
+                                    color: "var(--text-secondary)",
+                                  }}
+                                >
+                                  📍 Installé le{" "}
+                                  {item.assignedAt
+                                    ? new Date(
+                                        item.assignedAt
+                                      ).toLocaleDateString("fr-FR")
+                                    : "N/A"}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Retrieve Condition Modal (OK/HS selection) */}
+      {showRetrieveConditionModal && selectedVehicleItem && (
+        <div
+          className="modal-overlay"
+          onClick={() => {
+            setShowRetrieveConditionModal(false);
+            setSelectedVehicleItem(null);
+          }}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            padding: "20px",
+          }}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "400px",
+              textAlign: "center",
+              backgroundColor: "var(--card-bg)",
+              borderRadius: "16px",
+              boxShadow: "var(--shadow-xl)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              className="modal-header"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "20px",
+                borderBottom: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-subtle)",
+              }}
+            >
+              <h3 style={{ margin: 0, color: "var(--text-primary)" }}>
+                📦 État du matériel
+              </h3>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setShowRetrieveConditionModal(false);
+                  setSelectedVehicleItem(null);
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "24px",
+                  cursor: "pointer",
+                  color: "var(--text-secondary)",
+                  padding: "5px",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: "25px" }}>
+              <p style={{ marginBottom: "10px" }}>
+                <strong>{selectedVehicleItem.stock.nomMateriel}</strong>
+              </p>
+              {selectedVehicleItem.stock.numeroSerie && (
+                <p
+                  style={{
+                    fontSize: "0.9rem",
+                    color: "var(--primary-color)",
+                    marginBottom: "20px",
+                  }}
+                >
+                  🔢 S/N: {selectedVehicleItem.stock.numeroSerie}
+                </p>
+              )}
+              <p
+                style={{ color: "var(--text-secondary)", marginBottom: "25px" }}
+              >
+                Dans quel état est ce matériel ?
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "15px",
+                  justifyContent: "center",
+                }}
+              >
+                <button
+                  onClick={() => handleRetrieveItem("ok")}
+                  style={{
+                    padding: "15px 30px",
+                    fontSize: "1.1rem",
+                    fontWeight: 600,
+                    borderRadius: "12px",
+                    border: "none",
+                    backgroundColor: "#d1fae5",
+                    color: "#065f46",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    flex: 1,
+                  }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.transform = "scale(1.05)")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.transform = "scale(1)")
+                  }
+                >
+                  ✅ OK
+                </button>
+                <button
+                  onClick={() => handleRetrieveItem("hs")}
+                  style={{
+                    padding: "15px 30px",
+                    fontSize: "1.1rem",
+                    fontWeight: 600,
+                    borderRadius: "12px",
+                    border: "none",
+                    backgroundColor: "#fee2e2",
+                    color: "#991b1b",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    flex: 1,
+                  }}
+                  onMouseOver={(e) =>
+                    (e.currentTarget.style.transform = "scale(1.05)")
+                  }
+                  onMouseOut={(e) =>
+                    (e.currentTarget.style.transform = "scale(1)")
+                  }
+                >
+                  ❌ HS
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
