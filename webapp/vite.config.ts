@@ -78,7 +78,7 @@ export default defineConfig({
         changeOrigin: true,
         // Required for file uploads - don't parse FormData
         configure: (proxy) => {
-          proxy.on("proxyReq", (proxyReq, req) => {
+          proxy.on("proxyReq", (_proxyReq, req) => {
             // Log upload requests for debugging
             if (req.url?.includes("/artifacts")) {
               console.log(

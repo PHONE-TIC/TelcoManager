@@ -91,7 +91,7 @@ export interface Photo {
 export const generateInterventionPDF = async (
   intervention: Intervention,
   returnBlob = false,
-  photos: Photo[] = [], // Kept in signature but ignored as requested
+  _photos: Photo[] = [],
   extraData: ExtraData = {}
 ): Promise<Blob | void> => {
   try {
@@ -318,7 +318,6 @@ export const generateInterventionPDF = async (
     const objetContent = intervention.commentaireTechnicien || "";
 
     const objetLines = doc.splitTextToSize(objetContent, objetWidth - 6);
-    const lineY = y + 5;
 
     // Draw lines for structure - limit to 19 lines to stay within contentHeight
     for (let i = 0; i < 19; i++) {

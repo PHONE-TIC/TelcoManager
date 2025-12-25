@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { apiService } from "../services/api.service";
 import SignaturePad from "./SignaturePad";
 import BarcodeScanner from "./BarcodeScanner";
