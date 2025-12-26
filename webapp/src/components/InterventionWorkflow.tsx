@@ -24,7 +24,7 @@ interface Equipment {
 }
 
 interface InterventionWorkflowProps {
-  intervention: any;
+  intervention: { id: string; technicienId?: string };
   photos: Photo[];
   onStatusChange: () => void;
   readOnly?: boolean;
@@ -173,7 +173,7 @@ export default function InterventionWorkflow({
       });
       showMessage("Heures enregistrées");
       setCurrentStep(2);
-    } catch (err: any) {
+    } catch (err: unknown) {
       showMessage("Erreur sauvegarde heures", true);
     } finally {
       setLoading(false);
@@ -271,7 +271,7 @@ export default function InterventionWorkflow({
 
       showMessage("Intervention clôturée avec succès !");
       onStatusChange();
-    } catch (err: any) {
+    } catch (err: unknown) {
       showMessage(err.message || "Erreur de clôture", true);
     } finally {
       setLoading(false);

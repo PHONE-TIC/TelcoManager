@@ -119,7 +119,7 @@ function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
         reason: `Transfert par N° série: ${selectedItem.numeroSerie}`,
       });
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.error || "Erreur lors du transfert");
     } finally {
       setLoading(false);

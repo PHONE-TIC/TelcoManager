@@ -212,7 +212,7 @@ const StockTransfer = () => {
       setSuccess("Transfert réussi !");
       setItems([]);
       setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setError(err.response?.data?.error || "Erreur lors du transfert");
     } finally {

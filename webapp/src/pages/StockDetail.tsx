@@ -473,7 +473,7 @@ function StockDetail() {
                   item.technicianStocks.length > 0
                 ) {
                   const clientAssignment = item.technicianStocks.find(
-                    (ts: any) => ts.client
+                    (ts: { client?: { id: string; nom: string } }) => ts.client
                   );
                   if (clientAssignment) {
                     const clientName = clientAssignment.client.nom || "Client";

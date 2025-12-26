@@ -38,7 +38,39 @@ interface Intervention {
     id: string;
     nom: string;
   };
-  equipements?: any[];
+  equipements?: InterventionEquipment[];
+}
+
+interface InterventionEquipment {
+  id?: string;
+  stockId?: string;
+  nom?: string;
+  action: string;
+  quantite: number;
+  etat?: string;
+}
+
+interface Photo {
+  id: string;
+  dataUrl: string;
+  type: "before" | "after" | "other";
+  timestamp: Date;
+  caption?: string;
+}
+
+interface HistoryIntervention {
+  id: string;
+  numero?: number;
+  titre: string;
+  datePlanifiee: string;
+  statut: string;
+}
+
+interface Artifact {
+  type: string;
+  filename: string;
+  url: string;
+  createdAt: string;
 }
 
 interface Equipment {
@@ -97,7 +129,7 @@ const TechnicianInterventionView: React.FC = () => {
     null
   );
   const [signatureClient, setSignatureClient] = useState<string | null>(null);
-  const [photos, setPhotos] = useState<any[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [loadedAttachments, setLoadedAttachments] = useState<
     Array<{ name: string; url: string; type: string }>
@@ -107,7 +139,7 @@ const TechnicianInterventionView: React.FC = () => {
   const [scanAction, _setScanAction] = useState<"install" | "retrait">(
     "install"
   );
-  const [clientHistory, setClientHistory] = useState<any[]>([]);
+  const [clientHistory, setClientHistory] = useState<HistoryIntervention[]>([]);
   const [travelEstimate, setTravelEstimate] = useState<TravelEstimate | null>(
     null
   );
@@ -211,9 +243,9 @@ const TechnicianInterventionView: React.FC = () => {
           });
           // Filter out current intervention and limit to 5 most recent
           const history = (historyData.interventions || [])
-            .filter((int: any) => int.id !== id)
+            .filter((int: HistoryIntervention) => int.id !== id)
             .sort(
-              (a: any, b: any) =>
+              (a: HistoryIntervention, b: HistoryIntervention) =>
                 new Date(b.datePlanifiee).getTime() -
                 new Date(a.datePlanifiee).getTime()
             )
@@ -229,8 +261,8 @@ const TechnicianInterventionView: React.FC = () => {
         try {
           const artifacts = await apiService.getInterventionArtifacts(id);
           const loadedPhotos = artifacts
-            .filter((f: any) => f.type.startsWith("photo_"))
-            .map((f: any) => {
+            .filter((f: Artifact) => f.type.startsWith("photo_"))
+            .map((f: Artifact) => {
               // Map French types from backend to English types expected by PhotoCapture
               let photoType: "before" | "after" | "other" = "other";
               if (f.type === "photo_avant") photoType = "before";
@@ -249,10 +281,10 @@ const TechnicianInterventionView: React.FC = () => {
           // Load non-photo attachments (documents, PDFs, etc.)
           const otherFiles = artifacts
             .filter(
-              (f: any) =>
+              (f: Artifact) =>
                 !f.type.startsWith("photo_") && f.type !== "rapport_pdf"
             )
-            .map((f: any) => ({
+            .map((f: Artifact) => ({
               name: f.filename,
               url: f.url,
               type: f.type,
@@ -262,7 +294,7 @@ const TechnicianInterventionView: React.FC = () => {
           // Check for existing report
           // Try exact type match first, then filename convention
           const report = artifacts.find(
-            (f: any) =>
+            (f: Artifact) =>
               f.type === "rapport_pdf" ||
               (f.filename &&
                 (f.filename.startsWith("Rapport_") ||
@@ -322,7 +354,7 @@ const TechnicianInterventionView: React.FC = () => {
       showMessage("Intervention prise en charge !");
       await loadIntervention();
       setCurrentStep(1); // Go to heures step
-    } catch (err: any) {
+    } catch (err: unknown) {
       showMessage(err.response?.data?.error || "Erreur", true);
     }
   };
@@ -358,7 +390,7 @@ const TechnicianInterventionView: React.FC = () => {
       });
       showMessage("Heures enregistrées");
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       showMessage(err.response?.data?.error || "Erreur", true);
       return false;
     }
@@ -399,7 +431,7 @@ const TechnicianInterventionView: React.FC = () => {
       await loadIntervention();
       // Restore current step after reload
       setCurrentStep(savedStep);
-    } catch (err: any) {
+    } catch (err: unknown) {
       showMessage(err.response?.data?.error || "Erreur", true);
     }
   };
@@ -459,7 +491,7 @@ const TechnicianInterventionView: React.FC = () => {
         `${item.stock.nomMateriel} installé chez ${intervention.client.nom}`
       );
       loadVehicleStock(); // Refresh vehicle stock
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur installation:", error);
       showMessage(
         error.response?.data?.error || "Erreur lors de l'installation",
@@ -503,7 +535,7 @@ const TechnicianInterventionView: React.FC = () => {
         } repris (${etat.toUpperCase()})`
       );
       loadVehicleStock(); // Refresh vehicle stock
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur reprise:", error);
       showMessage(
         error.response?.data?.error || "Erreur lors de la reprise",
@@ -543,7 +575,7 @@ const TechnicianInterventionView: React.FC = () => {
       // Remove from local list
       setEquipments(equipments.filter((_, idx) => idx !== index));
       loadVehicleStock(); // Refresh vehicle stock
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur lors de la suppression:", error);
       showMessage(
         error.response?.data?.error || "Erreur lors de la suppression",
@@ -668,7 +700,7 @@ const TechnicianInterventionView: React.FC = () => {
 
       alert("✅ Intervention clôturée avec succès !");
       navigate("/interventions");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error closing intervention:", err);
       setLoading(false);
       alert(
@@ -863,7 +895,7 @@ const TechnicianInterventionView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {intervention.equipements.map((eq: any, idx: number) => (
+                  {intervention.equipements.map((eq: InterventionEquipment, idx: number) => (
                     <tr key={idx}>
                       <td>{eq.stock?.nomMateriel || eq.nom || "N/A"}</td>
                       <td>
@@ -1546,7 +1578,7 @@ const TechnicianInterventionView: React.FC = () => {
                   {clientHistory.length > 1 ? "s" : ""})
                 </h3>
                 <div style={{ marginTop: "10px" }}>
-                  {clientHistory.map((hist: any) => (
+                  {clientHistory.map((hist: HistoryIntervention) => (
                     <div
                       key={hist.id}
                       style={{
@@ -1746,7 +1778,7 @@ const TechnicianInterventionView: React.FC = () => {
                   <div className="saved-equipment">
                     {/* Installed Equipment Section */}
                     {intervention.equipements.filter(
-                      (eq: any) => eq.action === "install"
+                      (eq: InterventionEquipment) => eq.action === "install"
                     ).length > 0 && (
                       <div style={{ marginBottom: "16px" }}>
                         <h4
@@ -1761,8 +1793,8 @@ const TechnicianInterventionView: React.FC = () => {
                           📥 Matériel installé
                         </h4>
                         {intervention.equipements
-                          .filter((eq: any) => eq.action === "install")
-                          .map((eq: any) => (
+                          .filter((eq: InterventionEquipment) => eq.action === "install")
+                          .map((eq: InterventionEquipment) => (
                             <div
                               key={eq.id}
                               className="equipment-item install"
@@ -1801,7 +1833,7 @@ const TechnicianInterventionView: React.FC = () => {
 
                     {/* Retrieved Equipment Section */}
                     {intervention.equipements.filter(
-                      (eq: any) => eq.action === "retrait"
+                      (eq: InterventionEquipment) => eq.action === "retrait"
                     ).length > 0 && (
                       <div>
                         <h4
@@ -1816,8 +1848,8 @@ const TechnicianInterventionView: React.FC = () => {
                           📤 Matériel repris
                         </h4>
                         {intervention.equipements
-                          .filter((eq: any) => eq.action === "retrait")
-                          .map((eq: any) => (
+                          .filter((eq: InterventionEquipment) => eq.action === "retrait")
+                          .map((eq: InterventionEquipment) => (
                             <div
                               key={eq.id}
                               className="equipment-item retrait"

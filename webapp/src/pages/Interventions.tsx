@@ -93,7 +93,7 @@ function Interventions() {
           let filtered = cachedInterventions;
           if (user?.role === "technicien") {
             filtered = cachedInterventions.filter(
-              (intervention: any) => intervention.technicienId === user.id
+              (intervention: { technicienId?: string; id: string }) => intervention.technicienId === user.id
             );
           }
           setInterventions(filtered);
@@ -109,7 +109,7 @@ function Interventions() {
       // Filter interventions for technician role
       if (user?.role === "technicien") {
         filteredInterventions = interventionsData.interventions.filter(
-          (intervention: any) => intervention.technicienId === user.id
+          (intervention: { technicienId?: string; id: string }) => intervention.technicienId === user.id
         );
       }
 
@@ -459,7 +459,7 @@ function Interventions() {
   );
 
   // Sort interventions
-  const sortInterventions = (list: any[]) => {
+  const sortInterventions = (list: unknown[]) => {
     return [...list].sort((a, b) => {
       let valA, valB;
       switch (sortColumn) {
@@ -520,7 +520,7 @@ function Interventions() {
     setCalendarKey((prev) => prev + 1);
   };
 
-  const handleViewChange = (view: any) => {
+  const handleViewChange = (view: string) => {
     setCalendarView(view);
     setTransitionClass("fade-in"); // View change: simple fade
     setCalendarKey((prev) => prev + 1);
@@ -539,7 +539,7 @@ function Interventions() {
     resource: int,
   }));
 
-  const eventStyleGetter = (event: any) => {
+  const eventStyleGetter = (event: { id: string }) => {
     let backgroundColor = "#3174ad"; // Default blue
     const status = event.resource.statut;
 
@@ -1244,7 +1244,7 @@ function Interventions() {
                     time: "Heure",
                     event: "Événement",
                   }}
-                  onSelectEvent={(event: any) =>
+                  onSelectEvent={(event: { id: string }) =>
                     navigate(`/interventions/${event.resource.id}`, {
                       state: { from: "calendar" },
                     })

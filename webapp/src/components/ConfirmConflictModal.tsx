@@ -4,7 +4,7 @@ interface ConfirmConflictModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
-    conflictingIntervention: any;
+    conflictingIntervention: { id: string; numero?: number; titre: string };
     newDate: string;
 }
 

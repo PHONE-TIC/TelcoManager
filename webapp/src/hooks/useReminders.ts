@@ -18,7 +18,7 @@ interface UseRemindersReturn {
     settings: ReminderSettings;
     activeRemindersCount: number;
     updateSettings: (settings: ReminderSettings) => void;
-    scheduleForInterventions: (interventions: any[]) => void;
+    scheduleForInterventions: (interventions: { id: string; datePlanifiee: string; technicienId?: string }[]) => void;
     cancelAll: () => void;
 }
 
@@ -50,7 +50,7 @@ export const useReminders = (): UseRemindersReturn => {
         }
     }, []);
 
-    const scheduleForInterventions = useCallback((interventions: any[]) => {
+    const scheduleForInterventions = useCallback((interventions: { id: string; datePlanifiee: string; technicienId?: string }[]) => {
         if (!isSupported || !settings.enabled) {
             return;
         }

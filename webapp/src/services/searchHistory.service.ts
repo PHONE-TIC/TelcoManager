@@ -1,7 +1,7 @@
 export interface SearchHistoryItem {
     id: string;
     query: string;
-    filters: any;
+    filters: Record<string, string | string[]>;
     entities: string[];
     timestamp: number;
 }
@@ -10,7 +10,7 @@ const HISTORY_KEY = 'search_history';
 const MAX_HISTORY = 10;
 
 class SearchHistoryManager {
-    saveSearch(query: string, filters: any = {}, entities: string[] = ['clients', 'interventions', 'stock', 'techniciens']) {
+    saveSearch(query: string, filters: Record<string, string | string[]> = {}, entities: string[] = ['clients', 'interventions', 'stock', 'techniciens']) {
         if (!query || query.trim().length === 0) return;
 
         const history = this.getHistory();

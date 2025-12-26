@@ -3,6 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { useAuth } from "../contexts/AuthContext";
 import SerialTransferModal from "../components/SerialTransferModal";
+import type { Stock as StockType, Technicien, TechnicianStock } from "../types";
+
+// Extended stock type with additional fields from API
+interface StockWithRelations extends StockType {
+  originalStockId?: string;
+  technicianStockId?: string;
+  // Allow dynamic property access for sorting
+  [key: string]: unknown;
+}
 
 function Stock() {
   const navigate = useNavigate();
@@ -10,7 +19,7 @@ function Stock() {
   const canManageStock =
     user?.role === "admin" || user?.role === "gestionnaire";
   const canDeleteStock = user?.role === "admin";
-  const [stock, setStock] = useState<any[]>([]);
+  const [stock, setStock] = useState<StockWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -19,9 +28,11 @@ function Stock() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortColumn, setSortColumn] = useState<string>("nomMateriel");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<StockWithRelations | null>(
+    null
+  );
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [detailItem, setDetailItem] = useState<any>(null);
+  const [detailItem, setDetailItem] = useState<StockWithRelations | null>(null);
   const [formData, setFormData] = useState({
     nomMateriel: "",
     reference: "",
@@ -36,14 +47,14 @@ function Stock() {
   const [serialNumbersCount, setSerialNumbersCount] = useState(0);
 
   // Technician Stock Logic
-  const [technicians, setTechnicians] = useState<any[]>([]);
+  const [technicians, setTechnicians] = useState<Technicien[]>([]);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>("");
 
   useEffect(() => {
     if (filter === "technician") {
       apiService.getTechniciens({ limit: 100 }).then((data) => {
         const list = Array.isArray(data) ? data : data.techniciens;
-        setTechnicians(list.filter((t: any) => t.role === "technicien"));
+        setTechnicians(list.filter((t: Technicien) => t.role === "technicien"));
       });
       setStock([]);
     }
@@ -55,13 +66,13 @@ function Stock() {
       apiService
         .getTechnicianStock(selectedTechnicianId)
         .then((data) => {
-          const formatted = data.map((ts: any) => ({
+          const formatted = data.map((ts: TechnicianStock) => ({
             ...ts.stock,
             quantite: ts.quantite,
             originalStockId: ts.stockId,
             technicianStockId: ts.id,
           }));
-          setStock(formatted);
+          setStock(formatted as StockWithRelations[]);
         })
         .catch((err) => console.error(err))
         .finally(() => setLoading(false));
@@ -123,12 +134,14 @@ function Stock() {
 
     // Sort
     result.sort((a, b) => {
-      let valA = a[sortColumn];
-      let valB = b[sortColumn];
-      if (typeof valA === "string") valA = valA.toLowerCase();
-      if (typeof valB === "string") valB = valB.toLowerCase();
-      if (valA < valB) return sortDirection === "asc" ? -1 : 1;
-      if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+      const valA = a[sortColumn];
+      const valB = b[sortColumn];
+      const strA = typeof valA === "string" ? valA.toLowerCase() : valA;
+      const strB = typeof valB === "string" ? valB.toLowerCase() : valB;
+      if (strA === undefined || strA === null) return 1;
+      if (strB === undefined || strB === null) return -1;
+      if (strA < strB) return sortDirection === "asc" ? -1 : 1;
+      if (strA > strB) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
 
@@ -209,11 +222,14 @@ function Stock() {
       });
       setSelectedItem(null);
       loadStock();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur lors de la sauvegarde:", error);
+      const axiosError = error as {
+        response?: { data?: { error?: string; message?: string } };
+      };
       const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.message ||
+        axiosError.response?.data?.error ||
+        axiosError.response?.data?.message ||
         "Erreur lors de la sauvegarde de l'article";
       setError(errorMessage);
     }
@@ -242,9 +258,10 @@ function Stock() {
     try {
       await apiService.deleteStock(id);
       loadStock();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur:", error);
-      if (error.response?.status === 403) {
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError.response?.status === 403) {
         alert(
           "Accès refusé - Seuls les administrateurs peuvent supprimer des articles."
         );
@@ -256,13 +273,14 @@ function Stock() {
 
   // Helper function to determine stock location for general view
   const getLocation = (
-    item: any
+    item: StockWithRelations
   ): { label: string; color: string; bgColor: string } => {
     // Check if assigned to a technician
-    if (item.technicianStocks && item.technicianStocks.length > 0) {
+    const techStocks = item.technicianStocks as TechnicianStock[] | undefined;
+    if (techStocks && techStocks.length > 0) {
       // Only check active technician stocks (qty > 0)
-      const activeTechStock = item.technicianStocks.find(
-        (ts: any) => ts.quantite > 0
+      const activeTechStock = techStocks.find(
+        (ts: TechnicianStock) => ts.quantite > 0
       );
 
       if (activeTechStock) {
@@ -286,12 +304,12 @@ function Stock() {
     }
 
     // Check if installed at a client (ClientEquipment)
-    if (item.clientEquipements && item.clientEquipements.length > 0) {
+    const clientEquips = item.clientEquipements as
+      | { statut: string; client?: { nom: string } }[]
+      | undefined;
+    if (clientEquips && clientEquips.length > 0) {
       // Only consider installed items
-      // Since clientEquipements might be an array of history, find the one with status 'installe'
-      const installed = item.clientEquipements.find(
-        (ce: any) => ce.statut === "installe"
-      );
+      const installed = clientEquips.find((ce) => ce.statut === "installe");
 
       if (installed) {
         const clientName = installed.client?.nom || "Client";

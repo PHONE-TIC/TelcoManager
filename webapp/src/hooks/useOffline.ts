@@ -16,7 +16,7 @@ interface UseOfflineReturn {
     pendingSyncCount: number;
     getCachedInterventionsList: () => Promise<any[]>;
     getCachedInterventionById: (id: string) => Promise<any | null>;
-    cacheInterventionsList: (interventions: any[]) => Promise<void>;
+    cacheInterventionsList: (interventions: { id: string; datePlanifiee: string; technicienId?: string }[]) => Promise<void>;
     syncNow: () => Promise<{ success: number; failed: number }>;
 }
 
@@ -76,7 +76,7 @@ export const useOffline = (): UseOfflineReturn => {
         return getCachedIntervention(id);
     }, []);
 
-    const cacheInterventionsList = useCallback(async (interventions: any[]): Promise<void> => {
+    const cacheInterventionsList = useCallback(async (interventions: { id: string; datePlanifiee: string; technicienId?: string }[]): Promise<void> => {
         await cacheInterventions(interventions);
         setHasCachedData(true);
     }, []);

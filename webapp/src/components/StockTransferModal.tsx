@@ -51,7 +51,7 @@ function StockTransferModal({ stockId, stockName, maxQuantite, onClose, onSucces
                 reason: reason || undefined
             });
             onSuccess();
-        } catch (err: any) {
+        } catch (err: unknown) {
             setError(err.response?.data?.error || 'Erreur lors du transfert');
         } finally {
             setLoading(false);

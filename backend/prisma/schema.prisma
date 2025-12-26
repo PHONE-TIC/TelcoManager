@@ -116,6 +116,8 @@ model Intervention {
 model Stock {
   id                  String                    @id @default(uuid())
   nomMateriel         String                    @map("nom_materiel")
+  marque              String?
+  modele              String?
   reference           String
   numeroSerie         String                    @default("") @map("numero_serie")
   codeBarre           String?                   @unique @map("code_barre")

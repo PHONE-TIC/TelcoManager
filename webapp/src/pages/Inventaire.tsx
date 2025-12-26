@@ -14,7 +14,7 @@ const DiscrepancyModal = ({
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  items: any[];
+  items: { stockId?: string; expectedQuantity: number; countedQuantity: number | null; stock?: { nomMateriel: string; reference: string } }[];
 }) => {
   if (!isOpen) return null;
 
@@ -229,7 +229,7 @@ function Inventaire() {
     const query = scanQuery.trim().toLowerCase();
 
     // Find item by serial number or barcode
-    const item = currentSession.items.find((i: any) => {
+    const item = currentSession.items.find((i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) => {
       const serial = i.stock.numeroSerie
         ? i.stock.numeroSerie.toLowerCase()
         : "";
@@ -258,7 +258,7 @@ function Inventaire() {
 
     const quantity = qty === "" ? null : parseInt(qty);
 
-    const updatedItems = currentSession.items.map((item: any) =>
+    const updatedItems = currentSession.items.map((item: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number; stock?: { nomMateriel: string; reference: string } }) =>
       item.id === itemId ? { ...item, countedQuantity: quantity } : item
     );
 
@@ -268,7 +268,7 @@ function Inventaire() {
   const handleUpdateItemNotes = (itemId: string, notes: string) => {
     if (!currentSession) return;
 
-    const updatedItems = currentSession.items.map((item: any) =>
+    const updatedItems = currentSession.items.map((item: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number; stock?: { nomMateriel: string; reference: string } }) =>
       item.id === itemId ? { ...item, notes } : item
     );
 
@@ -336,13 +336,13 @@ function Inventaire() {
     if (!currentSession)
       return { counted: 0, total: 0, discrepancies: 0, ok: 0 };
     const items = currentSession.items || [];
-    const counted = items.filter((i: any) => i.countedQuantity !== null).length;
+    const counted = items.filter((i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) => i.countedQuantity !== null).length;
     const discrepancies = items.filter(
-      (i: any) =>
+      (i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) =>
         i.countedQuantity !== null && i.countedQuantity !== i.expectedQuantity
     ).length;
     const ok = items.filter(
-      (i: any) =>
+      (i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) =>
         i.countedQuantity !== null && i.countedQuantity === i.expectedQuantity
     ).length;
     return { counted, total: items.length, discrepancies, ok };
@@ -356,16 +356,16 @@ function Inventaire() {
 
     switch (itemFilter) {
       case "uncounted":
-        return items.filter((i: any) => i.countedQuantity === null);
+        return items.filter((i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) => i.countedQuantity === null);
       case "discrepancy":
         return items.filter(
-          (i: any) =>
+          (i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) =>
             i.countedQuantity !== null &&
             i.countedQuantity !== i.expectedQuantity
         );
       case "ok":
         return items.filter(
-          (i: any) =>
+          (i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) =>
             i.countedQuantity !== null &&
             i.countedQuantity === i.expectedQuantity
         );
@@ -788,7 +788,7 @@ function Inventaire() {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item: any) => {
+              {filteredItems.map((item: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number; stock?: { nomMateriel: string; reference: string } }) => {
                 const counted = item.countedQuantity;
                 const expected = item.expectedQuantity;
                 const diff = counted !== null ? counted - expected : 0;

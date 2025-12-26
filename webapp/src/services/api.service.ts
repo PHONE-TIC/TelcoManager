@@ -1,9 +1,13 @@
-import axios from "axios";
+import axios, { type AxiosInstance } from "axios";
 
 const API_URL = "/api";
 
+// Generic types to replace 'any'
+type QueryParams = Record<string, string | number | boolean | undefined>;
+type EntityData = Record<string, unknown>;
+
 class ApiService {
-  private api;
+  private api: AxiosInstance;
 
   constructor() {
     this.api = axios.create({
@@ -54,7 +58,7 @@ class ApiService {
   }
 
   // Clients
-  async getClients(params?: any) {
+  async getClients(params?: QueryParams) {
     const response = await this.api.get("/clients", { params });
     return response.data;
   }
@@ -71,12 +75,12 @@ class ApiService {
     return response.data;
   }
 
-  async createClient(data: any) {
+  async createClient(data: EntityData) {
     const response = await this.api.post("/clients", data);
     return response.data;
   }
 
-  async updateClient(id: string, data: any) {
+  async updateClient(id: string, data: EntityData) {
     const response = await this.api.put(`/clients/${id}`, data);
     return response.data;
   }
@@ -86,7 +90,7 @@ class ApiService {
   }
 
   // Techniciens
-  async getTechniciens(params?: any) {
+  async getTechniciens(params?: QueryParams) {
     const response = await this.api.get("/techniciens", { params });
     return response.data;
   }
@@ -96,12 +100,12 @@ class ApiService {
     return response.data;
   }
 
-  async createTechnicien(data: any) {
+  async createTechnicien(data: EntityData) {
     const response = await this.api.post("/techniciens", data);
     return response.data;
   }
 
-  async updateTechnicien(id: string, data: any) {
+  async updateTechnicien(id: string, data: EntityData) {
     const response = await this.api.put(`/techniciens/${id}`, data);
     return response.data;
   }
@@ -111,7 +115,7 @@ class ApiService {
   }
 
   // Interventions
-  async getInterventions(params?: any) {
+  async getInterventions(params?: QueryParams) {
     const response = await this.api.get("/interventions", { params });
     return response.data;
   }
@@ -121,12 +125,12 @@ class ApiService {
     return response.data;
   }
 
-  async createIntervention(data: any) {
+  async createIntervention(data: EntityData) {
     const response = await this.api.post("/interventions", data);
     return response.data;
   }
 
-  async updateIntervention(id: string, data: any) {
+  async updateIntervention(id: string, data: EntityData) {
     const response = await this.api.put(`/interventions/${id}`, data);
     return response.data;
   }
@@ -216,7 +220,7 @@ class ApiService {
   }
 
   // Stock
-  async getStock(params?: any) {
+  async getStock(params?: QueryParams) {
     const response = await this.api.get("/stock", { params });
     return response.data;
   }
@@ -238,17 +242,17 @@ class ApiService {
     return response.data;
   }
 
-  async createStock(data: any) {
+  async createStock(data: EntityData) {
     const response = await this.api.post("/stock", data);
     return response.data;
   }
 
-  async updateStock(id: string, data: any) {
+  async updateStock(id: string, data: EntityData) {
     const response = await this.api.put(`/stock/${id}`, data);
     return response.data;
   }
 
-  async moveToHS(id: string, data: any) {
+  async moveToHS(id: string, data: EntityData) {
     const response = await this.api.post(`/stock/${id}/move-to-hs`, data);
     return response.data;
   }
@@ -263,14 +267,14 @@ class ApiService {
   }
 
   // Stock Movements
-  async getStockMovements(stockId: string, params?: any) {
+  async getStockMovements(stockId: string, params?: QueryParams) {
     const response = await this.api.get(`/stock/${stockId}/movements`, {
       params,
     });
     return response.data;
   }
 
-  async getAllStockMovements(params?: any) {
+  async getAllStockMovements(params?: QueryParams) {
     const response = await this.api.get("/stock-movements", { params });
     return response.data;
   }
@@ -283,7 +287,7 @@ class ApiService {
     return response.data;
   }
 
-  async bulkImportStock(items: any[]) {
+  async bulkImportStock(items: EntityData[]) {
     const response = await this.api.post("/stock/import", { items });
     return response.data;
   }
@@ -416,12 +420,12 @@ class ApiService {
     return response.data;
   }
 
-  async createInventorySession(data: any) {
+  async createInventorySession(data: EntityData) {
     const response = await this.api.post("/inventaire/sessions", data);
     return response.data;
   }
 
-  async updateInventoryItems(sessionId: string, items: any[]) {
+  async updateInventoryItems(sessionId: string, items: EntityData[]) {
     const response = await this.api.put(
       `/inventaire/sessions/${sessionId}/items`,
       { items }
@@ -443,7 +447,7 @@ class ApiService {
   async globalSearch(params: {
     q: string;
     entities?: string[];
-    filters?: any;
+    filters?: QueryParams;
   }) {
     const response = await this.api.get("/search/global", {
       params: {

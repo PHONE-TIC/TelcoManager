@@ -50,7 +50,7 @@ interface Intervention {
     nom: string;
     username?: string;
   };
-  equipements?: any[];
+  equipements?: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }[];
 }
 
 // Extra data passed from Workflow
@@ -339,10 +339,10 @@ export const generateInterventionPDF = async (
     // Fill Matériel - Split into Installed and Retrieved sections
     if (intervention.equipements && intervention.equipements.length > 0) {
       const installed = intervention.equipements.filter(
-        (eq: any) => eq.action === "install"
+        (eq: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }) => eq.action === "install"
       );
       const retrieved = intervention.equipements.filter(
-        (eq: any) => eq.action === "retrait"
+        (eq: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }) => eq.action === "retrait"
       );
 
       let fourY = y + 5;
@@ -358,7 +358,7 @@ export const generateInterventionPDF = async (
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
 
-        installed.forEach((eq: any) => {
+        installed.forEach((eq: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }) => {
           const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
           const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
 
@@ -399,7 +399,7 @@ export const generateInterventionPDF = async (
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
 
-        retrieved.forEach((eq: any) => {
+        retrieved.forEach((eq: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }) => {
           const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
           const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
           const etat = eq.etat ? ` (${eq.etat.toUpperCase()})` : "";

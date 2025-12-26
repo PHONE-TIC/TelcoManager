@@ -21,7 +21,7 @@ function Login() {
     try {
       await login(username, password);
       navigate("/");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.error || "Erreur de connexion");
     } finally {
       setLoading(false);

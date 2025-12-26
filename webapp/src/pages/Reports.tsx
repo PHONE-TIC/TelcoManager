@@ -35,7 +35,7 @@ function Reports() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const params: any = {
+            const params: Record<string, string> = {
                 dateDebut: dateRange.start,
                 dateFin: dateRange.end,
                 limit: 500
@@ -47,14 +47,14 @@ function Reports() {
             setInterventions(data.interventions || []);
 
             const all = data.interventions || [];
-            const completed = all.filter((i: any) => i.statut === 'terminee');
-            const pending = all.filter((i: any) => i.statut === 'planifiee');
-            const inProgress = all.filter((i: any) => i.statut === 'en_cours');
+            const completed = all.filter((i: { statut: string; heureArrivee?: string; heureDepart?: string }) => i.statut === 'terminee');
+            const pending = all.filter((i: { statut: string; heureArrivee?: string; heureDepart?: string }) => i.statut === 'planifiee');
+            const inProgress = all.filter((i: { statut: string; heureArrivee?: string; heureDepart?: string }) => i.statut === 'en_cours');
 
             let avgDuration = 0;
-            const withDuration = completed.filter((i: any) => i.heureArrivee && i.heureDepart);
+            const withDuration = completed.filter((i: { statut: string; heureArrivee?: string; heureDepart?: string }) => i.heureArrivee && i.heureDepart);
             if (withDuration.length > 0) {
-                const totalMinutes = withDuration.reduce((acc: number, i: any) => {
+                const totalMinutes = withDuration.reduce((acc: number, i: { heureArrivee: string; heureDepart: string }) => {
                     const start = moment(i.heureArrivee, 'HH:mm');
                     const end = moment(i.heureDepart, 'HH:mm');
                     return acc + end.diff(start, 'minutes');

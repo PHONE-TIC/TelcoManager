@@ -37,8 +37,10 @@ router.use(requireGestionnaireOrAdmin);
 router.post(
   "/",
   [
-    body("nomMateriel").notEmpty().withMessage("Nom du matériel requis"),
-    body("reference").notEmpty().withMessage("Référence requise"),
+    body("nomMateriel").optional(), // Généré automatiquement si non fourni
+    body("reference").optional(), // Généré automatiquement si non fourni
+    body("marque").notEmpty().withMessage("Marque requise"),
+    body("modele").optional().isString(),
     body("codeBarre").optional(),
     body("categorie").notEmpty().withMessage("Catégorie requise"),
     body("statut").optional().isIn(["courant", "hs"]),
@@ -55,6 +57,8 @@ router.put(
     param("id").isUUID(),
     body("nomMateriel").optional().notEmpty(),
     body("reference").optional().notEmpty(),
+    body("marque").optional().isString(),
+    body("modele").optional().isString(),
     body("codeBarre").optional(),
     body("categorie").optional().notEmpty(),
     body("statut").optional().isIn(["courant", "hs"]),

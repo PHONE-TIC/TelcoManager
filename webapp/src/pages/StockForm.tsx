@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
+import type { Stock } from "../types";
 
 function StockForm() {
   const { id } = useParams<{ id: string }>();
@@ -13,7 +14,8 @@ function StockForm() {
   const [existingCategories, setExistingCategories] = useState<string[]>([]);
   const [serialNumbersCount, setSerialNumbersCount] = useState(0);
   const [formData, setFormData] = useState({
-    nomMateriel: "",
+    marque: "",
+    modele: "",
     reference: "",
     numeroSerie: "",
     codeBarre: "",
@@ -24,6 +26,24 @@ function StockForm() {
     notes: "",
     statut: "courant",
   });
+
+  // Génération de la prévisualisation de la référence
+  const generateReferencePreview = (
+    marque: string,
+    categorie: string
+  ): string => {
+    if (!marque || !categorie) return "";
+    const cleanStr = (str: string): string => {
+      return str
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Supprimer les accents
+        .replace(/[^a-zA-Z]/g, "") // Garder uniquement les lettres
+        .toUpperCase()
+        .substring(0, 3)
+        .padEnd(3, "X");
+    };
+    return `${cleanStr(marque)}${cleanStr(categorie)}XXXXX`;
+  };
 
   // Parse serial numbers from comma or newline separated input
   const parseSerialNumbers = (input: string): string[] => {
@@ -58,7 +78,7 @@ function StockForm() {
     try {
       const data = await apiService.getStock({ limit: 500 });
       const cats = [
-        ...new Set(data.stock.map((item: any) => item.categorie)),
+        ...new Set(data.stock.map((item: Stock) => item.categorie)),
       ].sort() as string[];
       setExistingCategories(cats);
     } catch (err) {
@@ -70,7 +90,8 @@ function StockForm() {
     try {
       const item = await apiService.getStockById(id!);
       setFormData({
-        nomMateriel: item.nomMateriel || "",
+        marque: item.marque || "",
+        modele: item.modele || "",
         reference: item.reference || "",
         numeroSerie: item.numeroSerie || "",
         codeBarre: item.codeBarre || "",
@@ -101,11 +122,14 @@ function StockForm() {
         await apiService.createStock(formData);
       }
       navigate("/stock");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erreur sauvegarde:", err);
+      const axiosError = err as {
+        response?: { data?: { error?: string; message?: string } };
+      };
       const errorMessage =
-        err.response?.data?.error ||
-        err.response?.data?.message ||
+        axiosError.response?.data?.error ||
+        axiosError.response?.data?.message ||
         "Erreur lors de la sauvegarde. Vérifiez les champs obligatoires.";
       setError(errorMessage);
     } finally {
@@ -193,30 +217,86 @@ function StockForm() {
               gap: "20px",
             }}
           >
-            {/* Nom du matériel */}
-            <div style={{ gridColumn: "span 2" }}>
-              <label style={labelStyle}>Nom du matériel *</label>
+            {/* Marque */}
+            <div>
+              <label style={labelStyle}>Marque *</label>
               <input
                 type="text"
-                value={formData.nomMateriel}
-                onChange={(e) => handleChange("nomMateriel", e.target.value)}
-                placeholder="Ex: Switch Cisco 24 ports"
+                value={formData.marque}
+                onChange={(e) => handleChange("marque", e.target.value)}
+                placeholder="Ex: Yealink, Cisco, Ubiquiti..."
                 style={inputStyle}
-                required
+                required={!isEditing}
               />
             </div>
 
-            {/* Référence */}
+            {/* Modèle */}
             <div>
-              <label style={labelStyle}>Référence *</label>
+              <label style={labelStyle}>Modèle</label>
               <input
                 type="text"
-                value={formData.reference}
-                onChange={(e) => handleChange("reference", e.target.value)}
-                placeholder="Ex: WS-C2960X-24TD-L"
+                value={formData.modele}
+                onChange={(e) => handleChange("modele", e.target.value)}
+                placeholder="Ex: T46U, SG350-28, UAP-AC-PRO..."
                 style={inputStyle}
-                required
               />
+            </div>
+
+            {/* Référence (générée automatiquement) */}
+            <div>
+              <label style={labelStyle}>
+                Référence
+                {!isEditing && (
+                  <span
+                    style={{
+                      marginLeft: "8px",
+                      padding: "2px 8px",
+                      borderRadius: "12px",
+                      fontSize: "0.7rem",
+                      fontWeight: 500,
+                      backgroundColor: "#dbeafe",
+                      color: "#1e40af",
+                    }}
+                  >
+                    Générée automatiquement
+                  </span>
+                )}
+              </label>
+              {isEditing ? (
+                <div
+                  style={{
+                    ...inputStyle,
+                    backgroundColor: "rgba(255, 255, 255, 0.02)",
+                    color: "#10b981",
+                    fontFamily: "monospace",
+                    fontSize: "1.1rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {formData.reference || "—"}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    ...inputStyle,
+                    backgroundColor: "rgba(255, 255, 255, 0.02)",
+                    color:
+                      formData.marque && formData.categorie
+                        ? "#10b981"
+                        : "var(--text-secondary)",
+                    fontFamily: "monospace",
+                    fontSize: "1.1rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {formData.marque && formData.categorie
+                    ? generateReferencePreview(
+                        formData.marque,
+                        formData.categorie
+                      )
+                    : "Remplissez Marque et Catégorie"}
+                </div>
+              )}
             </div>
 
             {/* Numéro de série - Multiple entries */}

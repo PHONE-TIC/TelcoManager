@@ -3,7 +3,7 @@ import autoTable from 'jspdf-autotable';
 import JsBarcode from 'jsbarcode';
 import moment from 'moment';
 
-export const generateInventoryPDF = (session: any) => {
+export const generateInventoryPDF = (session: { date: string; notes?: string; items: { stock?: { nomMateriel: string; reference: string }; expectedQuantity: number; countedQuantity: number | null }[] }) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
 
@@ -42,7 +42,7 @@ export const generateInventoryPDF = (session: any) => {
     };
 
     // --- Table Data ---
-    const tableBody = session.items.map((item: any) => {
+    const tableBody = session.items.map((item: { stock?: { nomMateriel: string; reference: string }; expectedQuantity: number; countedQuantity: number | null }) => {
         const barcodeData = item.stock?.codeBarre ? generateBarcodeDataUrl(item.stock.codeBarre) : null;
 
         return [

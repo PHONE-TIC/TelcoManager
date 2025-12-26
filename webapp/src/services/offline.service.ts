@@ -51,7 +51,7 @@ export const initOfflineDB = (): Promise<IDBDatabase> => {
 };
 
 // Save interventions to IndexedDB
-export const cacheInterventions = async (interventions: any[]): Promise<void> => {
+export const cacheInterventions = async (interventions: { id: string; datePlanifiee: string; technicienId?: string }[]): Promise<void> => {
     const database = await initOfflineDB();
     const transaction = database.transaction([STORE_INTERVENTIONS], 'readwrite');
     const store = transaction.objectStore(STORE_INTERVENTIONS);
@@ -99,7 +99,7 @@ export const getCachedIntervention = async (id: string): Promise<any | null> => 
 interface SyncAction {
     type: 'update' | 'create';
     endpoint: string;
-    data: any;
+    data: Record<string, unknown>;
     timestamp: number;
 }
 

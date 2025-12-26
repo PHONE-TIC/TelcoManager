@@ -84,7 +84,7 @@ function UserForm() {
 
         try {
             if (isEditing) {
-                const updateData: any = {
+                const updateData: Record<string, string | boolean> = {
                     nom: fullName,
                     username: formData.username,
                     role: formData.role,

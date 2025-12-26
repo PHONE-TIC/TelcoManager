@@ -453,7 +453,7 @@ function TechnicianDetail() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {technician.activityLogs?.length > 0 ? (
-                    technician.activityLogs.map((log: any) => (
+                    technician.activityLogs.map((log: { id: string; action: string; createdAt: string; details?: string }) => (
                       <tr key={log.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 whitespace-nowrap text-gray-600">
                           {new Date(log.createdAt).toLocaleString("fr-FR")}

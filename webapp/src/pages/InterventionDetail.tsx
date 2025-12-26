@@ -38,7 +38,7 @@ interface Intervention {
     username: string;
   };
   technicienNom?: string; // Fallback name when technicien is deleted
-  equipements?: any[];
+  equipements?: InterventionEquipment[];
 }
 
 const InterventionDetail: React.FC = () => {
@@ -105,7 +105,7 @@ const InterventionDetail: React.FC = () => {
       if (!id) return;
       try {
         await apiService.lockIntervention(id);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (e.response?.status === 409) {
           alert(
             `ATTENTION: Cette intervention est actuellement modifiée par ${
@@ -148,8 +148,8 @@ const InterventionDetail: React.FC = () => {
       try {
         const artifacts = await apiService.getInterventionArtifacts(id!);
         const loadedPhotos = artifacts
-          .filter((f: any) => f.type.startsWith("photo_"))
-          .map((f: any) => {
+          .filter((f: { type: string; filename: string; url: string; createdAt: string }) => f.type.startsWith("photo_"))
+          .map((f: { type: string; filename: string; url: string; createdAt: string }) => {
             // Map French types from backend to English types expected by PhotoCapture
             let photoType: "before" | "after" | "other" = "other";
             if (f.type === "photo_avant") photoType = "before";
@@ -168,9 +168,9 @@ const InterventionDetail: React.FC = () => {
         // Load non-photo attachments (documents, PDFs, etc.)
         const otherFiles = artifacts
           .filter(
-            (f: any) => !f.type.startsWith("photo_") && f.type !== "rapport_pdf"
+            (f: { type: string; filename: string; url: string; createdAt: string }) => !f.type.startsWith("photo_") && f.type !== "rapport_pdf"
           )
-          .map((f: any) => ({
+          .map((f: { type: string; filename: string; url: string; createdAt: string }) => ({
             name: f.filename,
             url: f.url,
             type: f.type,
@@ -179,7 +179,7 @@ const InterventionDetail: React.FC = () => {
 
         // Check for existing report
         const report = artifacts.find(
-          (f: any) =>
+          (f: { type: string; filename: string; url: string; createdAt: string }) =>
             f.type === "rapport_pdf" ||
             (f.filename &&
               (f.filename.startsWith("Rapport_") ||
@@ -207,7 +207,7 @@ const InterventionDetail: React.FC = () => {
           technicienId: data.technicien?.id || "",
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "Erreur lors du chargement");
     } finally {
       if (!silent) setLoading(false);
@@ -246,7 +246,7 @@ const InterventionDetail: React.FC = () => {
       await loadIntervention();
       setIsEditing(false);
       alert("Intervention mise à jour avec succès !");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.message || "Erreur lors de la sauvegarde");
     } finally {
       setSaving(false);
@@ -281,7 +281,7 @@ const InterventionDetail: React.FC = () => {
       });
       loadIntervention();
       alert("Intervention prise en charge !");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
         err.response?.data?.error || "Erreur lors de la prise en charge"
       );
@@ -294,7 +294,7 @@ const InterventionDetail: React.FC = () => {
     try {
       await apiService.updateInterventionStatus(id, { statut: newStatus });
       loadIntervention();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
         err.response?.data?.error || "Erreur lors du changement de statut"
       );
@@ -307,7 +307,7 @@ const InterventionDetail: React.FC = () => {
     try {
       await apiService.updateIntervention(id, { technicienId: techId || null });
       loadIntervention();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.error || "Erreur lors de la réassignation");
     }
   };
@@ -912,7 +912,7 @@ const InterventionDetail: React.FC = () => {
         <div className="info-card">
           <h3>🔧 Équipements utilisés</h3>
           <div className="equipments-list">
-            {intervention.equipements.map((eq: any) => (
+            {intervention.equipements.map((eq: { id?: string; stockId?: string; nom: string; action: string; quantite: number }) => (
               <div key={eq.id} className="equipment-item">
                 {eq.stock?.nomMateriel} - {eq.action} (x{eq.quantite})
               </div>

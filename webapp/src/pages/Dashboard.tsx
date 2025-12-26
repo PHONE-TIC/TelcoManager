@@ -37,7 +37,7 @@ function Dashboard() {
 
             // Process intervention stats
             const interventions = interventionsData.interventions || [];
-            const statusCounts = interventions.reduce((acc: any, curr: any) => {
+            const statusCounts = interventions.reduce((acc: Record<string, number>, curr: { statut: string }) => {
                 const status = curr.statut || 'Inconnu';
                 acc[status] = (acc[status] || 0) + 1;
                 return acc;
@@ -256,7 +256,7 @@ function Dashboard() {
                     <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px' }}>📦 Stock par Catégorie</h2>
                     {stats?.stock?.parCategorie && stats.stock.parCategorie.length > 0 ? (
                         <div>
-                            {stats.stock.parCategorie.slice(0, 5).map((cat: any, idx: number) => (
+                            {stats.stock.parCategorie.slice(0, 5).map((cat: { name: string; count: number }, idx: number) => (
                                 <div
                                     key={idx}
                                     className="intervention-card-item"
@@ -297,7 +297,7 @@ function Dashboard() {
                             ⚠️ Alertes Stock
                         </h2>
                         <div>
-                            {stats.stock.stockFaible.slice(0, 5).map((item: any, idx: number) => (
+                            {stats.stock.stockFaible.slice(0, 5).map((item: { id: string; nomMateriel: string; quantite: number }, idx: number) => (
                                 <div
                                     key={idx}
                                     style={{

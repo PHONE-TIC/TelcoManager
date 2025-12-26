@@ -10,7 +10,7 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
     const [csvData, setCsvData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [result, setResult] = useState<{ created: number; errors: any[] } | null>(null);
+    const [result, setResult] = useState<{ created: number; errors: { row: number; message: string }[] } | null>(null);
     const [parseError, setParseError] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,7 +42,7 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
 
                 const items = lines.slice(1).map((line) => {
                     const values = line.split(';').map(v => v.trim());
-                    const item: any = {};
+                    const item: Record<string, string> = {};
                     headers.forEach((header, i) => {
                         if (header === 'nommateriel') item.nomMateriel = values[i];
                         else if (header === 'numeroserie') item.numeroSerie = values[i];
@@ -76,7 +76,7 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
                     onSuccess();
                 }, 2000);
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             setError(err.response?.data?.error || 'Erreur lors de l\'import');
         } finally {
             setLoading(false);
