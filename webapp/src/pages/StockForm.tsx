@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
-import type { Stock } from "../types";
 
 function StockForm() {
   const { id } = useParams<{ id: string }>();
@@ -11,7 +10,7 @@ function StockForm() {
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [existingCategories, setExistingCategories] = useState<string[]>([]);
+
   const [serialNumbersCount, setSerialNumbersCount] = useState(0);
   const [formData, setFormData] = useState({
     marque: "",
@@ -55,36 +54,24 @@ function StockForm() {
 
   // Handle serial numbers change with auto-quantity update
   const handleSerialNumbersChange = (value: string) => {
-    const serialNumbers = parseSerialNumbers(value);
+    const uppercaseValue = value.toUpperCase();
+    const serialNumbers = parseSerialNumbers(uppercaseValue);
     const count = serialNumbers.length;
     setSerialNumbersCount(count);
 
     setFormData((prev) => ({
       ...prev,
-      numeroSerie: value,
+      numeroSerie: uppercaseValue,
       // Auto-update quantity only for new items (not editing) and only if > 0 serial numbers
       quantite: !isEditing && count > 0 ? count : prev.quantite,
     }));
   };
 
   useEffect(() => {
-    loadCategories();
     if (isEditing) {
       loadStock();
     }
-  }, [id]);
-
-  const loadCategories = async () => {
-    try {
-      const data = await apiService.getStock({ limit: 500 });
-      const cats = [
-        ...new Set(data.stock.map((item: Stock) => item.categorie)),
-      ].sort() as string[];
-      setExistingCategories(cats);
-    } catch (err) {
-      console.error("Erreur chargement catégories:", err);
-    }
-  };
+  }, [id, isEditing]);
 
   const loadStock = async () => {
     try {
@@ -110,9 +97,57 @@ function StockForm() {
     }
   };
 
+  // Liste des champs obligatoires (pour un nouvel article)
+  const requiredFields = [
+    { key: "marque", label: "Marque" },
+    { key: "modele", label: "Modèle" },
+    { key: "numeroSerie", label: "Numéro de série" },
+    { key: "categorie", label: "Catégorie" },
+    { key: "fournisseur", label: "Fournisseur" },
+  ];
+
+  // État pour les erreurs de validation par champ
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+
+  // Validation du formulaire
+  const validateForm = (): boolean => {
+    const errors: Record<string, boolean> = {};
+    let isValid = true;
+
+    for (const field of requiredFields) {
+      const value = formData[field.key as keyof typeof formData];
+      const isEmpty = value === "" || value === null || value === undefined;
+      if (isEmpty) {
+        errors[field.key] = true;
+        isValid = false;
+      }
+    }
+
+    setFieldErrors(errors);
+    return isValid;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Valider le formulaire avant soumission
+    if (!validateForm()) {
+      const missingFields = requiredFields
+        .filter(
+          (f) =>
+            fieldErrors[f.key] ||
+            formData[f.key as keyof typeof formData] === ""
+        )
+        .map((f) => f.label);
+      setError(
+        `Veuillez remplir tous les champs obligatoires : ${missingFields.join(
+          ", "
+        )}`
+      );
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -137,8 +172,20 @@ function StockForm() {
     }
   };
 
+  // Champs qui doivent être en majuscules
+  const uppercaseFields = ["marque", "modele", "numeroSerie"];
+
   const handleChange = (field: string, value: string | number) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Convertir en majuscules pour les champs concernés
+    const finalValue =
+      uppercaseFields.includes(field) && typeof value === "string"
+        ? value.toUpperCase()
+        : value;
+    setFormData((prev) => ({ ...prev, [field]: finalValue }));
+    // Effacer l'erreur du champ quand l'utilisateur commence à taper
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: false }));
+    }
   };
 
   const inputStyle = {
@@ -153,12 +200,40 @@ function StockForm() {
     outline: "none",
   };
 
+  const errorInputStyle = {
+    ...inputStyle,
+    border: "2px solid var(--error-color, #dc2626)",
+    backgroundColor: "var(--error-bg, rgba(220, 38, 38, 0.15))",
+  };
+
+  // Helper pour obtenir le style d'un champ en fonction de son état d'erreur
+  const getInputStyle = (fieldName: string) => {
+    return fieldErrors[fieldName] ? errorInputStyle : inputStyle;
+  };
+
   const labelStyle = {
     display: "block",
     marginBottom: "6px",
     fontWeight: 600,
     fontSize: "0.875rem",
     color: "var(--text-secondary)",
+  };
+
+  const errorLabelStyle = {
+    ...labelStyle,
+    color: "var(--error-color, #dc2626)",
+  };
+
+  // Helper pour obtenir le style du label
+  const getLabelStyle = (fieldName: string) => {
+    return fieldErrors[fieldName] ? errorLabelStyle : labelStyle;
+  };
+
+  // Style pour les messages d'erreur sous les champs
+  const fieldErrorStyle = {
+    color: "var(--error-color, #dc2626)",
+    fontSize: "0.75rem",
+    marginTop: "4px",
   };
 
   if (loading) {
@@ -204,7 +279,17 @@ function StockForm() {
       {/* Form */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div
+            style={{
+              marginBottom: "24px",
+              padding: "16px",
+              backgroundColor: "var(--error-bg)",
+              border: "1px solid var(--error-color)",
+              borderRadius: "8px",
+              color: "var(--error-color)",
+              fontWeight: 500,
+            }}
+          >
             ⚠️ {error}
           </div>
         )}
@@ -219,27 +304,32 @@ function StockForm() {
           >
             {/* Marque */}
             <div>
-              <label style={labelStyle}>Marque *</label>
+              <label style={getLabelStyle("marque")}>Marque *</label>
               <input
                 type="text"
                 value={formData.marque}
                 onChange={(e) => handleChange("marque", e.target.value)}
-                placeholder="Ex: Yealink, Cisco, Ubiquiti..."
-                style={inputStyle}
-                required={!isEditing}
+                placeholder="Ex: YEALINK, CISCO, UBIQUITI..."
+                style={getInputStyle("marque")}
               />
+              {fieldErrors.marque && (
+                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+              )}
             </div>
 
             {/* Modèle */}
             <div>
-              <label style={labelStyle}>Modèle</label>
+              <label style={getLabelStyle("modele")}>Modèle *</label>
               <input
                 type="text"
                 value={formData.modele}
                 onChange={(e) => handleChange("modele", e.target.value)}
                 placeholder="Ex: T46U, SG350-28, UAP-AC-PRO..."
-                style={inputStyle}
+                style={getInputStyle("modele")}
               />
+              {fieldErrors.modele && (
+                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+              )}
             </div>
 
             {/* Référence (générée automatiquement) */}
@@ -301,8 +391,8 @@ function StockForm() {
 
             {/* Numéro de série - Multiple entries */}
             <div>
-              <label style={labelStyle}>
-                Numéro(s) de série
+              <label style={getLabelStyle("numeroSerie")}>
+                Numéro(s) de série *
                 {!isEditing && serialNumbersCount > 0 && (
                   <span
                     style={{
@@ -330,12 +420,15 @@ function StockForm() {
                 }
                 rows={isEditing ? 1 : 3}
                 style={{
-                  ...inputStyle,
+                  ...getInputStyle("numeroSerie"),
                   resize: "vertical",
                   minHeight: isEditing ? "44px" : "80px",
                 }}
               />
-              {!isEditing && (
+              {fieldErrors.numeroSerie && (
+                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+              )}
+              {!isEditing && !fieldErrors.numeroSerie && (
                 <p
                   style={{
                     fontSize: "0.75rem",
@@ -351,35 +444,55 @@ function StockForm() {
 
             {/* Catégorie */}
             <div>
-              <label style={labelStyle}>Catégorie *</label>
-              <input
-                type="text"
+              <label style={getLabelStyle("categorie")}>Catégorie *</label>
+              <select
                 value={formData.categorie}
                 onChange={(e) => handleChange("categorie", e.target.value)}
-                placeholder="Ex: Réseau, Sécurité, Téléphonie..."
-                list="categories"
-                style={inputStyle}
-                required
-              />
-              <datalist id="categories">
-                {existingCategories.map((cat, i) => (
-                  <option key={i} value={cat} />
+                className="form-input-premium"
+                style={{
+                  ...getInputStyle("categorie"),
+                  cursor: "pointer",
+                }}
+              >
+                <option value="">Sélectionner une catégorie</option>
+                {[
+                  "Téléphone IP",
+                  "Téléphone analogique",
+                  "Borne DECT IP",
+                  "Borne DECT Analogique",
+                  "Téléphone IP DECT",
+                  "Accessoires DECT",
+                  "Accessoires Téléphone Fixe",
+                  "Répéteur DECT",
+                  "PBX Analogique",
+                  "PBX IP",
+                  "Accessoires PBX",
+                  "Routeur",
+                  "Accessoires routeur",
+                  "Onduleur",
+                  "Accessoires Onduleur",
+                  "SBC-PC",
+                  "Cartes SIM",
+                ].map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
                 ))}
-              </datalist>
+              </select>
+              {fieldErrors.categorie && (
+                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+              )}
             </div>
 
             {/* Fournisseur */}
             <div>
-              <label style={labelStyle}>Fournisseur</label>
+              <label style={getLabelStyle("fournisseur")}>Fournisseur *</label>
               <select
                 value={formData.fournisseur}
                 onChange={(e) => handleChange("fournisseur", e.target.value)}
                 className="form-input-premium"
                 style={{
-                  width: "100%",
-                  padding: "12px 16px",
-                  borderRadius: "8px",
-                  fontSize: "1rem",
+                  ...getInputStyle("fournisseur"),
                   cursor: "pointer",
                 }}
               >
@@ -405,6 +518,9 @@ function StockForm() {
                   </option>
                 ))}
               </select>
+              {fieldErrors.fournisseur && (
+                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+              )}
             </div>
 
             {/* Quantité */}

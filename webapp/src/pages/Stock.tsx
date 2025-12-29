@@ -124,13 +124,29 @@ function Stock() {
     [stock]
   );
 
-  // Filter and sort stock
+  // Filter and sort stock, with calculated total quantity per reference
   const filteredStock = useMemo(() => {
-    const result = stock.filter((item) => {
+    // First, filter by category
+    const filtered = stock.filter((item) => {
       const matchesCategory =
         categoryFilter === "all" || item.categorie === categoryFilter;
       return matchesCategory;
     });
+
+    // Calculate total quantity per reference (count of items with same reference)
+    const quantityByReference = new Map<string, number>();
+    for (const item of filtered) {
+      const current = quantityByReference.get(item.reference) || 0;
+      quantityByReference.set(item.reference, current + item.quantite);
+    }
+
+    // Add the total quantity to each item while keeping them individual
+    const result = filtered.map((item) => ({
+      ...item,
+      // Store original quantity and calculated total
+      _totalQuantityForReference:
+        quantityByReference.get(item.reference) || item.quantite,
+    })) as (StockWithRelations & { _totalQuantityForReference: number })[];
 
     // Sort
     result.sort((a, b) => {
@@ -683,37 +699,47 @@ function Stock() {
                       </span>
                     </td>
                     <td>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <span
-                          style={{
-                            display: "inline-block",
-                            padding: "4px 10px",
-                            borderRadius: "12px",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            backgroundColor:
-                              item.quantite <= 0 ? "#fee2e2" : "#d1fae5",
-                            color: item.quantite <= 0 ? "#991b1b" : "#065f46",
-                          }}
-                        >
-                          {item.quantite} unité{item.quantite > 1 ? "s" : ""}
-                        </span>
-
-                        {item.quantite <= 0 && (
-                          <span
-                            title="Rupture de stock"
-                            style={{ cursor: "help" }}
+                      {(() => {
+                        const totalQty =
+                          (
+                            item as unknown as {
+                              _totalQuantityForReference?: number;
+                            }
+                          )._totalQuantityForReference || item.quantite;
+                        return (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                            }}
                           >
-                            🔴
-                          </span>
-                        )}
-                      </div>
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "4px 10px",
+                                borderRadius: "12px",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                backgroundColor:
+                                  totalQty <= 0 ? "#fee2e2" : "#d1fae5",
+                                color: totalQty <= 0 ? "#991b1b" : "#065f46",
+                              }}
+                            >
+                              {totalQty} unité{totalQty > 1 ? "s" : ""}
+                            </span>
+
+                            {totalQty <= 0 && (
+                              <span
+                                title="Rupture de stock"
+                                style={{ cursor: "help" }}
+                              >
+                                🔴
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     {filter === "all" && (
                       <td>
