@@ -160,12 +160,21 @@ function StockForm() {
     } catch (err: unknown) {
       console.error("Erreur sauvegarde:", err);
       const axiosError = err as {
-        response?: { data?: { error?: string; message?: string } };
+        response?: {
+          data?: { error?: string; message?: string; details?: string };
+        };
       };
-      const errorMessage =
+      // Construct error message including details if available (for duplicate serial numbers)
+      let errorMessage =
         axiosError.response?.data?.error ||
         axiosError.response?.data?.message ||
         "Erreur lors de la sauvegarde. Vérifiez les champs obligatoires.";
+
+      // Append details if they exist (shows location of duplicates)
+      if (axiosError.response?.data?.details) {
+        errorMessage += "\n\n" + axiosError.response.data.details;
+      }
+
       setError(errorMessage);
     } finally {
       setSaving(false);
@@ -288,6 +297,7 @@ function StockForm() {
               borderRadius: "8px",
               color: "var(--error-color)",
               fontWeight: 500,
+              whiteSpace: "pre-line",
             }}
           >
             ⚠️ {error}

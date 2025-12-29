@@ -300,6 +300,83 @@ export const createStock = async (req: AuthRequest, res: Response) => {
           .filter((s: string) => s.length > 0)
       : [];
 
+    // Check for duplicate serial numbers in the database (only for non-empty serial numbers)
+    const nonEmptySerialNumbers = serialNumbers.filter(
+      (sn) => sn && sn.trim() !== ""
+    );
+
+    if (nonEmptySerialNumbers.length > 0) {
+      const existingItems = await prisma.stock.findMany({
+        where: {
+          numeroSerie: {
+            in: nonEmptySerialNumbers,
+          },
+        },
+        include: {
+          technicianStocks: {
+            include: {
+              technicien: {
+                select: { nom: true },
+              },
+            },
+          },
+          clientEquipements: {
+            include: {
+              client: {
+                select: { nom: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (existingItems.length > 0) {
+        // Build detailed error message with location info
+        // Use type assertion to handle Prisma include types
+        const duplicates = (existingItems as any[]).map((item) => {
+          let location = "Stock principal";
+
+          // Check if assigned to a technician (with null safety)
+          if (item.technicianStocks && item.technicianStocks.length > 0) {
+            const techStock = item.technicianStocks[0];
+            if (techStock.technicien) {
+              location = `Véhicule de ${
+                techStock.technicien.nom || "Technicien"
+              }`;
+            }
+          }
+
+          // Check if assigned to a client (with null safety)
+          if (item.clientEquipements && item.clientEquipements.length > 0) {
+            const clientEquip = item.clientEquipements[0];
+            if (clientEquip.client) {
+              location = `Client: ${clientEquip.client.nom || "Inconnu"}`;
+            }
+          }
+
+          return {
+            numeroSerie: item.numeroSerie,
+            reference: item.reference,
+            nomMateriel: item.nomMateriel,
+            location,
+          };
+        });
+
+        const duplicateSerials = duplicates
+          .map((d) => d.numeroSerie)
+          .join(", ");
+        const duplicateDetails = duplicates
+          .map((d) => `• ${d.numeroSerie} (${d.nomMateriel}) - ${d.location}`)
+          .join("\n");
+
+        return res.status(409).json({
+          error: `Numéro(s) de série déjà enregistré(s) : ${duplicateSerials}`,
+          duplicates,
+          details: duplicateDetails,
+        });
+      }
+    }
+
     // If multiple serial numbers, create individual entries
     if (serialNumbers.length > 1) {
       // Générer des références uniques pour chaque article si nécessaire
