@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "logo.png", "robots.txt"],
       manifest: {
         name: "TelcoManager - Stock & Interventions",
@@ -16,6 +16,8 @@ export default defineConfig({
         theme_color: "#3b82f6",
         background_color: "#1a1a2e",
         display: "standalone",
+        scope: "/",
+        id: "telcomanager-v1",
         orientation: "portrait-primary",
         start_url: "/",
         icons: [
@@ -66,7 +68,8 @@ export default defineConfig({
         ],
       },
       devOptions: {
-        enabled: false,
+        enabled: true,
+        type: "module",
       },
     }),
   ],

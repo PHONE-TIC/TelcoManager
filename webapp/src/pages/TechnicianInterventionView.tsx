@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
@@ -10,57 +10,12 @@ import SignaturePad from "../components/SignaturePad";
 import BarcodeScanner from "../components/BarcodeScanner";
 import { useAuth } from "../contexts/AuthContext";
 import "./TechnicianInterventionView.css";
+import type { Intervention, InterventionEquipment, Photo } from "../types";
 
-interface Intervention {
-  id: string;
-  numero?: number;
-  titre: string;
-  description: string;
-  datePlanifiee: string;
-  dateRealisee?: string;
-  statut: string;
-  notes?: string;
-  heureArrivee?: string;
-  heureDepart?: string;
-  signature?: string;
-  commentaireTechnicien?: string;
-  client: {
-    id: string;
-    nom: string;
-    contact: string;
-    telephone: string;
-    email?: string;
-    rue?: string;
-    codePostal?: string;
-    ville?: string;
-  };
-  technicien?: {
-    id: string;
-    nom: string;
-  };
-  equipements?: InterventionEquipment[];
-}
-
-interface InterventionEquipment {
-  id?: string;
-  stockId?: string;
-  nom?: string;
-  action: string;
-  quantite: number;
-  etat?: string;
-}
-
-interface Photo {
-  id: string;
-  dataUrl: string;
-  type: "before" | "after" | "other";
-  timestamp: Date;
-  caption?: string;
-}
-
+// HistoryIntervention compatible with global type
 interface HistoryIntervention {
   id: string;
-  numero?: number;
+  numero: string;
   titre: string;
   datePlanifiee: string;
   statut: string;
@@ -110,6 +65,20 @@ const STEPS = [
   { id: "sign-client", label: "✍️ Client", icon: "✍️" },
 ];
 
+// Helper to extract HH:mm from ISO
+const extractTime = (isoStr?: string) => {
+  if (!isoStr) return "";
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+};
+
 const TechnicianInterventionView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -122,8 +91,11 @@ const TechnicianInterventionView: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
 
   // Form states
-  const [_heureArrivee, setHeureArrivee] = useState("");
-  const [_heureDepart, setHeureDepart] = useState("");
+  // Form states
+  // We only use the setters for these ISO strings to update them before save
+  const [, setHeureArrivee] = useState("");
+  const [, setHeureDepart] = useState("");
+
   const [commentaire, setCommentaire] = useState("");
   const [signatureTechnicien, setSignatureTechnicien] = useState<string | null>(
     null
@@ -136,9 +108,7 @@ const TechnicianInterventionView: React.FC = () => {
   >([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
   const [showScanner, setShowScanner] = useState(false);
-  const [scanAction, _setScanAction] = useState<"install" | "retrait">(
-    "install"
-  );
+  const [scanAction] = useState<"install" | "retrait">("install");
   const [clientHistory, setClientHistory] = useState<HistoryIntervention[]>([]);
   const [travelEstimate, setTravelEstimate] = useState<TravelEstimate | null>(
     null
@@ -176,19 +146,6 @@ const TechnicianInterventionView: React.FC = () => {
   const initialPinchDistance = useRef<number | null>(null);
   const initialZoomLevel = useRef<number>(1);
 
-  // Helper to extract HH:mm from ISO
-  const extractTime = (isoStr?: string) => {
-    if (!isoStr) return "";
-    try {
-      const d = new Date(isoStr);
-      return d.toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return "";
-    }
-  };
   const stopAllCameras = () => {
     console.log("Stopping all cameras globally...");
     // Find all video elements and stop their streams
@@ -205,17 +162,7 @@ const TechnicianInterventionView: React.FC = () => {
     setShowScanner(false);
   };
 
-  useEffect(() => {
-    loadIntervention();
-
-    // Cleanup: stop all cameras when leaving the page
-    return () => {
-      console.log("TechnicianInterventionView unmounting - stopping cameras");
-      stopAllCameras();
-    };
-  }, [id]);
-
-  const loadIntervention = async () => {
+  const loadIntervention = useCallback(async () => {
     if (!id) return;
     try {
       setLoading(true);
@@ -327,7 +274,17 @@ const TechnicianInterventionView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]); // Removed currentStep dependency as it is not used directly
+
+  useEffect(() => {
+    loadIntervention();
+
+    // Cleanup: stop all cameras when leaving the page
+    return () => {
+      console.log("TechnicianInterventionView unmounting - stopping cameras");
+      stopAllCameras();
+    };
+  }, [id, loadIntervention]);
 
   const showMessage = (msg: string, isError = false) => {
     if (isError) {
@@ -355,7 +312,7 @@ const TechnicianInterventionView: React.FC = () => {
       await loadIntervention();
       setCurrentStep(1); // Go to heures step
     } catch (err: unknown) {
-      showMessage(err.response?.data?.error || "Erreur", true);
+      showMessage((err as any).response?.data?.error || "Erreur", true);
     }
   };
 
@@ -391,7 +348,7 @@ const TechnicianInterventionView: React.FC = () => {
       showMessage("Heures enregistrées");
       return true;
     } catch (err: unknown) {
-      showMessage(err.response?.data?.error || "Erreur", true);
+      showMessage((err as any).response?.data?.error || "Erreur", true);
       return false;
     }
   };
@@ -432,7 +389,7 @@ const TechnicianInterventionView: React.FC = () => {
       // Restore current step after reload
       setCurrentStep(savedStep);
     } catch (err: unknown) {
-      showMessage(err.response?.data?.error || "Erreur", true);
+      showMessage((err as any).response?.data?.error || "Erreur", true);
     }
   };
 
@@ -494,7 +451,7 @@ const TechnicianInterventionView: React.FC = () => {
     } catch (error: unknown) {
       console.error("Erreur installation:", error);
       showMessage(
-        error.response?.data?.error || "Erreur lors de l'installation",
+        (error as any).response?.data?.error || "Erreur lors de l'installation",
         true
       );
     }
@@ -538,7 +495,7 @@ const TechnicianInterventionView: React.FC = () => {
     } catch (error: unknown) {
       console.error("Erreur reprise:", error);
       showMessage(
-        error.response?.data?.error || "Erreur lors de la reprise",
+        (error as any).response?.data?.error || "Erreur lors de la reprise",
         true
       );
     }
@@ -578,14 +535,14 @@ const TechnicianInterventionView: React.FC = () => {
     } catch (error: unknown) {
       console.error("Erreur lors de la suppression:", error);
       showMessage(
-        error.response?.data?.error || "Erreur lors de la suppression",
+        (error as any).response?.data?.error || "Erreur lors de la suppression",
         true
       );
     }
   };
 
   const handleClose = async () => {
-    if (!id) return;
+    if (!id || !intervention) return;
     if (!timeArrivee || !timeDepart) {
       alert("⚠️ Veuillez saisir les heures d'arrivée et de départ");
       setCurrentStep(1);
@@ -669,7 +626,7 @@ const TechnicianInterventionView: React.FC = () => {
         heureDepart: dateDep.toISOString(),
         commentaireTechnicien: commentaire,
         signature: signatureClient,
-        statut: "terminee",
+        statut: "terminee" as const,
       };
 
       const extraData = {
@@ -680,7 +637,7 @@ const TechnicianInterventionView: React.FC = () => {
       };
 
       const pdfBlob = await generateInterventionPDF(
-        pdfIntervention as any,
+        pdfIntervention,
         true,
         photos,
         extraData
@@ -705,8 +662,8 @@ const TechnicianInterventionView: React.FC = () => {
       setLoading(false);
       alert(
         "❌ Erreur: " +
-          (err.response?.data?.error ||
-            err.message ||
+          ((err as any).response?.data?.error ||
+            (err as any).message ||
             "Erreur lors de la clôture")
       );
     }
@@ -895,17 +852,19 @@ const TechnicianInterventionView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {intervention.equipements.map((eq: InterventionEquipment, idx: number) => (
-                    <tr key={idx}>
-                      <td>{eq.stock?.nomMateriel || eq.nom || "N/A"}</td>
-                      <td>
-                        {eq.action === "install"
-                          ? "✅ Installation"
-                          : "🔄 Retrait"}
-                      </td>
-                      <td>{eq.quantite || 1}</td>
-                    </tr>
-                  ))}
+                  {intervention.equipements.map(
+                    (eq: InterventionEquipment, idx: number) => (
+                      <tr key={idx}>
+                        <td>{eq.stock?.nomMateriel || eq.nom || "N/A"}</td>
+                        <td>
+                          {eq.action === "install"
+                            ? "✅ Installation"
+                            : "🔄 Retrait"}
+                        </td>
+                        <td>{eq.quantite || 1}</td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1423,23 +1382,23 @@ const TechnicianInterventionView: React.FC = () => {
                 <div className="info-item">
                   <label>Client</label>
                   <div className="info-value">
-                    <strong>{intervention.client.nom}</strong>
+                    <strong>{intervention.client?.nom}</strong>
                   </div>
                 </div>
                 <div className="info-item">
                   <label>Contact</label>
                   <div className="info-value">
-                    {intervention.client.contact}
+                    {intervention.client?.contact}
                   </div>
                 </div>
                 <div className="info-item">
                   <label>Téléphone</label>
                   <div className="info-value">
                     <a
-                      href={`tel:${intervention.client.telephone}`}
+                      href={`tel:${intervention.client?.telephone}`}
                       className="phone-link"
                     >
-                      {intervention.client.telephone}
+                      {intervention.client?.telephone}
                     </a>
                   </div>
                 </div>
@@ -1458,11 +1417,11 @@ const TechnicianInterventionView: React.FC = () => {
               <h3>📍 Localisation client</h3>
               <div className="address-info">
                 <div className="address-line">
-                  🏠 {intervention.client.rue || "Adresse non renseignée"}
+                  🏠 {intervention.client?.rue || "Adresse non renseignée"}
                 </div>
                 <div className="address-line">
-                  📮 {intervention.client.codePostal}{" "}
-                  {intervention.client.ville}
+                  📮 {intervention.client?.codePostal}{" "}
+                  {intervention.client?.ville}
                 </div>
               </div>
 
@@ -1502,7 +1461,7 @@ const TechnicianInterventionView: React.FC = () => {
                   style={{ flex: 1 }}
                   onClick={() => {
                     const addr = encodeURIComponent(
-                      `${intervention.client.rue}, ${intervention.client.codePostal} ${intervention.client.ville}`
+                      `${intervention.client?.rue}, ${intervention.client?.codePostal} ${intervention.client?.ville}`
                     );
                     window.open(
                       `https://www.google.com/maps/dir/?api=1&destination=${addr}`,
@@ -1522,7 +1481,7 @@ const TechnicianInterventionView: React.FC = () => {
                   }}
                   onClick={() => {
                     const addr = encodeURIComponent(
-                      `${intervention.client.rue}, ${intervention.client.codePostal} ${intervention.client.ville}`
+                      `${intervention.client?.rue}, ${intervention.client?.codePostal} ${intervention.client?.ville}`
                     );
                     window.open(
                       `https://waze.com/ul?q=${addr}&navigate=yes`,
@@ -1542,7 +1501,7 @@ const TechnicianInterventionView: React.FC = () => {
                 onClick={async () => {
                   setLoadingTravel(true);
                   try {
-                    const address = `${intervention.client.rue}, ${intervention.client.codePostal} ${intervention.client.ville}`;
+                    const address = `${intervention.client?.rue}, ${intervention.client?.codePostal} ${intervention.client?.ville}`;
                     const estimate = await getTravelEstimate(address);
                     setTravelEstimate(estimate);
                   } catch (err) {
@@ -1793,7 +1752,10 @@ const TechnicianInterventionView: React.FC = () => {
                           📥 Matériel installé
                         </h4>
                         {intervention.equipements
-                          .filter((eq: InterventionEquipment) => eq.action === "install")
+                          .filter(
+                            (eq: InterventionEquipment) =>
+                              eq.action === "install"
+                          )
                           .map((eq: InterventionEquipment) => (
                             <div
                               key={eq.id}
@@ -1848,7 +1810,10 @@ const TechnicianInterventionView: React.FC = () => {
                           📤 Matériel repris
                         </h4>
                         {intervention.equipements
-                          .filter((eq: InterventionEquipment) => eq.action === "retrait")
+                          .filter(
+                            (eq: InterventionEquipment) =>
+                              eq.action === "retrait"
+                          )
                           .map((eq: InterventionEquipment) => (
                             <div
                               key={eq.id}

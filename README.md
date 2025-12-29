@@ -129,4 +129,11 @@ Si vous souhaitez développer sans Docker :
 
 ## 📝 Licence
 
-Ce projet est développé à des fins internes.
+## 🛠️ Mises à jour techniques (Décembre 2025)
+
+Refonte majeure pour améliorer la stabilité et la maintenabilité ("Code Lighter") :
+
+- **Centralisation des types TypeScript** : Toutes les interfaces (`Intervention`, `Client`, `Photo`, etc.) sont unifiées dans `src/types/index.ts`.
+- **Vue Technicien Optimisée** : Refonte de `TechnicianInterventionView.tsx` avec gestion d'erreurs robuste, support hors-ligne amélioré et génération PDF fiable.
+- **Sécurité & Stabilité** : Correction de nombreuses failles de typage (null safety), suppression de code mort et nettoyage des logs de debug.
+- **Build Production** : Validation complète du build `npm run build` avec 0 erreur.

@@ -7,40 +7,20 @@ import searchHistory, {
 import { useNavigate } from "react-router-dom";
 import "./GlobalSearch.css";
 
+import type {
+  Client,
+  Intervention,
+  Stock as StockItem,
+  Technicien,
+} from "../types";
+
 interface SearchFilters {
   dateFrom?: string;
   dateTo?: string;
   status?: string[];
   category?: string[];
   technicianId?: string;
-}
-
-interface Client {
-  id: string;
-  nom: string;
-  telephone?: string;
-}
-
-interface Intervention {
-  id: string;
-  numero: string;
-  titre: string;
-  datePlanifiee: string;
-  client?: { nom: string };
-}
-
-interface StockItem {
-  id: string;
-  nomMateriel: string;
-  reference: string;
-  numeroSerie?: string;
-  quantite: number;
-}
-
-interface Technicien {
-  id: string;
-  nom: string;
-  username: string;
+  [key: string]: any;
 }
 
 interface SearchResults {

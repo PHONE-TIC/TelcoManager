@@ -20,38 +20,7 @@ async function loadLogo(): Promise<string | null> {
 }
 
 // Update Interface to include new fields
-interface Intervention {
-  numero?: number;
-  titre: string;
-  description?: string; // Not used in Objet anymore, but part of type
-  datePlanifiee: string;
-  dateRealisee?: string;
-  statut: string;
-  notes?: string;
-  commentaireTechnicien?: string;
-  heureArrivee?: string;
-  heureDepart?: string;
-  signature?: string;
-  signatureTechnicien?: string;
-  signatureClient?: string;
-  type?: string;
-  client: {
-    nom: string;
-    contact: string;
-    telephone: string;
-    adresse?: string;
-    rue?: string;
-    codePostal?: string;
-    ville?: string;
-    email?: string;
-  };
-  technicien?: {
-    id?: string;
-    nom: string;
-    username?: string;
-  };
-  equipements?: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }[];
-}
+import type { Intervention, Photo } from "../types";
 
 // Extra data passed from Workflow
 interface ExtraData {
@@ -80,13 +49,7 @@ const ORANGE: [number, number, number] = [237, 125, 49];
 const LIGHT_ORANGE: [number, number, number] = [253, 234, 218];
 const BLACK: [number, number, number] = [0, 0, 0];
 
-export interface Photo {
-  id: string;
-  dataUrl: string;
-  type: "before" | "after" | "other";
-  caption?: string;
-  timestamp: Date;
-}
+// Photo interface imported from types
 
 export const generateInterventionPDF = async (
   intervention: Intervention,
@@ -187,17 +150,17 @@ export const generateInterventionPDF = async (
     // ==========================================
     // CLIENT INFO TABLE
     // ==========================================
-    const clientAddress = intervention.client.rue
+    const clientAddress = intervention.client?.rue
       ? `${intervention.client.rue}, ${intervention.client.codePostal || ""} ${
           intervention.client.ville || ""
         }`
-      : intervention.client.adresse || "";
+      : intervention.client?.adresse || "";
 
     // Construct contact info string
     const contactInfo = [
-      intervention.client.contact,
-      intervention.client.telephone,
-      intervention.client.email,
+      intervention.client?.contact,
+      intervention.client?.telephone,
+      intervention.client?.email,
     ]
       .filter(Boolean)
       .join(" - ");
@@ -219,7 +182,7 @@ export const generateInterventionPDF = async (
       head: [["Nom du client", "Lieu d'intervention", "Type de système"]],
       body: [
         [
-          intervention.client.nom || "",
+          intervention.client?.nom || "",
           clientAddress + (contactInfo ? "\n" + contactInfo : ""),
           extraData.systemType || "",
         ],
@@ -339,10 +302,10 @@ export const generateInterventionPDF = async (
     // Fill Matériel - Split into Installed and Retrieved sections
     if (intervention.equipements && intervention.equipements.length > 0) {
       const installed = intervention.equipements.filter(
-        (eq: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }) => eq.action === "install"
+        (eq) => eq.action === "install" || eq.action === "installe"
       );
       const retrieved = intervention.equipements.filter(
-        (eq: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }) => eq.action === "retrait"
+        (eq) => eq.action === "retrait" || eq.action === "retire"
       );
 
       let fourY = y + 5;
@@ -358,7 +321,7 @@ export const generateInterventionPDF = async (
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
 
-        installed.forEach((eq: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }) => {
+        installed.forEach((eq) => {
           const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
           const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
 
@@ -399,7 +362,7 @@ export const generateInterventionPDF = async (
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7);
 
-        retrieved.forEach((eq: { id?: string; stockId?: string; nom?: string; marque?: string; modele?: string; action: string; quantite: number; serialNumber?: string }) => {
+        retrieved.forEach((eq) => {
           const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
           const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
           const etat = eq.etat ? ` (${eq.etat.toUpperCase()})` : "";
@@ -484,7 +447,7 @@ export const generateInterventionPDF = async (
     doc.setFont("helvetica", "normal");
     // Use the explicit clientSigner name provided in closure
     doc.text(
-      extraData.clientSigner || intervention.client.contact || "",
+      extraData.clientSigner || intervention.client?.contact || "",
       sigX + 35,
       y + 13
     );

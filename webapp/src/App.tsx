@@ -34,6 +34,7 @@ import { useNotifications } from "./hooks/useNotifications";
 
 import logo from "./assets/logo.png";
 import ReloadPrompt from "./components/ReloadPrompt";
+import { PwaInstallButton, PwaInstallPopup } from "./components/PwaInstall";
 
 function Navigation() {
   const location = useLocation();
@@ -173,6 +174,10 @@ function Navigation() {
         </ul>
       </nav>
       <div style={{ marginTop: "auto", paddingTop: "20px" }}>
+        {/* PWA Install button for desktop */}
+        <div style={{ marginBottom: "10px" }}>
+          <PwaInstallButton />
+        </div>
         {/* Notification toggle for technicians */}
         {isSupported && user?.role === "technicien" && (
           <button
@@ -449,6 +454,7 @@ function App() {
         <AuthProvider>
           <AppContent />
           <ReloadPrompt />
+          <PwaInstallPopup />
         </AuthProvider>
       </ThemeProvider>
     </Router>

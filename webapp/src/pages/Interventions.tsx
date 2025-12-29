@@ -13,6 +13,8 @@ import { useReminders } from "../hooks/useReminders";
 
 const localizer = momentLocalizer(moment);
 
+import type { Intervention } from "../types";
+
 function Interventions() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,7 +37,7 @@ function Interventions() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [calendarKey, setCalendarKey] = useState(0);
   const [transitionClass, setTransitionClass] = useState("fade-in");
-  const [interventions, setInterventions] = useState<any[]>([]);
+  const [interventions, setInterventions] = useState<Intervention[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [techniciens, setTechniciens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ function Interventions() {
   // Conflict detection state
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflictingIntervention, setConflictingIntervention] =
-    useState<any>(null);
+    useState<Intervention | null>(null);
 
   const [formData, setFormData] = useState({
     clientId: "",
@@ -93,7 +95,8 @@ function Interventions() {
           let filtered = cachedInterventions;
           if (user?.role === "technicien") {
             filtered = cachedInterventions.filter(
-              (intervention: { technicienId?: string; id: string }) => intervention.technicienId === user.id
+              (intervention: Intervention) =>
+                intervention.technicienId === user.id
             );
           }
           setInterventions(filtered);
@@ -109,7 +112,7 @@ function Interventions() {
       // Filter interventions for technician role
       if (user?.role === "technicien") {
         filteredInterventions = interventionsData.interventions.filter(
-          (intervention: { technicienId?: string; id: string }) => intervention.technicienId === user.id
+          (intervention: Intervention) => intervention.technicienId === user.id
         );
       }
 
@@ -459,7 +462,7 @@ function Interventions() {
   );
 
   // Sort interventions
-  const sortInterventions = (list: unknown[]) => {
+  const sortInterventions = (list: Intervention[]) => {
     return [...list].sort((a, b) => {
       let valA, valB;
       switch (sortColumn) {
@@ -467,11 +470,12 @@ function Interventions() {
           valA = new Date(a.datePlanifiee).getTime();
           valB = new Date(b.datePlanifiee).getTime();
           break;
-        case "statut":
+        case "statut": {
           const order = { planifiee: 1, en_cours: 2, terminee: 3, annulee: 4 };
           valA = order[a.statut as keyof typeof order] || 5;
           valB = order[b.statut as keyof typeof order] || 5;
           break;
+        }
         case "client":
           valA = a.client?.nom?.toLowerCase() || "";
           valB = b.client?.nom?.toLowerCase() || "";
@@ -481,7 +485,7 @@ function Interventions() {
           valB = b.technicien?.nom?.toLowerCase() || "zzz";
           break;
         case "id":
-        case "numero":
+        case "numero": {
           // Try to extract number from "RDV2025005" format
           const extractNum = (str: string) => {
             if (!str) return 0;
@@ -499,6 +503,7 @@ function Interventions() {
             valB = b.numero || b.id || "";
           }
           break;
+        }
         default:
           valA = a[sortColumn];
           valB = b[sortColumn];
@@ -539,7 +544,7 @@ function Interventions() {
     resource: int,
   }));
 
-  const eventStyleGetter = (event: { id: string }) => {
+  const eventStyleGetter = (event: any) => {
     let backgroundColor = "#3174ad"; // Default blue
     const status = event.resource.statut;
 
@@ -1244,7 +1249,7 @@ function Interventions() {
                     time: "Heure",
                     event: "Événement",
                   }}
-                  onSelectEvent={(event: { id: string }) =>
+                  onSelectEvent={(event: any) =>
                     navigate(`/interventions/${event.resource.id}`, {
                       state: { from: "calendar" },
                     })
@@ -1703,13 +1708,15 @@ function Interventions() {
         </div>
       </div>
 
-      <ConfirmConflictModal
-        isOpen={showConflictModal}
-        onClose={() => setShowConflictModal(false)}
-        onConfirm={submitForm}
-        conflictingIntervention={conflictingIntervention}
-        newDate={formData.datePlanifiee}
-      />
+      {showConflictModal && conflictingIntervention && (
+        <ConfirmConflictModal
+          isOpen={showConflictModal}
+          onClose={() => setShowConflictModal(false)}
+          onConfirm={submitForm}
+          conflictingIntervention={conflictingIntervention}
+          newDate={formData.datePlanifiee}
+        />
+      )}
     </div>
   );
 }

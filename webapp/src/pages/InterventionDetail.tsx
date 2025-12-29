@@ -8,38 +8,7 @@ import PhotoCapture from "../components/PhotoCapture";
 import InterventionWorkflow from "../components/InterventionWorkflow";
 import { useAuth } from "../contexts/AuthContext";
 
-interface Intervention {
-  id: string;
-  numero?: number;
-  titre: string;
-  description: string;
-  datePlanifiee: string;
-  dateRealisee?: string;
-  statut: string;
-  notes?: string;
-  heureArrivee?: string;
-  heureDepart?: string;
-  signature?: string;
-  commentaireTechnicien?: string;
-  createdAt?: string;
-  client: {
-    id: string;
-    nom: string;
-    contact: string;
-    telephone: string;
-    email?: string;
-    rue?: string;
-    codePostal?: string;
-    ville?: string;
-  };
-  technicien?: {
-    id: string;
-    nom: string;
-    username: string;
-  };
-  technicienNom?: string; // Fallback name when technicien is deleted
-  equipements?: InterventionEquipment[];
-}
+import type { Intervention } from "../types";
 
 const InterventionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -106,10 +75,10 @@ const InterventionDetail: React.FC = () => {
       try {
         await apiService.lockIntervention(id);
       } catch (e: unknown) {
-        if (e.response?.status === 409) {
+        if ((e as any).response?.status === 409) {
           alert(
             `ATTENTION: Cette intervention est actuellement modifiée par ${
-              e.response.data.lockedBy || "un autre utilisateur"
+              (e as any).response.data.lockedBy || "un autre utilisateur"
             }.`
           );
         }
@@ -148,38 +117,69 @@ const InterventionDetail: React.FC = () => {
       try {
         const artifacts = await apiService.getInterventionArtifacts(id!);
         const loadedPhotos = artifacts
-          .filter((f: { type: string; filename: string; url: string; createdAt: string }) => f.type.startsWith("photo_"))
-          .map((f: { type: string; filename: string; url: string; createdAt: string }) => {
-            // Map French types from backend to English types expected by PhotoCapture
-            let photoType: "before" | "after" | "other" = "other";
-            if (f.type === "photo_avant") photoType = "before";
-            else if (f.type === "photo_apres") photoType = "after";
+          .filter(
+            (f: {
+              type: string;
+              filename: string;
+              url: string;
+              createdAt: string;
+            }) => f.type.startsWith("photo_")
+          )
+          .map(
+            (f: {
+              type: string;
+              filename: string;
+              url: string;
+              createdAt: string;
+            }) => {
+              // Map French types from backend to English types expected by PhotoCapture
+              let photoType: "before" | "after" | "other" = "other";
+              if (f.type === "photo_avant") photoType = "before";
+              else if (f.type === "photo_apres") photoType = "after";
 
-            return {
-              id: f.filename,
-              dataUrl: f.url,
-              type: photoType,
-              timestamp: new Date(f.createdAt),
-              caption: f.filename,
-            };
-          });
+              return {
+                id: f.filename,
+                dataUrl: f.url,
+                type: photoType,
+                timestamp: new Date(f.createdAt),
+                caption: f.filename,
+              };
+            }
+          );
         setPhotos(loadedPhotos);
 
         // Load non-photo attachments (documents, PDFs, etc.)
         const otherFiles = artifacts
           .filter(
-            (f: { type: string; filename: string; url: string; createdAt: string }) => !f.type.startsWith("photo_") && f.type !== "rapport_pdf"
+            (f: {
+              type: string;
+              filename: string;
+              url: string;
+              createdAt: string;
+            }) => !f.type.startsWith("photo_") && f.type !== "rapport_pdf"
           )
-          .map((f: { type: string; filename: string; url: string; createdAt: string }) => ({
-            name: f.filename,
-            url: f.url,
-            type: f.type,
-          }));
+          .map(
+            (f: {
+              type: string;
+              filename: string;
+              url: string;
+              createdAt: string;
+            }) => ({
+              name: f.filename,
+              url: f.url,
+              type: f.type,
+            })
+          );
         setLoadedAttachments(otherFiles);
 
         // Check for existing report
         const report = artifacts.find(
-          (f: { type: string; filename: string; url: string; createdAt: string }) =>
+          (f: {
+            type: string;
+            filename: string;
+            url: string;
+            createdAt: string;
+          }) =>
             f.type === "rapport_pdf" ||
             (f.filename &&
               (f.filename.startsWith("Rapport_") ||
@@ -208,7 +208,9 @@ const InterventionDetail: React.FC = () => {
         });
       }
     } catch (err: unknown) {
-      setError(err.response?.data?.message || "Erreur lors du chargement");
+      setError(
+        (err as any).response?.data?.message || "Erreur lors du chargement"
+      );
     } finally {
       if (!silent) setLoading(false);
     }
@@ -247,7 +249,9 @@ const InterventionDetail: React.FC = () => {
       setIsEditing(false);
       alert("Intervention mise à jour avec succès !");
     } catch (err: unknown) {
-      setError(err.response?.data?.message || "Erreur lors de la sauvegarde");
+      setError(
+        (err as any).response?.data?.message || "Erreur lors de la sauvegarde"
+      );
     } finally {
       setSaving(false);
     }
@@ -263,7 +267,7 @@ const InterventionDetail: React.FC = () => {
           : "",
         statut: intervention.statut,
         notes: intervention.notes || "",
-        clientId: intervention.client.id,
+        clientId: intervention.client?.id || "",
         technicienId: intervention.technicien?.id || "",
       });
     }
@@ -283,7 +287,8 @@ const InterventionDetail: React.FC = () => {
       alert("Intervention prise en charge !");
     } catch (err: unknown) {
       setError(
-        err.response?.data?.error || "Erreur lors de la prise en charge"
+        (err as any).response?.data?.error ||
+          "Erreur lors de la prise en charge"
       );
     }
   };
@@ -296,7 +301,8 @@ const InterventionDetail: React.FC = () => {
       loadIntervention();
     } catch (err: unknown) {
       setError(
-        err.response?.data?.error || "Erreur lors du changement de statut"
+        (err as any).response?.data?.error ||
+          "Erreur lors du changement de statut"
       );
     }
   };
@@ -308,7 +314,9 @@ const InterventionDetail: React.FC = () => {
       await apiService.updateIntervention(id, { technicienId: techId || null });
       loadIntervention();
     } catch (err: unknown) {
-      setError(err.response?.data?.error || "Erreur lors de la réassignation");
+      setError(
+        (err as any).response?.data?.error || "Erreur lors de la réassignation"
+      );
     }
   };
 
@@ -420,7 +428,7 @@ const InterventionDetail: React.FC = () => {
                         ✓ Terminer
                       </button>
                     )}
-                    {intervention.statut !== "annulee" && (
+                    {(intervention.statut as string) !== "annulee" && (
                       <button
                         onClick={() => {
                           if (
@@ -498,11 +506,11 @@ const InterventionDetail: React.FC = () => {
             <label>Client</label>
             {!isEditing ? (
               <div className="info-value">
-                <strong>{intervention.client.nom}</strong>
+                <strong>{intervention.client?.nom}</strong>
                 <br />
                 <small>
-                  {intervention.client.contact} -{" "}
-                  {intervention.client.telephone}
+                  {intervention.client?.contact} -{" "}
+                  {intervention.client?.telephone}
                 </small>
               </div>
             ) : (
@@ -523,14 +531,14 @@ const InterventionDetail: React.FC = () => {
           </div>
 
           {/* Adresse client (inline for admins) */}
-          {user?.role === "admin" && intervention.client.rue && (
+          {user?.role === "admin" && intervention.client?.rue && (
             <div className="info-item">
               <label>Adresse</label>
               <div className="info-value">
-                {intervention.client.rue}
+                {intervention.client?.rue}
                 <br />
                 <small>
-                  {intervention.client.codePostal} {intervention.client.ville}
+                  {intervention.client?.codePostal} {intervention.client?.ville}
                 </small>
               </div>
             </div>
@@ -655,11 +663,11 @@ const InterventionDetail: React.FC = () => {
       </div>
 
       {/* Carte Localisation Client - Only for technicians */}
-      {user?.role !== "admin" && intervention.client.rue && (
+      {user?.role !== "admin" && intervention.client?.rue && (
         <InterventionLocation
-          clientAddress={intervention.client.rue}
-          clientCity={intervention.client.ville || ""}
-          clientPostalCode={intervention.client.codePostal || ""}
+          clientAddress={intervention.client?.rue}
+          clientCity={intervention.client?.ville || ""}
+          clientPostalCode={intervention.client?.codePostal || ""}
         />
       )}
 
@@ -912,7 +920,7 @@ const InterventionDetail: React.FC = () => {
         <div className="info-card">
           <h3>🔧 Équipements utilisés</h3>
           <div className="equipments-list">
-            {intervention.equipements.map((eq: { id?: string; stockId?: string; nom: string; action: string; quantite: number }) => (
+            {intervention.equipements.map((eq) => (
               <div key={eq.id} className="equipment-item">
                 {eq.stock?.nomMateriel} - {eq.action} (x{eq.quantite})
               </div>

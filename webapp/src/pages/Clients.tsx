@@ -52,7 +52,7 @@ function Clients() {
       loadClients();
     } catch (error: unknown) {
       alert(
-        error.response?.data?.error || "Erreur lors de la synchronisation UNYC"
+        (error as any).response?.data?.error || "Erreur lors de la synchronisation UNYC"
       );
     } finally {
       setSyncing(false);

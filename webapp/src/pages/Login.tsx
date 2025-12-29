@@ -22,7 +22,7 @@ function Login() {
       await login(username, password);
       navigate("/");
     } catch (err: unknown) {
-      setError(err.response?.data?.error || "Erreur de connexion");
+      setError((err as any).response?.data?.error || "Erreur de connexion");
     } finally {
       setLoading(false);
     }

@@ -24,7 +24,16 @@ interface Equipment {
 }
 
 interface InterventionWorkflowProps {
-  intervention: { id: string; technicienId?: string };
+  intervention: {
+    id: string;
+    technicienId?: string;
+    statut?: string;
+    heureArrivee?: string;
+    heureDepart?: string;
+    commentaireTechnicien?: string;
+    signature?: string;
+    [key: string]: any;
+  };
   photos: Photo[];
   onStatusChange: () => void;
   readOnly?: boolean;
@@ -251,7 +260,7 @@ export default function InterventionWorkflow({
       };
 
       const pdfBlob = await generateInterventionPDF(
-        latestIntervention,
+        latestIntervention as any,
         true,
         photos,
         extraData
@@ -260,7 +269,7 @@ export default function InterventionWorkflow({
         formData.append(
           "files",
           pdfBlob,
-          `Rapport_${latestIntervention.numero || "Intervention"}.pdf`
+          `Rapport_${(latestIntervention as any).numero || "Intervention"}.pdf`
         );
       }
 
@@ -272,7 +281,7 @@ export default function InterventionWorkflow({
       showMessage("Intervention clôturée avec succès !");
       onStatusChange();
     } catch (err: unknown) {
-      showMessage(err.message || "Erreur de clôture", true);
+      showMessage((err as any).message || "Erreur de clôture", true);
     } finally {
       setLoading(false);
     }

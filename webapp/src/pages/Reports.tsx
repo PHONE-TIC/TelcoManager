@@ -38,7 +38,7 @@ function Reports() {
             const params: Record<string, string> = {
                 dateDebut: dateRange.start,
                 dateFin: dateRange.end,
-                limit: 500
+                limit: "500"
             };
             if (selectedTechnician) {
                 params.technicienId = selectedTechnician;

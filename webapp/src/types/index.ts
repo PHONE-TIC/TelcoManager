@@ -11,8 +11,17 @@ export interface Client {
   telephone: string;
   email?: string;
   notes?: string;
+  adresse?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Photo {
+  id: string;
+  dataUrl: string;
+  type: "before" | "after" | "other";
+  caption?: string;
+  timestamp: Date;
 }
 
 export interface Technicien {
@@ -101,18 +110,20 @@ export interface Intervention {
   client?: Client;
   technicien?: Technicien;
   equipements?: InterventionEquipment[];
+  [key: string]: any;
 }
 
 export interface InterventionEquipment {
   id: string;
   interventionId: string;
   stockId?: string;
-  action: "installe" | "retire" | "remplace";
+  action: "installe" | "retire" | "remplace" | string;
   quantite: number;
   nom?: string;
   marque?: string;
   modele?: string;
   serialNumber?: string;
+  etat?: string;
   notes?: string;
   stock?: Stock;
 }

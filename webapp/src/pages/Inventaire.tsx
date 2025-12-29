@@ -5,6 +5,29 @@ import { generateInventoryPDF } from "../utils/inventoryPdf";
 
 type FilterType = "all" | "uncounted" | "discrepancy" | "ok";
 
+interface InventoryItem {
+  [key: string]: any;
+  id: string;
+  stockId: string;
+  expectedQuantity: number;
+  countedQuantity: number | null;
+  notes?: string;
+  stock: {
+    nomMateriel: string;
+    reference: string;
+    numeroSerie?: string;
+    codeBarre?: string;
+  };
+}
+
+interface InventorySession {
+  id: string;
+  date: string;
+  status: string;
+  items: InventoryItem[];
+  notes?: string;
+}
+
 const DiscrepancyModal = ({
   isOpen,
   onClose,
@@ -14,7 +37,7 @@ const DiscrepancyModal = ({
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  items: { stockId?: string; expectedQuantity: number; countedQuantity: number | null; stock?: { nomMateriel: string; reference: string } }[];
+  items: InventoryItem[];
 }) => {
   if (!isOpen) return null;
 
@@ -116,7 +139,7 @@ const DiscrepancyModal = ({
                     </div>
                     <div style={{ fontWeight: 700, color: "#ef4444" }}>
                       Compté: {item.countedQuantity} (
-                      {item.countedQuantity - item.expectedQuantity})
+                      {item.countedQuantity! - item.expectedQuantity})
                     </div>
                   </div>
                 </div>
@@ -157,7 +180,9 @@ const DiscrepancyModal = ({
 
 function Inventaire() {
   const [sessions, setSessions] = useState<any[]>([]);
-  const [currentSession, setCurrentSession] = useState<any>(null);
+  const [currentSession, setCurrentSession] = useState<InventorySession | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
 
   const [itemFilter, setItemFilter] = useState<FilterType>("all");
@@ -229,7 +254,7 @@ function Inventaire() {
     const query = scanQuery.trim().toLowerCase();
 
     // Find item by serial number or barcode
-    const item = currentSession.items.find((i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) => {
+    const item = currentSession.items.find((i) => {
       const serial = i.stock.numeroSerie
         ? i.stock.numeroSerie.toLowerCase()
         : "";
@@ -258,7 +283,7 @@ function Inventaire() {
 
     const quantity = qty === "" ? null : parseInt(qty);
 
-    const updatedItems = currentSession.items.map((item: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number; stock?: { nomMateriel: string; reference: string } }) =>
+    const updatedItems = currentSession.items.map((item) =>
       item.id === itemId ? { ...item, countedQuantity: quantity } : item
     );
 
@@ -268,7 +293,7 @@ function Inventaire() {
   const handleUpdateItemNotes = (itemId: string, notes: string) => {
     if (!currentSession) return;
 
-    const updatedItems = currentSession.items.map((item: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number; stock?: { nomMateriel: string; reference: string } }) =>
+    const updatedItems = currentSession.items.map((item) =>
       item.id === itemId ? { ...item, notes } : item
     );
 
@@ -336,13 +361,13 @@ function Inventaire() {
     if (!currentSession)
       return { counted: 0, total: 0, discrepancies: 0, ok: 0 };
     const items = currentSession.items || [];
-    const counted = items.filter((i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) => i.countedQuantity !== null).length;
+    const counted = items.filter((i) => i.countedQuantity !== null).length;
     const discrepancies = items.filter(
-      (i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) =>
+      (i) =>
         i.countedQuantity !== null && i.countedQuantity !== i.expectedQuantity
     ).length;
     const ok = items.filter(
-      (i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) =>
+      (i) =>
         i.countedQuantity !== null && i.countedQuantity === i.expectedQuantity
     ).length;
     return { counted, total: items.length, discrepancies, ok };
@@ -356,16 +381,16 @@ function Inventaire() {
 
     switch (itemFilter) {
       case "uncounted":
-        return items.filter((i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) => i.countedQuantity === null);
+        return items.filter((i) => i.countedQuantity === null);
       case "discrepancy":
         return items.filter(
-          (i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) =>
+          (i) =>
             i.countedQuantity !== null &&
             i.countedQuantity !== i.expectedQuantity
         );
       case "ok":
         return items.filter(
-          (i: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number }) =>
+          (i) =>
             i.countedQuantity !== null &&
             i.countedQuantity === i.expectedQuantity
         );
@@ -788,7 +813,7 @@ function Inventaire() {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item: { stockId?: string; numeroSerie?: string; codeBarre?: string; countedQuantity: number | null; expectedQuantity: number; stock?: { nomMateriel: string; reference: string } }) => {
+              {filteredItems.map((item) => {
                 const counted = item.countedQuantity;
                 const expected = item.expectedQuantity;
                 const diff = counted !== null ? counted - expected : 0;
