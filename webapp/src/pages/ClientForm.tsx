@@ -54,32 +54,32 @@ function ClientForm() {
   };
 
   useEffect(() => {
+    const loadClient = async () => {
+      try {
+        const client = await apiService.getClientById(id!);
+        setFormData({
+          nom: client.nom || "",
+          sousLieu: client.sousLieu || "",
+          rue: client.rue || "",
+          codePostal: client.codePostal || "",
+          ville: client.ville || "",
+          contact: client.contact || "",
+          telephone: client.telephone || "",
+          email: client.email || "",
+          notes: client.notes || "",
+        });
+      } catch (err) {
+        console.error("Erreur chargement client:", err);
+        setError("Client non trouvé");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (isEditing) {
       loadClient();
     }
-  }, [id]);
-
-  const loadClient = async () => {
-    try {
-      const client = await apiService.getClientById(id!);
-      setFormData({
-        nom: client.nom || "",
-        sousLieu: client.sousLieu || "",
-        rue: client.rue || "",
-        codePostal: client.codePostal || "",
-        ville: client.ville || "",
-        contact: client.contact || "",
-        telephone: client.telephone || "",
-        email: client.email || "",
-        notes: client.notes || "",
-      });
-    } catch (err) {
-      console.error("Erreur chargement client:", err);
-      setError("Client non trouvé");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [id, isEditing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
