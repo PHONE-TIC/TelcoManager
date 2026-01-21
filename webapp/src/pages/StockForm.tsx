@@ -483,6 +483,8 @@ function StockForm() {
                   "Accessoires Onduleur",
                   "SBC-PC",
                   "Cartes SIM",
+                  "Casque",
+                  "Switch",
                 ].map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
