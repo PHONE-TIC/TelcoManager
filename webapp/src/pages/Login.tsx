@@ -86,7 +86,7 @@ function Login() {
         </form>
 
         <div className="login-footer">
-          <p>© 2024 TelcoManager. Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} PHONE&TIC. Tous droits réservés.</p>
         </div>
       </div>
     </div>
