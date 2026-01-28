@@ -45,7 +45,7 @@ export interface Stock {
   codeBarre?: string;
   categorie: string;
   fournisseur?: string;
-  statut: "courant" | "hs";
+  statut: "courant" | "hs" | "retour_fournisseur";
   quantite: number;
   lowStockThreshold?: number;
   dateEntree: string;

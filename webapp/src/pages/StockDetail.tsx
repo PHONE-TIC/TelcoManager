@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import StockTransferModal from "../components/StockTransferModal";
+import StockLocationModal from "../components/StockLocationModal";
 
 function StockDetail() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,7 @@ function StockDetail() {
   const [movements, setMovements] = useState<any[]>([]);
   const [movementsLoading, setMovementsLoading] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   const loadStock = useCallback(async () => {
     try {
@@ -177,16 +179,24 @@ function StockDetail() {
                   background:
                     item.statut === "courant"
                       ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                      : "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                      : item.statut === "retour_fournisseur"
+                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                        : "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
                   color: "white",
                   boxShadow:
                     item.statut === "courant"
                       ? "0 2px 8px rgba(16, 185, 129, 0.35)"
-                      : "0 2px 8px rgba(239, 68, 68, 0.35)",
+                      : item.statut === "retour_fournisseur"
+                        ? "0 2px 8px rgba(245, 158, 11, 0.35)"
+                        : "0 2px 8px rgba(239, 68, 68, 0.35)",
                   border: "1px solid rgba(255,255,255,0.2)",
                 }}
               >
-                {item.statut === "courant" ? "✅ En stock" : "⚠️ Hors Service"}
+                {item.statut === "courant"
+                  ? "✅ En stock"
+                  : item.statut === "retour_fournisseur"
+                    ? "↩️ Retour Frn"
+                    : "⚠️ Hors Service"}
               </span>
             </h1>
             <p className="text-gray-500 mt-1">Référence: {item.reference}</p>
@@ -388,15 +398,15 @@ function StockDetail() {
                     item.quantite <= 0
                       ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
                       : item.quantite <= 2
-                      ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
-                      : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                        : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                   color: "white",
                   boxShadow:
                     item.quantite <= 0
                       ? "0 2px 8px rgba(239, 68, 68, 0.35)"
                       : item.quantite <= 2
-                      ? "0 2px 8px rgba(245, 158, 11, 0.35)"
-                      : "0 2px 8px rgba(16, 185, 129, 0.35)",
+                        ? "0 2px 8px rgba(245, 158, 11, 0.35)"
+                        : "0 2px 8px rgba(16, 185, 129, 0.35)",
                   border: "1px solid rgba(255,255,255,0.2)",
                 }}
               >
@@ -430,16 +440,24 @@ function StockDetail() {
                   background:
                     item.statut === "courant"
                       ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                      : "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                      : item.statut === "retour_fournisseur"
+                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                        : "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
                   color: "white",
                   boxShadow:
                     item.statut === "courant"
                       ? "0 2px 8px rgba(16, 185, 129, 0.35)"
-                      : "0 2px 8px rgba(239, 68, 68, 0.35)",
+                      : item.statut === "retour_fournisseur"
+                        ? "0 2px 8px rgba(245, 158, 11, 0.35)"
+                        : "0 2px 8px rgba(239, 68, 68, 0.35)",
                   border: "1px solid rgba(255,255,255,0.2)",
                 }}
               >
-                {item.statut === "courant" ? "✅ En stock" : "⚠️ Hors Service"}
+                {item.statut === "courant"
+                  ? "✅ En stock"
+                  : item.statut === "retour_fournisseur"
+                    ? "↩️ Retour Frn"
+                    : "⚠️ Hors Service"}
               </span>
             </div>
 
@@ -467,6 +485,12 @@ function StockDetail() {
                     label: "⚠️ HS",
                     color: "#dc2626",
                     bgColor: "rgba(220, 38, 38, 0.15)",
+                  };
+                } else if (item.statut === "retour_fournisseur") {
+                  location = {
+                    label: "↩️ Retour Fournisseur",
+                    color: "#d97706",
+                    bgColor: "rgba(245, 158, 11, 0.15)",
                   };
                 } else if (
                   item.technicianStocks &&
@@ -505,21 +529,40 @@ function StockDetail() {
                 }
 
                 return (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "8px 14px",
-                      borderRadius: "20px",
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      backgroundColor: location.bgColor,
-                      color: location.color,
-                    }}
-                  >
-                    {location.label}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "8px 14px",
+                        borderRadius: "20px",
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        backgroundColor: location.bgColor,
+                        color: location.color,
+                      }}
+                    >
+                      {location.label}
+                    </span>
+                    <button
+                      onClick={() => setShowLocationModal(true)}
+                      title="Modifier la localisation"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '1rem',
+                        opacity: 0.6,
+                        transition: 'opacity 0.2s',
+                        padding: '4px'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                    >
+                      ✏️
+                    </button>
+                  </div>
                 );
               })()}
             </div>
@@ -708,6 +751,21 @@ function StockDetail() {
           onClose={() => setShowTransferModal(false)}
           onSuccess={() => {
             setShowTransferModal(false);
+            loadStock();
+            loadMovements();
+          }}
+        />
+      )}
+
+      {/* Location Modal */}
+      {showLocationModal && item && (
+        <StockLocationModal
+          stockId={id!}
+          currentStatut={item.statut}
+          currentTechnicianId={item.technicianStocks?.[0]?.technicien?.id}
+          onClose={() => setShowLocationModal(false)}
+          onSuccess={() => {
+            setShowLocationModal(false);
             loadStock();
             loadMovements();
           }}

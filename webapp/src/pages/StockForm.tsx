@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
+import AutocompleteInput from "../components/AutocompleteInput";
 
 function StockForm() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +26,46 @@ function StockForm() {
     notes: "",
     statut: "courant",
   });
+
+  // Suggestions state
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [allModels, setAllModels] = useState<{ brand: string, model: string }[]>([]);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+
+  // Initial load for suggestions
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      try {
+        // Fetch a larger list to get representative unique values
+        // Ideally backend should provide /api/stock/brands and /api/stock/models
+        const response = await apiService.getStock({ limit: 1000 });
+        if (response.stock) {
+          const brands = Array.from(new Set(response.stock.map((i: any) => i.marque).filter(Boolean))) as string[];
+          const models = response.stock.map((i: any) => ({ brand: i.marque, model: i.modele })).filter((i: any) => i.model);
+
+          setAvailableBrands(brands.sort());
+          setAllModels(models);
+        } else {
+          console.warn("No stock in response", response);
+        }
+      } catch (e) {
+        console.error("Failed to load suggestions", e);
+      }
+    };
+    loadSuggestions();
+  }, []);
+
+  // Filter models when brand changes
+  useEffect(() => {
+    if (formData.marque) {
+      const brandModels = allModels
+        .filter(m => m.brand?.toUpperCase() === formData.marque.toUpperCase())
+        .map(m => m.model);
+      setAvailableModels(Array.from(new Set(brandModels)).sort() as string[]);
+    } else {
+      setAvailableModels(Array.from(new Set(allModels.map(m => m.model))).sort() as string[]);
+    }
+  }, [formData.marque, allModels]);
 
   // Génération de la prévisualisation de la référence
   const generateReferencePreview = (
@@ -308,40 +349,50 @@ function StockForm() {
           <div
             style={{
               display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+              gap: "24px",
+            }}
+          >
+            {/* Replace standard input with AutocompleteInput for Marque */}
+            <AutocompleteInput
+              label="Marque"
+              value={formData.marque}
+              onChange={(val) => handleChange("marque", val)}
+              suggestions={availableBrands}
+              required
+              placeholder="Ex : CISCO"
+              isInvalid={fieldErrors.marque}
+            />
+            {fieldErrors.marque && (
+              <span style={{ color: "#ef4444", fontSize: "0.875rem", display: 'block', marginTop: '-15px' }}>
+                Ce champ est requis
+              </span>
+            )}
+
+            {/* Replace standard input with AutocompleteInput for Modele */}
+            <AutocompleteInput
+              label="Modèle"
+              value={formData.modele}
+              onChange={(val) => handleChange("modele", val)}
+              suggestions={availableModels}
+              required
+              placeholder="Ex : GALAXY S24"
+              isInvalid={fieldErrors.modele}
+            />
+            {fieldErrors.modele && (
+              <span style={{ color: "#ef4444", fontSize: "0.875rem", display: 'block', marginTop: '-15px' }}>
+                Ce champ est requis
+              </span>
+            )}
+          </div>
+
+          <div
+            style={{
+              display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
               gap: "20px",
             }}
           >
-            {/* Marque */}
-            <div>
-              <label style={getLabelStyle("marque")}>Marque *</label>
-              <input
-                type="text"
-                value={formData.marque}
-                onChange={(e) => handleChange("marque", e.target.value)}
-                placeholder="Ex: YEALINK, CISCO, UBIQUITI..."
-                style={getInputStyle("marque")}
-              />
-              {fieldErrors.marque && (
-                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
-              )}
-            </div>
-
-            {/* Modèle */}
-            <div>
-              <label style={getLabelStyle("modele")}>Modèle *</label>
-              <input
-                type="text"
-                value={formData.modele}
-                onChange={(e) => handleChange("modele", e.target.value)}
-                placeholder="Ex: T46U, SG350-28, UAP-AC-PRO..."
-                style={getInputStyle("modele")}
-              />
-              {fieldErrors.modele && (
-                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
-              )}
-            </div>
-
             {/* Référence (générée automatiquement) */}
             <div>
               <label style={labelStyle}>
@@ -391,9 +442,9 @@ function StockForm() {
                 >
                   {formData.marque && formData.categorie
                     ? generateReferencePreview(
-                        formData.marque,
-                        formData.categorie
-                      )
+                      formData.marque,
+                      formData.categorie
+                    )
                     : "Remplissez Marque et Catégorie"}
                 </div>
               )}
@@ -628,8 +679,8 @@ function StockForm() {
               {saving
                 ? "⏳ Enregistrement..."
                 : isEditing
-                ? "💾 Enregistrer"
-                : "➕ Créer"}
+                  ? "💾 Enregistrer"
+                  : "➕ Créer"}
             </button>
           </div>
         </form>

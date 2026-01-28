@@ -210,9 +210,8 @@ function Stock() {
     });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `stock_${filter}_${
-      new Date().toISOString().split("T")[0]
-    }.csv`;
+    link.download = `stock_${filter}_${new Date().toISOString().split("T")[0]
+      }.csv`;
     link.click();
   };
 
@@ -263,6 +262,24 @@ function Stock() {
     }
   };
 
+  const handleMoveToSupplier = async (id: string, nom: string) => {
+    if (
+      !confirm(
+        `Renvoyer "${nom}" au fournisseur ?\n\nCela changera le statut de l'article à "Retour Fournisseur".`
+      )
+    )
+      return;
+
+    try {
+      // Use updateStock to change status
+      await apiService.updateStock(id, { statut: "retour_fournisseur" });
+      loadStock();
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Erreur lors du renvoi au fournisseur");
+    }
+  };
+
   const handleDelete = async (id: string, nom: string) => {
     if (
       !confirm(
@@ -291,6 +308,15 @@ function Stock() {
   const getLocation = (
     item: StockWithRelations
   ): { label: string; color: string; bgColor: string } => {
+    // Check status first for "Retour Fournisseur" as it overrides location
+    if (item.statut === "retour_fournisseur") {
+      return {
+        label: "↩️ Retour Fournisseur",
+        color: "#d97706", // Amber 600
+        bgColor: "rgba(245, 158, 11, 0.15)", // Amber 500 equivalent with opacity
+      };
+    }
+
     // Check if assigned to a technician
     const techStocks = item.technicianStocks as TechnicianStock[] | undefined;
     if (techStocks && techStocks.length > 0) {
@@ -345,6 +371,8 @@ function Stock() {
         bgColor: "rgba(220, 38, 38, 0.15)",
       };
     }
+
+
 
     // Default: in main stock
     return {
@@ -452,13 +480,14 @@ function Stock() {
         {[
           {
             value: totalItems,
-            label: `Articles ${
-              filter === "hs"
-                ? "HS"
+            label: `Articles ${filter === "hs"
+              ? "HS"
+              : filter === "retour_fournisseur"
+                ? "en Retour"
                 : filter === "all"
-                ? "au total"
-                : "en stock"
-            }`,
+                  ? "au total"
+                  : "en stock"
+              }`,
             color: "#f97316",
           },
           { value: totalQuantity, label: "Quantité totale", color: "#3b82f6" },
@@ -500,9 +529,8 @@ function Stock() {
             {/* Status buttons */}
             <div className="flex gap-2 flex-wrap">
               <button
-                className={`btn ${
-                  filter === "all" ? "btn-primary" : "btn-secondary"
-                }`}
+                className={`btn ${filter === "all" ? "btn-primary" : "btn-secondary"
+                  }`}
                 onClick={() => setFilter("all")}
                 style={{
                   background:
@@ -514,27 +542,38 @@ function Stock() {
                 🌐 Vue Générale
               </button>
               <button
-                className={`btn ${
-                  filter === "courant" ? "btn-primary" : "btn-secondary"
-                }`}
+                className={`btn ${filter === "courant" ? "btn-primary" : "btn-secondary"
+                  }`}
                 onClick={() => setFilter("courant")}
               >
                 📦 Stock Courant
               </button>
               <button
-                className={`btn ${
-                  filter === "hs" ? "btn-danger" : "btn-secondary"
-                }`}
+                className={`btn ${filter === "hs" ? "btn-danger" : "btn-secondary"
+                  }`}
                 onClick={() => setFilter("hs")}
               >
                 ⚠️ Stock HS
               </button>
+              <button
+                className={`btn ${filter === "retour_fournisseur"
+                  ? "btn-warning"
+                  : "btn-secondary"
+                  }`}
+                onClick={() => setFilter("retour_fournisseur")}
+                style={{
+                  backgroundColor:
+                    filter === "retour_fournisseur" ? "#d97706" : undefined,
+                  color: filter === "retour_fournisseur" ? "white" : undefined,
+                }}
+              >
+                ↩️ Retour Fournisseur
+              </button>
               {/* Button visible for admin AND gestionnaire */}
               {canManageStock && (
                 <button
-                  className={`btn ${
-                    filter === "technician" ? "btn-primary" : "btn-secondary"
-                  }`}
+                  className={`btn ${filter === "technician" ? "btn-primary" : "btn-secondary"
+                    }`}
                   onClick={() => setFilter("technician")}
                   style={{
                     background:
@@ -869,6 +908,44 @@ function Stock() {
                             ⚠️
                           </button>
                         )}
+                        {/* Return to Supplier Button (for courant and hs stock) */}
+                        {canManageStock &&
+                          (filter === "courant" || filter === "hs") && (
+                            <button
+                              style={{
+                                padding: "8px",
+                                borderRadius: "8px",
+                                border: "1.5px solid rgba(255,255,255,0.25)",
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                                color: "var(--text-primary)",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              onClick={() =>
+                                handleMoveToSupplier(item.id, item.nomMateriel)
+                              }
+                              title="Renvoyer au fournisseur"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor =
+                                  "#d97706";
+                                e.currentTarget.style.color = "white";
+                                e.currentTarget.style.borderColor = "#d97706";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor =
+                                  "rgba(255,255,255,0.05)";
+                                e.currentTarget.style.color =
+                                  "var(--text-primary)";
+                                e.currentTarget.style.borderColor =
+                                  "rgba(255,255,255,0.25)";
+                              }}
+                            >
+                              ↩️
+                            </button>
+                          )}
                         {/* Delete Button (Admin only) */}
                         {canDeleteStock && (
                           <button
@@ -1225,13 +1302,12 @@ function Stock() {
                   </label>
                   <div>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        detailItem.quantite <= 0
-                          ? "bg-red-50 text-red-600"
-                          : detailItem.quantite <= 2
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${detailItem.quantite <= 0
+                        ? "bg-red-50 text-red-600"
+                        : detailItem.quantite <= 2
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-green-100 text-green-800"
-                      }`}
+                        }`}
                     >
                       {detailItem.quantite} unité
                       {detailItem.quantite > 1 ? "s" : ""}

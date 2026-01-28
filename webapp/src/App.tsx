@@ -144,7 +144,7 @@ function Navigation() {
           Gestion Stock & Terrain
         </div>
       </div>
-      {user.role === "admin" && (
+      {(user.role === "admin" || user.role === "gestionnaire") && (
         <div style={{ padding: "0 16px", marginBottom: "20px" }}>
           <GlobalSearch />
         </div>
