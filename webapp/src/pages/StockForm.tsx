@@ -519,6 +519,7 @@ function StockForm() {
                 {[
                   "Téléphone IP",
                   "Téléphone analogique",
+                  "Téléphone DECT",
                   "Borne DECT IP",
                   "Borne DECT Analogique",
                   "Téléphone IP DECT",
