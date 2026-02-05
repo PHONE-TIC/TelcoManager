@@ -59,16 +59,17 @@ export default function InterventionWorkflow({
   const [success, setSuccess] = useState<string | null>(null);
 
   // === WIZARD STATE ===
+  // === WIZARD STATE ===
   const [currentStep, setCurrentStep] = useState(1);
-  // Step 1: Hours (HH:mm)
-  // Step 2: Report (Billing, System Type, Comment)
+  // Step 1: Hours
+  // Step 2: Report
   // Step 3: Equipment
-  // Step 4: Closing (Client Remarks, Signer, Signature)
+  // Step 4: Technician Signature
+  // Step 5: Closing (Client Signature)
 
   // === DATA STATE ===
 
-  // Step 1: Hours - we store TIME strings "HH:mm"
-  // If editing existing, extract time part. New ones default to blank.
+  // Step 1: Hours
   const extractTime = (isoString?: string) => {
     if (!isoString) return "";
     try {
@@ -87,7 +88,6 @@ export default function InterventionWorkflow({
   );
   const [timeDepart, setTimeDepart] = useState(extractTime(initialHeureDepart));
 
-  // Stored FULL ISOs for submission
   const [isoHeureArrivee, setIsoHeureArrivee] = useState(
     initialHeureArrivee || ""
   );
@@ -117,7 +117,12 @@ export default function InterventionWorkflow({
     quantite: 1,
   });
 
-  // Step 4: Closing
+  // Step 4: Technician Signature
+  const [signatureTechnicien, setSignatureTechnicien] = useState<string | null>(
+    intervention.signatureTechnicien || null
+  );
+
+  // Step 5: Closing
   const [clientRemarks, setClientRemarks] = useState("");
   const [clientSigner, setClientSigner] = useState("");
   const [signature, setSignature] = useState<string | null>(
@@ -136,15 +141,10 @@ export default function InterventionWorkflow({
     }, 3000);
   };
 
-  // === AUTO-GENERATE ISO DATES FROM TIME ===
-  // When next is clicked on Step 1, or when final closing happens.
+  // === HELPERS ===
   const updateIsoTimes = () => {
     if (!timeArrivee || !timeDepart) return false;
-
-    // Use current date (or intervention date if better logic needed)
-    // Here we assume "Date du jour" as requested.
-    const today = new Date(); // Current date base
-
+    const today = new Date();
     const [hArr, mArr] = timeArrivee.split(":").map(Number);
     const dateArr = new Date(today);
     dateArr.setHours(hArr, mArr, 0, 0);
@@ -153,8 +153,6 @@ export default function InterventionWorkflow({
     const dateDep = new Date(today);
     dateDep.setHours(hDep, mDep, 0, 0);
 
-    // If Depart is before Arrivee, maybe assume next day? Or just error?
-    // Let's just set them.
     setIsoHeureArrivee(dateArr.toISOString());
     setIsoHeureDepart(dateDep.toISOString());
 
@@ -164,13 +162,11 @@ export default function InterventionWorkflow({
     };
   };
 
-  // === STEP 1: SAVE HOURS & NEXT ===
   const handleStep1Next = async () => {
     if (!timeArrivee || !timeDepart) {
       showMessage("Veuillez saisir les heures.", true);
       return;
     }
-
     const dates = updateIsoTimes();
     if (!dates) return;
 
@@ -189,7 +185,6 @@ export default function InterventionWorkflow({
     }
   };
 
-  // === NAVIGATION ===
   const nextStep = () => setCurrentStep((prev) => prev + 1);
   const prevStep = () => setCurrentStep((prev) => prev - 1);
 
@@ -201,16 +196,21 @@ export default function InterventionWorkflow({
       return;
     }
     if (!signature) {
-      showMessage("Signature requise", true);
+      showMessage("Signature client requise", true);
       return;
     }
 
     setLoading(true);
     try {
-      // Ensure times are latest (though step 1 saved them)
-      // If we want to be safe we use the state `isoHeureArrivee`
+      // Save Technician Signature
+      if (signatureTechnicien) {
+        await apiService.signIntervention(interventionId, {
+          type: "technicien",
+          signature: signatureTechnicien,
+        });
+      }
 
-      // Save Signature - Optional seperate call if needed or just pass in status
+      // Save Client Signature
       if (signature) {
         await apiService.signIntervention(interventionId, {
           type: "client",
@@ -237,8 +237,8 @@ export default function InterventionWorkflow({
           photo.type === "before"
             ? "avant"
             : photo.type === "after"
-            ? "apres"
-            : "autre";
+              ? "apres"
+              : "autre";
         formData.append("files", blob, `photo_${ext}_${i + 1}.jpg`);
       }
 
@@ -249,6 +249,7 @@ export default function InterventionWorkflow({
         heureDepart: isoHeureDepart,
         commentaireTechnicien: commentaire,
         signature,
+        signatureTechnicien, // Include in PDF data
         statut: "terminee",
       };
 
@@ -288,7 +289,6 @@ export default function InterventionWorkflow({
   };
 
   // === EQUIPMENT HANDLERS ===
-  // (Simplified for brevity, logic same as before)
   const handleBarcodeScan = async (barcode: string) => {
     setShowScanner(false);
     try {
@@ -306,7 +306,7 @@ export default function InterventionWorkflow({
         ]);
         showMessage("Ajouté");
       } else {
-        setShowEquipmentForm(true); // Fallback
+        setShowEquipmentForm(true);
       }
     } catch {
       setShowEquipmentForm(true);
@@ -338,9 +338,8 @@ export default function InterventionWorkflow({
     }
   };
 
-  if (readOnly) return null;
 
-  // If status not en_cours, don't show wizard
+  if (readOnly) return null;
   if (statut !== "en_cours") return null;
 
   return (
@@ -349,9 +348,8 @@ export default function InterventionWorkflow({
       {error && <div className="workflow-message error">{error}</div>}
       {success && <div className="workflow-message success">{success}</div>}
 
-      {/* DEBUG INDICATOR */}
       <h4 style={{ textAlign: "center", color: "var(--primary-color)" }}>
-        Modification Activée : Assistant Clôture
+        Assistant Clôture (Admin)
       </h4>
 
       {/* Progress Bar */}
@@ -363,6 +361,8 @@ export default function InterventionWorkflow({
         <div className={`step-dot ${currentStep >= 3 ? "active" : ""}`}>3</div>
         <div className="step-line"></div>
         <div className={`step-dot ${currentStep >= 4 ? "active" : ""}`}>4</div>
+        <div className="step-line"></div>
+        <div className={`step-dot ${currentStep >= 5 ? "active" : ""}`}>5</div>
       </div>
 
       <div className="wizard-content">
@@ -534,7 +534,6 @@ export default function InterventionWorkflow({
               </div>
             )}
 
-            {/* Manual Form Overlay/Inline */}
             {showEquipmentForm && (
               <div className="equipment-form-inline">
                 <input
@@ -598,10 +597,44 @@ export default function InterventionWorkflow({
           </div>
         )}
 
-        {/* STEP 4: CLOSING */}
+        {/* STEP 4: SIGNATURE TECHNICIEN (NEW) */}
         {currentStep === 4 && (
           <div className="wizard-step">
-            <h3>Clôture & Signature</h3>
+            <h3>Signature du Technicien</h3>
+            <div className="form-group">
+              <p className="hint">
+                Signature du technicien (Vous ou le technicien assigné).
+              </p>
+            </div>
+            <SignaturePad
+              onSignatureChange={setSignatureTechnicien}
+              initialSignature={signatureTechnicien || undefined}
+              label="Signature Technicien"
+            />
+            <div className="wizard-actions">
+              <button className="btn btn-secondary" onClick={prevStep}>
+                ⬅ Retour
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  if (!signatureTechnicien) {
+                    showMessage("Signature technicien requise", true);
+                    return;
+                  }
+                  nextStep();
+                }}
+              >
+                Suivant ➔
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 5: CLOSING (formerly 4) */}
+        {currentStep === 5 && (
+          <div className="wizard-step">
+            <h3>Clôture & Signature Client</h3>
 
             <div className="form-group">
               <label>Remarques Client</label>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
@@ -147,14 +147,14 @@ const TechnicianInterventionView: React.FC = () => {
   const initialZoomLevel = useRef<number>(1);
 
   const stopAllCameras = () => {
-    console.log("Stopping all cameras globally...");
+
     // Find all video elements and stop their streams
     document.querySelectorAll("video").forEach((video) => {
       if (video.srcObject) {
         const stream = video.srcObject as MediaStream;
         stream.getTracks().forEach((track) => {
           track.stop();
-          console.log("Global track stopped:", track.label);
+
         });
         video.srcObject = null;
       }
@@ -250,13 +250,10 @@ const TechnicianInterventionView: React.FC = () => {
           );
 
           if (report) {
-            console.log("Found existing PDF report:", report.url);
+
             setReportUrl(report.url);
           } else {
-            console.log(
-              "No existing PDF report found in artifacts:",
-              artifacts
-            );
+
           }
         } catch (artifactErr) {
           console.warn("Could not load artifacts:", artifactErr);
@@ -281,7 +278,7 @@ const TechnicianInterventionView: React.FC = () => {
 
     // Cleanup: stop all cameras when leaving the page
     return () => {
-      console.log("TechnicianInterventionView unmounting - stopping cameras");
+
       stopAllCameras();
     };
   }, [id, loadIntervention]);
@@ -487,8 +484,7 @@ const TechnicianInterventionView: React.FC = () => {
       setShowRetrieveConditionModal(false);
       setSelectedVehicleItem(null);
       showMessage(
-        `${
-          selectedVehicleItem.stock.nomMateriel
+        `${selectedVehicleItem.stock.nomMateriel
         } repris (${etat.toUpperCase()})`
       );
       loadVehicleStock(); // Refresh vehicle stock
@@ -609,8 +605,8 @@ const TechnicianInterventionView: React.FC = () => {
           photo.type === "before"
             ? "avant"
             : photo.type === "after"
-            ? "apres"
-            : "autre";
+              ? "apres"
+              : "autre";
         formData.append("files", blob, `photo_${ext}_${i + 1}.jpg`);
       }
 
@@ -626,6 +622,7 @@ const TechnicianInterventionView: React.FC = () => {
         heureDepart: dateDep.toISOString(),
         commentaireTechnicien: commentaire,
         signature: signatureClient,
+        signatureTechnicien: signatureTechnicien || undefined,
         statut: "terminee" as const,
       };
 
@@ -662,9 +659,9 @@ const TechnicianInterventionView: React.FC = () => {
       setLoading(false);
       alert(
         "❌ Erreur: " +
-          ((err as any).response?.data?.error ||
-            (err as any).message ||
-            "Erreur lors de la clôture")
+        ((err as any).response?.data?.error ||
+          (err as any).message ||
+          "Erreur lors de la clôture")
       );
     }
   };
@@ -719,9 +716,8 @@ const TechnicianInterventionView: React.FC = () => {
   // For closed interventions, show full report details
   if (isClosed) {
     const clientAddress = intervention.client?.rue
-      ? `${intervention.client.rue}, ${intervention.client.codePostal || ""} ${
-          intervention.client.ville || ""
-        }`
+      ? `${intervention.client.rue}, ${intervention.client.codePostal || ""} ${intervention.client.ville || ""
+      }`
       : "Non renseignée";
 
     return (
@@ -970,16 +966,16 @@ const TechnicianInterventionView: React.FC = () => {
                           photo.type === "before"
                             ? "#f59e0b"
                             : photo.type === "after"
-                            ? "#10b981"
-                            : "#6366f1",
+                              ? "#10b981"
+                              : "#6366f1",
                         color: "white",
                       }}
                     >
                       {photo.type === "before"
                         ? "Avant"
                         : photo.type === "after"
-                        ? "Après"
-                        : "Autre"}
+                          ? "Après"
+                          : "Autre"}
                     </div>
 
                     {/* Download button */}
@@ -1050,12 +1046,12 @@ const TechnicianInterventionView: React.FC = () => {
                         {file.name.endsWith(".pdf")
                           ? "📄"
                           : file.name.match(/\.(jpg|jpeg|png|gif)$/i)
-                          ? "🖼️"
-                          : file.name.match(/\.(doc|docx)$/i)
-                          ? "📝"
-                          : file.name.match(/\.(xls|xlsx)$/i)
-                          ? "📊"
-                          : "📁"}
+                            ? "🖼️"
+                            : file.name.match(/\.(doc|docx)$/i)
+                              ? "📝"
+                              : file.name.match(/\.(xls|xlsx)$/i)
+                                ? "📊"
+                                : "📁"}
                       </span>
                       <span style={{ fontWeight: "500" }}>{file.name}</span>
                     </div>
@@ -1283,9 +1279,8 @@ const TechnicianInterventionView: React.FC = () => {
           >
             <button
               onClick={handleTakeCharge}
-              className={`btn ${
-                isScheduledForToday ? "btn-success" : "btn-secondary"
-              }`}
+              className={`btn ${isScheduledForToday ? "btn-success" : "btn-secondary"
+                }`}
               disabled={!isScheduledForToday}
               style={
                 !isScheduledForToday
@@ -1321,9 +1316,8 @@ const TechnicianInterventionView: React.FC = () => {
           {STEPS.map((step, index) => (
             <button
               key={step.id}
-              className={`step-tab ${currentStep === index ? "active" : ""} ${
-                index < currentStep ? "completed" : ""
-              }`}
+              className={`step-tab ${currentStep === index ? "active" : ""} ${index < currentStep ? "completed" : ""
+                }`}
               onClick={() => {
                 // Validate fields when trying to go from step 3 (Rapport) to step 4 or 5
                 if (currentStep === 3 && index > 3) {
@@ -1545,13 +1539,12 @@ const TechnicianInterventionView: React.FC = () => {
                         marginBottom: "8px",
                         backgroundColor: "var(--bg-secondary)",
                         borderRadius: "6px",
-                        borderLeft: `4px solid ${
-                          hist.statut === "terminee"
-                            ? "var(--success-color)"
-                            : hist.statut === "annulee"
+                        borderLeft: `4px solid ${hist.statut === "terminee"
+                          ? "var(--success-color)"
+                          : hist.statut === "annulee"
                             ? "var(--danger-color)"
                             : "var(--primary-color)"
-                        }`,
+                          }`,
                       }}
                     >
                       <div
@@ -1571,16 +1564,16 @@ const TechnicianInterventionView: React.FC = () => {
                               hist.statut === "terminee"
                                 ? "var(--success-color)"
                                 : hist.statut === "annulee"
-                                ? "var(--danger-color)"
-                                : "var(--primary-color)",
+                                  ? "var(--danger-color)"
+                                  : "var(--primary-color)",
                             color: "white",
                           }}
                         >
                           {hist.statut === "terminee"
                             ? "Terminée"
                             : hist.statut === "annulee"
-                            ? "Annulée"
-                            : hist.statut}
+                              ? "Annulée"
+                              : hist.statut}
                         </span>
                       </div>
                       <div
@@ -1739,135 +1732,135 @@ const TechnicianInterventionView: React.FC = () => {
                     {intervention.equipements.filter(
                       (eq: InterventionEquipment) => eq.action === "install"
                     ).length > 0 && (
-                      <div style={{ marginBottom: "16px" }}>
-                        <h4
-                          style={{
-                            color: "var(--success-color, #10b981)",
-                            marginBottom: "10px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          📥 Matériel installé
-                        </h4>
-                        {intervention.equipements
-                          .filter(
-                            (eq: InterventionEquipment) =>
-                              eq.action === "install"
-                          )
-                          .map((eq: InterventionEquipment) => (
-                            <div
-                              key={eq.id}
-                              className="equipment-item install"
-                              style={{ marginBottom: "8px" }}
-                            >
+                        <div style={{ marginBottom: "16px" }}>
+                          <h4
+                            style={{
+                              color: "var(--success-color, #10b981)",
+                              marginBottom: "10px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            📥 Matériel installé
+                          </h4>
+                          {intervention.equipements
+                            .filter(
+                              (eq: InterventionEquipment) =>
+                                eq.action === "install"
+                            )
+                            .map((eq: InterventionEquipment) => (
                               <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  width: "100%",
-                                }}
+                                key={eq.id}
+                                className="equipment-item install"
+                                style={{ marginBottom: "8px" }}
                               >
-                                <span style={{ fontWeight: 600 }}>
-                                  {eq.stock?.nomMateriel || eq.nom}
-                                </span>
-                                {eq.stock?.numeroSerie && (
-                                  <span
-                                    style={{
-                                      fontSize: "0.9rem",
-                                      color: "var(--primary-color)",
-                                      fontFamily: "monospace",
-                                      backgroundColor: "var(--bg-secondary)",
-                                      padding: "2px 8px",
-                                      borderRadius: "4px",
-                                    }}
-                                  >
-                                    S/N: {eq.stock.numeroSerie}
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    width: "100%",
+                                  }}
+                                >
+                                  <span style={{ fontWeight: 600 }}>
+                                    {eq.stock?.nomMateriel || eq.nom}
                                   </span>
-                                )}
+                                  {eq.stock?.numeroSerie && (
+                                    <span
+                                      style={{
+                                        fontSize: "0.9rem",
+                                        color: "var(--primary-color)",
+                                        fontFamily: "monospace",
+                                        backgroundColor: "var(--bg-secondary)",
+                                        padding: "2px 8px",
+                                        borderRadius: "4px",
+                                      }}
+                                    >
+                                      S/N: {eq.stock.numeroSerie}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                      </div>
-                    )}
+                            ))}
+                        </div>
+                      )}
 
                     {/* Retrieved Equipment Section */}
                     {intervention.equipements.filter(
                       (eq: InterventionEquipment) => eq.action === "retrait"
                     ).length > 0 && (
-                      <div>
-                        <h4
-                          style={{
-                            color: "var(--warning-color, #f59e0b)",
-                            marginBottom: "10px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          📤 Matériel repris
-                        </h4>
-                        {intervention.equipements
-                          .filter(
-                            (eq: InterventionEquipment) =>
-                              eq.action === "retrait"
-                          )
-                          .map((eq: InterventionEquipment) => (
-                            <div
-                              key={eq.id}
-                              className="equipment-item retrait"
-                              style={{ marginBottom: "8px" }}
-                            >
+                        <div>
+                          <h4
+                            style={{
+                              color: "var(--warning-color, #f59e0b)",
+                              marginBottom: "10px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            📤 Matériel repris
+                          </h4>
+                          {intervention.equipements
+                            .filter(
+                              (eq: InterventionEquipment) =>
+                                eq.action === "retrait"
+                            )
+                            .map((eq: InterventionEquipment) => (
                               <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  flex: 1,
-                                }}
+                                key={eq.id}
+                                className="equipment-item retrait"
+                                style={{ marginBottom: "8px" }}
                               >
-                                <span style={{ fontWeight: 600 }}>
-                                  {eq.stock?.nomMateriel || eq.nom}
-                                </span>
-                                {eq.stock?.numeroSerie && (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    flex: 1,
+                                  }}
+                                >
+                                  <span style={{ fontWeight: 600 }}>
+                                    {eq.stock?.nomMateriel || eq.nom}
+                                  </span>
+                                  {eq.stock?.numeroSerie && (
+                                    <span
+                                      style={{
+                                        fontSize: "0.9rem",
+                                        color: "var(--primary-color)",
+                                        fontFamily: "monospace",
+                                        backgroundColor: "var(--bg-secondary)",
+                                        padding: "2px 8px",
+                                        borderRadius: "4px",
+                                      }}
+                                    >
+                                      S/N: {eq.stock.numeroSerie}
+                                    </span>
+                                  )}
+                                </div>
+                                {eq.etat && (
                                   <span
                                     style={{
-                                      fontSize: "0.9rem",
-                                      color: "var(--primary-color)",
-                                      fontFamily: "monospace",
-                                      backgroundColor: "var(--bg-secondary)",
-                                      padding: "2px 8px",
-                                      borderRadius: "4px",
+                                      padding: "4px 10px",
+                                      borderRadius: "8px",
+                                      fontSize: "0.75rem",
+                                      fontWeight: 600,
+                                      backgroundColor:
+                                        eq.etat === "ok"
+                                          ? "rgba(16, 185, 129, 0.2)"
+                                          : "rgba(239, 68, 68, 0.2)",
+                                      color:
+                                        eq.etat === "ok" ? "#10b981" : "#ef4444",
                                     }}
                                   >
-                                    S/N: {eq.stock.numeroSerie}
+                                    {eq.etat === "ok" ? "✅ OK" : "❌ HS"}
                                   </span>
                                 )}
                               </div>
-                              {eq.etat && (
-                                <span
-                                  style={{
-                                    padding: "4px 10px",
-                                    borderRadius: "8px",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 600,
-                                    backgroundColor:
-                                      eq.etat === "ok"
-                                        ? "rgba(16, 185, 129, 0.2)"
-                                        : "rgba(239, 68, 68, 0.2)",
-                                    color:
-                                      eq.etat === "ok" ? "#10b981" : "#ef4444",
-                                  }}
-                                >
-                                  {eq.etat === "ok" ? "✅ OK" : "❌ HS"}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                      </div>
-                    )}
+                            ))}
+                        </div>
+                      )}
                   </div>
                 )}
 
@@ -1974,9 +1967,8 @@ const TechnicianInterventionView: React.FC = () => {
                   value={commentaire}
                   onChange={(e) => setCommentaire(e.target.value)}
                   placeholder="Décrivez le travail effectué, les observations, les problèmes rencontrés..."
-                  className={`form-textarea ${
-                    !commentaire.trim() ? "field-required" : ""
-                  }`}
+                  className={`form-textarea ${!commentaire.trim() ? "field-required" : ""
+                    }`}
                   rows={6}
                 />
                 {!commentaire.trim() && (
@@ -2031,14 +2023,14 @@ const TechnicianInterventionView: React.FC = () => {
                           {file.type.includes("pdf")
                             ? "📄"
                             : file.type.includes("image")
-                            ? "🖼️"
-                            : file.type.includes("word") ||
-                              file.type.includes("document")
-                            ? "📝"
-                            : file.type.includes("excel") ||
-                              file.type.includes("spreadsheet")
-                            ? "📊"
-                            : "📁"}
+                              ? "🖼️"
+                              : file.type.includes("word") ||
+                                file.type.includes("document")
+                                ? "📝"
+                                : file.type.includes("excel") ||
+                                  file.type.includes("spreadsheet")
+                                  ? "📊"
+                                  : "📁"}
                         </span>
                         <div className="file-details">
                           <div className="file-name">{file.name}</div>
@@ -2202,13 +2194,11 @@ const TechnicianInterventionView: React.FC = () => {
                 className="btn btn-success btn-lg btn-block"
                 type="button"
                 onClick={() => {
-                  console.log("Closure button clicked!");
-                  console.log("signatureClient:", signatureClient);
+                  // Logs removed for production
                   if (!signatureClient) {
                     alert("⚠️ La signature du client est obligatoire");
                     return;
                   }
-                  console.log("Calling handleClose...");
                   handleClose();
                 }}
               >
@@ -2513,12 +2503,12 @@ const TechnicianInterventionView: React.FC = () => {
                                   transition: "all 0.2s",
                                 }}
                                 onMouseOver={(e) =>
-                                  (e.currentTarget.style.borderColor =
-                                    "var(--primary-color)")
+                                (e.currentTarget.style.borderColor =
+                                  "var(--primary-color)")
                                 }
                                 onMouseOut={(e) =>
-                                  (e.currentTarget.style.borderColor =
-                                    "transparent")
+                                (e.currentTarget.style.borderColor =
+                                  "transparent")
                                 }
                               >
                                 <div style={{ fontWeight: 600 }}>
@@ -2602,12 +2592,12 @@ const TechnicianInterventionView: React.FC = () => {
                                   transition: "all 0.2s",
                                 }}
                                 onMouseOver={(e) =>
-                                  (e.currentTarget.style.borderColor =
-                                    "var(--primary-color)")
+                                (e.currentTarget.style.borderColor =
+                                  "var(--primary-color)")
                                 }
                                 onMouseOut={(e) =>
-                                  (e.currentTarget.style.borderColor =
-                                    "transparent")
+                                (e.currentTarget.style.borderColor =
+                                  "transparent")
                                 }
                               >
                                 <div style={{ fontWeight: 600 }}>
@@ -2644,8 +2634,8 @@ const TechnicianInterventionView: React.FC = () => {
                                   📍 Installé le{" "}
                                   {item.assignedAt
                                     ? new Date(
-                                        item.assignedAt
-                                      ).toLocaleDateString("fr-FR")
+                                      item.assignedAt
+                                    ).toLocaleDateString("fr-FR")
                                     : "N/A"}
                                 </div>
                               </div>

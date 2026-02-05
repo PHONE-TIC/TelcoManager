@@ -456,9 +456,15 @@ export const signIntervention = async (req: AuthRequest, res: Response) => {
     const { type, signature } = req.body; // type: 'technicien' | 'client'
 
     const data: any = {};
-    if (type === "technicien") data.signatureTechnicien = signature;
-    else if (type === "client") data.signature = signature;
-    else return res.status(400).json({ error: "Type de signature invalide" });
+    if (type === "technicien") {
+
+      data.signatureTechnicien = signature;
+    } else if (type === "client") {
+
+      data.signature = signature;
+    } else {
+      return res.status(400).json({ error: "Type de signature invalide" });
+    }
 
     const intervention = await prisma.intervention.update({
       where: { id },
@@ -607,9 +613,8 @@ export const manageEquipement = async (req: AuthRequest, res: Response) => {
             where: { id: clientEq.id },
             data: {
               statut: etat === "hs" ? "hs" : "retire",
-              notes: `Retiré ${etat?.toUpperCase()} (Int #${
-                intervention.numero
-              })`,
+              notes: `Retiré ${etat?.toUpperCase()} (Int #${intervention.numero
+                })`,
             },
           });
         }
@@ -738,11 +743,11 @@ export const uploadArtifacts = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const files = req.files as Express.Multer.File[];
 
-    console.log(`[Upload] Processing artifacts for intervention ${id}`);
+
     if (files) {
-      console.log(`[Upload] Received ${files.length} files`);
+
       files.forEach((f) =>
-        console.log(` - ${f.originalname} (${f.size} bytes)`)
+
       );
     }
 

@@ -151,9 +151,8 @@ export const generateInterventionPDF = async (
     // CLIENT INFO TABLE
     // ==========================================
     const clientAddress = intervention.client?.rue
-      ? `${intervention.client.rue}, ${intervention.client.codePostal || ""} ${
-          intervention.client.ville || ""
-        }`
+      ? `${intervention.client.rue}, ${intervention.client.codePostal || ""} ${intervention.client.ville || ""
+      }`
       : intervention.client?.adresse || "";
 
     // Construct contact info string
@@ -464,19 +463,29 @@ export const generateInterventionPDF = async (
     doc.rect(sigX, y + 22, signatureWidth, 14, "D");
 
     // Add technician signature image if available
-    if (intervention.signatureTechnicien) {
+    const techSig = intervention.signatureTechnicien;
+    if (techSig) {
       try {
+
+        // Ensure proper data URI prefix
+        const sigData = techSig.startsWith("data:image")
+          ? techSig
+          : `data:image/png;base64,${techSig}`;
+
         doc.addImage(
-          intervention.signatureTechnicien,
+          sigData,
           "PNG",
           sigX + 3,
           y + 23,
           signatureWidth - 6,
           12
         );
+
       } catch (e) {
-        console.warn("Could not add technician signature image");
+        console.warn("Could not add technician signature image:", e);
       }
+    } else {
+
     }
 
     // Signature header - Client
@@ -491,12 +500,18 @@ export const generateInterventionPDF = async (
     doc.rect(sigX, y + 42, signatureWidth, 14, "D");
 
     // Add client signature image if available
-    if (intervention.signatureClient || intervention.signature) {
+    const clientSig = intervention.signatureClient || intervention.signature;
+    if (clientSig) {
       try {
-        const sigData = intervention.signatureClient || intervention.signature;
-        doc.addImage(sigData!, "PNG", sigX + 3, y + 43, signatureWidth - 6, 12);
+
+        const sigData = clientSig.startsWith("data:image")
+          ? clientSig
+          : `data:image/png;base64,${clientSig}`;
+
+        doc.addImage(sigData, "PNG", sigX + 3, y + 43, signatureWidth - 6, 12);
+
       } catch (e) {
-        console.warn("Could not add client signature image");
+        console.warn("Could not add client signature image:", e);
       }
     }
 
@@ -513,7 +528,7 @@ export const generateInterventionPDF = async (
     // ==========================================
     // NO PHOTOS generated
     // ==========================================
-    console.log("Photos page skipped as requested.");
+
 
     // ==========================================
     // FOOTER
@@ -551,13 +566,13 @@ export const generateInterventionPDF = async (
       : `Bon-Intervention-${new Date().toISOString().slice(0, 10)}.pdf`;
 
     if (returnBlob) {
-      console.log("Returning PDF as Blob");
+
       return doc.output("blob");
     }
 
-    console.log("Generating professional PDF:", filename);
+
     doc.save(filename);
-    console.log("PDF saved successfully");
+
   } catch (error) {
     console.error("Error generating PDF:", error);
     alert("Erreur lors de la génération du PDF: " + (error as Error).message);

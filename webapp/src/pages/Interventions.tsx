@@ -89,7 +89,7 @@ function Interventions() {
       // Check if online
       if (!isOnline) {
         // Use cached data when offline
-        console.log("Offline - using cached interventions");
+
         const cachedInterventions = await getCachedInterventionsList();
         if (cachedInterventions.length > 0) {
           let filtered = cachedInterventions;
@@ -225,7 +225,15 @@ function Interventions() {
 
   const submitForm = async () => {
     try {
-      await apiService.createIntervention(formData);
+      // Create a copy of data and convert date to ISO string (UTC)
+      const dataToSubmit = { ...formData };
+      if (dataToSubmit.datePlanifiee) {
+        dataToSubmit.datePlanifiee = new Date(
+          dataToSubmit.datePlanifiee
+        ).toISOString();
+      }
+
+      await apiService.createIntervention(dataToSubmit);
       closeForm();
       loadData();
     } catch (error) {
@@ -536,9 +544,8 @@ function Interventions() {
     id: int.id,
     title: `[${int.type === "Installation" ? "Install" : "SAV"}] [${moment(
       int.datePlanifiee
-    ).format("HH:mm")}] ${int.titre} - ${int.client?.nom} (${
-      getStatusBadge(int.statut).props.children
-    })`,
+    ).format("HH:mm")}] ${int.titre} - ${int.client?.nom} (${getStatusBadge(int.statut).props.children
+      })`,
     start: new Date(int.datePlanifiee),
     end: new Date(new Date(int.datePlanifiee).getTime() + 2 * 60 * 60 * 1000), // Assumed 2h duration
     resource: int,
@@ -790,32 +797,29 @@ function Interventions() {
           <div className="flex justify-between items-center gap-4 mb-6 border-b pb-4 flex-wrap">
             <div className="flex gap-2">
               <button
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  viewMode === "calendar"
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === "calendar"
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
                 onClick={() => setViewMode("calendar")}
               >
                 📅 Calendrier
               </button>
               <button
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  viewMode === "list"
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === "list"
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
                 onClick={() => setViewMode("list")}
               >
                 📋 Liste du jour
               </button>
               {user?.role === "admin" && (
                 <button
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    viewMode === "all"
-                      ? "bg-primary text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === "all"
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
                   onClick={() => setViewMode("all")}
                 >
                   📑 Toutes les interventions
@@ -878,11 +882,10 @@ function Interventions() {
                           </td>
                           <td>
                             <span
-                              className={`px-2 py-1 rounded text-xs font-semibold ${
-                                intervention.type === "Installation"
-                                  ? "bg-purple-100 text-purple-800"
-                                  : "bg-indigo-100 text-indigo-800"
-                              }`}
+                              className={`px-2 py-1 rounded text-xs font-semibold ${intervention.type === "Installation"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-indigo-100 text-indigo-800"
+                                }`}
                             >
                               {intervention.type || "SAV"}
                             </span>
@@ -1119,13 +1122,12 @@ function Interventions() {
                         </td>
                         <td>
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              intervention.type === "Installation"
-                                ? "bg-blue-100 text-blue-800"
-                                : intervention.type === "SAV"
+                            className={`px-2 py-1 rounded-full text-xs font-semibold ${intervention.type === "Installation"
+                              ? "bg-blue-100 text-blue-800"
+                              : intervention.type === "SAV"
                                 ? "bg-orange-100 text-orange-800"
                                 : "bg-gray-100 text-gray-800"
-                            }`}
+                              }`}
                           >
                             {intervention.type || "SAV"}
                           </span>
@@ -1269,9 +1271,8 @@ function Interventions() {
               <div className="stepper-container">
                 <div className="stepper-header">
                   <div
-                    className={`step-item ${
-                      currentStep === 1 ? "active" : ""
-                    } ${currentStep > 1 ? "completed" : ""} `}
+                    className={`step-item ${currentStep === 1 ? "active" : ""
+                      } ${currentStep > 1 ? "completed" : ""} `}
                   >
                     <div className="step-indicator">
                       {currentStep > 1 ? "✓" : "1"}
@@ -1279,9 +1280,8 @@ function Interventions() {
                     <div className="step-label">Client</div>
                   </div>
                   <div
-                    className={`step-item ${
-                      currentStep === 2 ? "active" : ""
-                    } ${currentStep > 2 ? "completed" : ""} `}
+                    className={`step-item ${currentStep === 2 ? "active" : ""
+                      } ${currentStep > 2 ? "completed" : ""} `}
                   >
                     <div className="step-indicator">
                       {currentStep > 2 ? "✓" : "2"}
@@ -1289,9 +1289,8 @@ function Interventions() {
                     <div className="step-label">Détails</div>
                   </div>
                   <div
-                    className={`step-item ${
-                      currentStep === 3 ? "active" : ""
-                    } ${currentStep > 3 ? "completed" : ""} `}
+                    className={`step-item ${currentStep === 3 ? "active" : ""
+                      } ${currentStep > 3 ? "completed" : ""} `}
                   >
                     <div className="step-indicator">
                       {currentStep > 3 ? "✓" : "3"}
@@ -1350,11 +1349,10 @@ function Interventions() {
                           .map((client) => (
                             <div
                               key={client.id}
-                              className={`selection-item ${
-                                formData.clientId === client.id
-                                  ? "selected"
-                                  : ""
-                              }`}
+                              className={`selection-item ${formData.clientId === client.id
+                                ? "selected"
+                                : ""
+                                }`}
                               onClick={() =>
                                 setFormData({
                                   ...formData,
@@ -1368,8 +1366,7 @@ function Interventions() {
                                 </span>
                                 <span className="selection-item-subtitle">
                                   {client.rue
-                                    ? `${client.rue}, ${
-                                        client.codePostal || ""
+                                    ? `${client.rue}, ${client.codePostal || ""
                                       } ${client.ville || ""}`.trim()
                                     : "Sans adresse"}
                                 </span>
@@ -1382,16 +1379,16 @@ function Interventions() {
                             .toLowerCase()
                             .includes(clientSearch.toLowerCase())
                         ).length === 0 && (
-                          <div
-                            style={{
-                              padding: "10px",
-                              textAlign: "center",
-                              color: "var(--text-secondary)",
-                            }}
-                          >
-                            Aucun client trouvé
-                          </div>
-                        )}
+                            <div
+                              style={{
+                                padding: "10px",
+                                textAlign: "center",
+                                color: "var(--text-secondary)",
+                              }}
+                            >
+                              Aucun client trouvé
+                            </div>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -1530,11 +1527,10 @@ function Interventions() {
                           .map((tech) => (
                             <div
                               key={tech.id}
-                              className={`selection-item ${
-                                formData.technicienId === tech.id
-                                  ? "selected"
-                                  : ""
-                              }`}
+                              className={`selection-item ${formData.technicienId === tech.id
+                                ? "selected"
+                                : ""
+                                }`}
                               onClick={() =>
                                 setFormData({
                                   ...formData,
@@ -1560,16 +1556,16 @@ function Interventions() {
                               .toLowerCase()
                               .includes(technicianSearch.toLowerCase())
                         ).length === 0 && (
-                          <div
-                            style={{
-                              padding: "10px",
-                              textAlign: "center",
-                              color: "var(--text-secondary)",
-                            }}
-                          >
-                            Aucun technicien disponible
-                          </div>
-                        )}
+                            <div
+                              style={{
+                                padding: "10px",
+                                textAlign: "center",
+                                color: "var(--text-secondary)",
+                              }}
+                            >
+                              Aucun technicien disponible
+                            </div>
+                          )}
                       </div>
                     </div>
                     <div className="form-group">
@@ -1642,8 +1638,8 @@ function Interventions() {
                             value={
                               formData.datePlanifiee
                                 ? (
-                                    formData.datePlanifiee.split("T")[1] || ""
-                                  ).substring(0, 5)
+                                  formData.datePlanifiee.split("T")[1] || ""
+                                ).substring(0, 5)
                                 : ""
                             }
                             onChange={(e) => {

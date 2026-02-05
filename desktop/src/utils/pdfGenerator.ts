@@ -159,6 +159,54 @@ export const generateInterventionPDF = (intervention: Intervention) => {
         });
     }
 
+    // === SIGNATURES ===
+    if (yPosition > 230) {
+        doc.addPage();
+        yPosition = 20;
+    }
+    yPosition += 10;
+
+    // Technician Signature
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Signature Technicien', margin, yPosition);
+
+    // Box for technician
+    doc.setDrawColor(0);
+    doc.rect(margin, yPosition + 5, 80, 25);
+
+    const techSig = (intervention as any).signatureTechnicien;
+    if (techSig) {
+        try {
+            const sigData = techSig.startsWith("data:image")
+                ? techSig
+                : `data:image/png;base64,${techSig}`;
+            doc.addImage(sigData, "PNG", margin + 2, yPosition + 7, 76, 21);
+        } catch (e) {
+            console.warn("Could not add tech signature to PDF", e);
+        }
+    }
+
+    // Client Signature
+    doc.text('Signature Client', pageWidth / 2 + 10, yPosition);
+
+    // Box for client
+    doc.rect(pageWidth / 2 + 10, yPosition + 5, 80, 25);
+
+    const clientSig = (intervention as any).signature || (intervention as any).signatureClient;
+    if (clientSig) {
+        try {
+            const sigData = clientSig.startsWith("data:image")
+                ? clientSig
+                : `data:image/png;base64,${clientSig}`;
+            doc.addImage(sigData, "PNG", pageWidth / 2 + 12, yPosition + 7, 76, 21);
+        } catch (e) {
+            console.warn("Could not add client signature to PDF", e);
+        }
+    }
+
+    yPosition += 35;
+
     // === PIED DE PAGE ===
     const totalPages = doc.internal.pages.length - 1;
     for (let i = 1; i <= totalPages; i++) {
