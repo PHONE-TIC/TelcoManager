@@ -15,6 +15,12 @@ import {
   getCalendarTransitionClass,
   getInterventionStatusBadgeConfig,
 } from "./interventions.utils";
+import {
+  filterClientsForSelection,
+  filterTechniciansForSelection,
+  findInterventionConflict,
+  validateInterventionStep,
+} from "./interventions-form.utils";
 
 const localizer = momentLocalizer(moment);
 
@@ -158,18 +164,7 @@ function Interventions() {
     }
   };
 
-  const validateStep = (step: number) => {
-    switch (step) {
-      case 1:
-        return !!formData.clientId;
-      case 2:
-        return !!formData.titre && !!formData.description;
-      case 3:
-        return !!formData.technicienId && !!formData.datePlanifiee;
-      default:
-        return false;
-    }
-  };
+  const validateStep = (step: number) => validateInterventionStep(step, formData);
 
   const handleNextStep = async () => {
     if (currentStep === 3) {
@@ -187,27 +182,8 @@ function Interventions() {
     setCurrentStep((prev) => prev - 1);
   };
 
-  const checkForConflict = (techId: string, date: string) => {
-    if (!techId || !date) return null;
-
-    const newDate = new Date(date);
-
-    // Simple conflict check logic: Look for interventions on the same day for same tech
-    // In a real app we'd check duration overlaps
-    return interventions.find((int) => {
-      if (
-        int.technicienId !== techId ||
-        int.statut === "annulee" ||
-        int.statut === "terminee"
-      )
-        return false;
-
-      const intDate = new Date(int.datePlanifiee);
-      // Check if it's the same day and roughly same time (within 2 hours)
-      const timeDiff = Math.abs(intDate.getTime() - newDate.getTime());
-      return timeDiff < 2 * 60 * 60 * 1000; // < 2 hours
-    });
-  };
+  const checkForConflict = (techId: string, date: string) =>
+    findInterventionConflict(interventions, techId, date);
 
   const handleCheckConflictAndSubmit = async () => {
     if (!validateStep(3)) {
@@ -1317,22 +1293,7 @@ function Interventions() {
                     <div className="form-group">
                       <label className="form-label">Liste des clients *</label>
                       <div className="selection-list">
-                        {clients
-                          .filter(
-                            (client) =>
-                              client.nom
-                                .toLowerCase()
-                                .includes(clientSearch.toLowerCase()) ||
-                              (client.rue &&
-                                client.rue
-                                  .toLowerCase()
-                                  .includes(clientSearch.toLowerCase())) ||
-                              (client.ville &&
-                                client.ville
-                                  .toLowerCase()
-                                  .includes(clientSearch.toLowerCase()))
-                          )
-                          .map((client) => (
+                        {filterClientsForSelection(clients, clientSearch).map((client) => (
                             <div
                               key={client.id}
                               className={`selection-item ${formData.clientId === client.id
@@ -1360,11 +1321,7 @@ function Interventions() {
                               <div className="selection-check">✓</div>
                             </div>
                           ))}
-                        {clients.filter((c) =>
-                          c.nom
-                            .toLowerCase()
-                            .includes(clientSearch.toLowerCase())
-                        ).length === 0 && (
+                        {filterClientsForSelection(clients, clientSearch).length === 0 && (
                             <div
                               style={{
                                 padding: "10px",
@@ -1498,19 +1455,7 @@ function Interventions() {
                       </div>
 
                       <div className="selection-list">
-                        {techniciens
-                          .filter(
-                            (tech) =>
-                              tech.role !== "admin" &&
-                              (tech.nom
-                                .toLowerCase()
-                                .includes(technicianSearch.toLowerCase()) ||
-                                (tech.role &&
-                                  tech.role
-                                    .toLowerCase()
-                                    .includes(technicianSearch.toLowerCase())))
-                          )
-                          .map((tech) => (
+                        {filterTechniciansForSelection(techniciens, technicianSearch).map((tech) => (
                             <div
                               key={tech.id}
                               className={`selection-item ${formData.technicienId === tech.id
@@ -1535,13 +1480,7 @@ function Interventions() {
                               <div className="selection-check">✓</div>
                             </div>
                           ))}
-                        {techniciens.filter(
-                          (t) =>
-                            t.role !== "admin" &&
-                            t.nom
-                              .toLowerCase()
-                              .includes(technicianSearch.toLowerCase())
-                        ).length === 0 && (
+                        {filterTechniciansForSelection(techniciens, technicianSearch).length === 0 && (
                             <div
                               style={{
                                 padding: "10px",
