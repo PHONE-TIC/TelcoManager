@@ -7,6 +7,14 @@ import InterventionLocation from "../components/InterventionLocation";
 import PhotoCapture from "../components/PhotoCapture";
 import InterventionWorkflow from "../components/InterventionWorkflow";
 import { useAuth } from "../contexts/AuthContext";
+import {
+  canEditInterventionByRole,
+  findDetailArtifactReport,
+  getInterventionBackState,
+  isInterventionClosed,
+  mapDetailArtifactAttachments,
+  mapDetailArtifactPhotos,
+} from "./intervention-detail.utils";
 
 import type { Intervention } from "../types";
 
@@ -19,25 +27,16 @@ const InterventionDetail: React.FC = () => {
   // Handle back navigation - return to original view if came from calendar or all
   const handleGoBack = () => {
     const fromView = (location.state as any)?.from;
-    if (fromView === "calendar") {
-      navigate("/interventions", { state: { viewMode: "calendar" } });
-    } else if (fromView === "all") {
-      navigate("/interventions", { state: { viewMode: "all" } });
-    } else {
-      navigate("/interventions");
-    }
+    const target = getInterventionBackState(fromView);
+    navigate(target.path, target.state ? { state: target.state } : undefined);
   };
 
   // Determine if user can edit based on role and intervention status
-  const canEdit = (statut: string) => {
-    if (user?.role === "admin") return true;
-    // Technicians can only edit interventions that are 'planifiee' or 'en_cours'
-    return statut === "planifiee" || statut === "en_cours";
-  };
+  const canEdit = (statut: string) =>
+    canEditInterventionByRole(user?.role, statut);
 
-  const isClosedIntervention = (statut: string) => {
-    return statut === "terminee" || statut === "annulee";
-  };
+  const isClosedIntervention = (statut: string) =>
+    isInterventionClosed(statut);
 
   const [intervention, setIntervention] = useState<Intervention | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -116,76 +115,13 @@ const InterventionDetail: React.FC = () => {
       // Load artifacts (photos)
       try {
         const artifacts = await apiService.getInterventionArtifacts(id!);
-        const loadedPhotos = artifacts
-          .filter(
-            (f: {
-              type: string;
-              filename: string;
-              url: string;
-              createdAt: string;
-            }) => f.type.startsWith("photo_")
-          )
-          .map(
-            (f: {
-              type: string;
-              filename: string;
-              url: string;
-              createdAt: string;
-            }) => {
-              // Map French types from backend to English types expected by PhotoCapture
-              let photoType: "before" | "after" | "other" = "other";
-              if (f.type === "photo_avant") photoType = "before";
-              else if (f.type === "photo_apres") photoType = "after";
-
-              return {
-                id: f.filename,
-                dataUrl: f.url,
-                type: photoType,
-                timestamp: new Date(f.createdAt),
-                caption: f.filename,
-              };
-            }
-          );
+        const loadedPhotos = mapDetailArtifactPhotos(artifacts);
         setPhotos(loadedPhotos);
 
-        // Load non-photo attachments (documents, PDFs, etc.)
-        const otherFiles = artifacts
-          .filter(
-            (f: {
-              type: string;
-              filename: string;
-              url: string;
-              createdAt: string;
-            }) => !f.type.startsWith("photo_") && f.type !== "rapport_pdf"
-          )
-          .map(
-            (f: {
-              type: string;
-              filename: string;
-              url: string;
-              createdAt: string;
-            }) => ({
-              name: f.filename,
-              url: f.url,
-              type: f.type,
-            })
-          );
+        const otherFiles = mapDetailArtifactAttachments(artifacts);
         setLoadedAttachments(otherFiles);
 
-        // Check for existing report
-        const report = artifacts.find(
-          (f: {
-            type: string;
-            filename: string;
-            url: string;
-            createdAt: string;
-          }) =>
-            f.type === "rapport_pdf" ||
-            (f.filename &&
-              (f.filename.startsWith("Rapport_") ||
-                f.filename.startsWith("Bon-Intervention-")) &&
-              f.filename.endsWith(".pdf"))
-        );
+        const report = findDetailArtifactReport(artifacts);
         if (report) {
           setReportUrl(report.url);
         }
