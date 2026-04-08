@@ -10,6 +10,11 @@ import MobilePlanning from "../components/MobilePlanning";
 import ConfirmConflictModal from "../components/ConfirmConflictModal";
 import { useOffline } from "../hooks/useOffline";
 import { useReminders } from "../hooks/useReminders";
+import {
+  buildCalendarEventTitle,
+  getCalendarTransitionClass,
+  getInterventionStatusBadgeConfig,
+} from "./interventions.utils";
 
 const localizer = momentLocalizer(moment);
 
@@ -259,22 +264,10 @@ function Interventions() {
   };
 
   const getStatusBadge = (statut: string) => {
-    const badges: { [key: string]: { label: string; class: string } } = {
-      planifiee: { label: "📅 Planifiée", class: "bg-blue-100 text-blue-800" },
-      en_cours: {
-        label: "⏳ En cours",
-        class: "bg-yellow-100 text-yellow-800",
-      },
-      terminee: { label: "✓ Terminée", class: "bg-green-100 text-green-800" },
-      annulee: { label: "✕ Annulée", class: "bg-red-50 text-red-600" },
-    };
-    const badge = badges[statut] || {
-      label: statut,
-      class: "bg-gray-100 text-gray-600",
-    };
+    const badge = getInterventionStatusBadgeConfig(statut);
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs font-semibold ${badge.class}`}
+        className={`px-2 py-1 rounded-full text-xs font-semibold ${badge.className}`}
       >
         {badge.label}
       </span>
@@ -524,11 +517,7 @@ function Interventions() {
   };
 
   const handleNavigate = (date: Date) => {
-    if (date > calendarDate) {
-      setTransitionClass("slide-left"); // Future: slide from right to left
-    } else {
-      setTransitionClass("slide-right"); // Past: slide from left to right
-    }
+    setTransitionClass(getCalendarTransitionClass(calendarDate, date));
     setCalendarDate(date);
     setCalendarKey((prev) => prev + 1);
   };
@@ -540,15 +529,12 @@ function Interventions() {
   };
 
   // Calendar events mapping - use local time (moment without UTC)
-  const calendarEvents = interventions.map((int) => ({
-    id: int.id,
-    title: `[${int.type === "Installation" ? "Install" : "SAV"}] [${moment(
-      int.datePlanifiee
-    ).format("HH:mm")}] ${int.titre} - ${int.client?.nom} (${getStatusBadge(int.statut).props.children
-      })`,
-    start: new Date(int.datePlanifiee),
-    end: new Date(new Date(int.datePlanifiee).getTime() + 2 * 60 * 60 * 1000), // Assumed 2h duration
-    resource: int,
+  const calendarEvents = interventions.map((intervention) => ({
+    id: intervention.id,
+    title: buildCalendarEventTitle(intervention),
+    start: new Date(intervention.datePlanifiee),
+    end: new Date(new Date(intervention.datePlanifiee).getTime() + 2 * 60 * 60 * 1000),
+    resource: intervention,
   }));
 
   const eventStyleGetter = (event: any) => {
