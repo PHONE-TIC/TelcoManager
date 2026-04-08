@@ -27,6 +27,11 @@ import {
   getTodayInterventions,
   sortInterventionsList,
 } from "./interventions-list.utils";
+import {
+  getInterventionPriorityIndicator,
+  getInterventionProgressLine,
+  getTechnicianAvatar,
+} from "./interventions-ui.utils";
 
 const localizer = momentLocalizer(moment);
 
@@ -253,161 +258,6 @@ function Interventions() {
       >
         {badge.label}
       </span>
-    );
-  };
-
-  // Priority indicator based on date
-  const getPriorityIndicator = (datePlanifiee: string, statut: string) => {
-    if (statut === "terminee" || statut === "annulee") return null;
-    const date = new Date(datePlanifiee);
-    const now = new Date();
-    const todayStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
-    const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-
-    if (date < now && statut !== "terminee") {
-      return (
-        <span
-          title="En retard"
-          style={{
-            display: "inline-block",
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            backgroundColor: "#ef4444",
-            marginRight: 6,
-          }}
-        />
-      );
-    } else if (date >= todayStart && date < tomorrowStart) {
-      return (
-        <span
-          title="Aujourd'hui"
-          style={{
-            display: "inline-block",
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            backgroundColor: "#f59e0b",
-            marginRight: 6,
-          }}
-        />
-      );
-    } else {
-      return (
-        <span
-          title="À venir"
-          style={{
-            display: "inline-block",
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            backgroundColor: "#10b981",
-            marginRight: 6,
-          }}
-        />
-      );
-    }
-  };
-
-  // Technician avatar with initials
-  const getTechnicianAvatar = (tech: { nom: string } | null | undefined) => {
-    if (!tech)
-      return (
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 28,
-            height: 28,
-            borderRadius: "50%",
-            backgroundColor: "#e5e7eb",
-            color: "#9ca3af",
-            fontSize: 11,
-            fontWeight: 600,
-          }}
-        >
-          ?
-        </span>
-      );
-    const initials = tech.nom
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-    // Generate color from name
-    const colors = [
-      "#3b82f6",
-      "#10b981",
-      "#f59e0b",
-      "#8b5cf6",
-      "#ec4899",
-      "#14b8a6",
-      "#f97316",
-    ];
-    const colorIndex = tech.nom.charCodeAt(0) % colors.length;
-    return (
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 28,
-          height: 28,
-          borderRadius: "50%",
-          backgroundColor: colors[colorIndex],
-          color: "white",
-          fontSize: 11,
-          fontWeight: 600,
-          marginRight: 6,
-        }}
-      >
-        {initials}
-      </span>
-    );
-  };
-
-  // Progress line for intervention status
-  const getProgressLine = (statut: string) => {
-    const steps = [
-      { key: "planifiee", label: "Planifiée", color: "#3b82f6" },
-      { key: "en_cours", label: "En cours", color: "#f59e0b" },
-      { key: "terminee", label: "Terminée", color: "#10b981" },
-    ];
-    const currentIndex =
-      statut === "annulee" ? -1 : steps.findIndex((s) => s.key === statut);
-
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        {steps.map((step, idx) => (
-          <div key={step.key} style={{ display: "flex", alignItems: "center" }}>
-            <div
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                backgroundColor: idx <= currentIndex ? step.color : "#e5e7eb",
-                transition: "background-color 0.2s",
-              }}
-            />
-            {idx < steps.length - 1 && (
-              <div
-                style={{
-                  width: 16,
-                  height: 2,
-                  backgroundColor:
-                    idx < currentIndex ? steps[idx + 1].color : "#e5e7eb",
-                }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
     );
   };
 
@@ -745,7 +595,7 @@ function Interventions() {
                             <div
                               style={{ display: "flex", alignItems: "center" }}
                             >
-                              {getPriorityIndicator(
+                              {getInterventionPriorityIndicator(
                                 intervention.datePlanifiee,
                                 intervention.statut
                               )}
@@ -804,7 +654,7 @@ function Interventions() {
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              {getProgressLine(intervention.statut)}
+                              {getInterventionProgressLine(intervention.statut)}
                               {getStatusBadge(intervention.statut)}
                             </div>
                           </td>
@@ -985,7 +835,7 @@ function Interventions() {
                           <div
                             style={{ display: "flex", alignItems: "center" }}
                           >
-                            {getPriorityIndicator(
+                            {getInterventionPriorityIndicator(
                               intervention.datePlanifiee,
                               intervention.statut
                             )}
@@ -1041,7 +891,7 @@ function Interventions() {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {getProgressLine(intervention.statut)}
+                            {getInterventionProgressLine(intervention.statut)}
                             {getStatusBadge(intervention.statut)}
                           </div>
                         </td>
