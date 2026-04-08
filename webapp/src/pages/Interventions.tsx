@@ -21,6 +21,12 @@ import {
   findInterventionConflict,
   validateInterventionStep,
 } from "./interventions-form.utils";
+import {
+  getOverdueInterventionsCount,
+  getStatusFilteredInterventions,
+  getTodayInterventions,
+  sortInterventionsList,
+} from "./interventions-list.utils";
 
 const localizer = momentLocalizer(moment);
 
@@ -406,10 +412,7 @@ function Interventions() {
   };
 
   // Count overdue interventions
-  const overdueCount = interventions.filter((i) => {
-    if (i.statut === "terminee" || i.statut === "annulee") return false;
-    return new Date(i.datePlanifiee) < new Date();
-  }).length;
+  const overdueCount = getOverdueInterventionsCount(interventions);
 
   // Column sorting handler
   const handleSort = (column: string) => {
@@ -438,59 +441,8 @@ function Interventions() {
     </th>
   );
 
-  // Sort interventions
-  const sortInterventions = (list: Intervention[]) => {
-    return [...list].sort((a, b) => {
-      let valA, valB;
-      switch (sortColumn) {
-        case "datePlanifiee":
-          valA = new Date(a.datePlanifiee).getTime();
-          valB = new Date(b.datePlanifiee).getTime();
-          break;
-        case "statut": {
-          const order = { planifiee: 1, en_cours: 2, terminee: 3, annulee: 4 };
-          valA = order[a.statut as keyof typeof order] || 5;
-          valB = order[b.statut as keyof typeof order] || 5;
-          break;
-        }
-        case "client":
-          valA = a.client?.nom?.toLowerCase() || "";
-          valB = b.client?.nom?.toLowerCase() || "";
-          break;
-        case "technicien":
-          valA = a.technicien?.nom?.toLowerCase() || "zzz";
-          valB = b.technicien?.nom?.toLowerCase() || "zzz";
-          break;
-        case "id":
-        case "numero": {
-          // Try to extract number from "RDV2025005" format
-          const extractNum = (str: string) => {
-            if (!str) return 0;
-            const match = str.toString().match(/\d+/);
-            return match ? parseInt(match[0], 10) : 0;
-          };
-          const numA = extractNum(a.numero || a.id);
-          const numB = extractNum(b.numero || b.id);
-
-          if (numA !== 0 && numB !== 0) {
-            valA = numA;
-            valB = numB;
-          } else {
-            valA = a.numero || a.id || "";
-            valB = b.numero || b.id || "";
-          }
-          break;
-        }
-        default:
-          valA = a[sortColumn];
-          valB = b[sortColumn];
-      }
-
-      if (valA < valB) return sortDirection === "asc" ? -1 : 1;
-      if (valA > valB) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-  };
+  const sortInterventions = (list: Intervention[]) =>
+    sortInterventionsList(list, sortColumn, sortDirection);
 
   const handleNavigate = (date: Date) => {
     setTransitionClass(getCalendarTransitionClass(calendarDate, date));
@@ -535,46 +487,11 @@ function Interventions() {
     };
   };
 
-  // Filtered list - For list view, only show today's interventions
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const filteredInterventions = interventions
-    .filter((intervention) => {
-      // For list view, filter to show only today's interventions
-      const interventionDate = new Date(intervention.datePlanifiee);
-      const isToday = interventionDate >= today && interventionDate < tomorrow;
-
-      if (!isToday) return false;
-
-      return true;
-    })
-    .sort((a, b) => {
-      // Sort by time (earliest first)
-      return (
-        new Date(a.datePlanifiee).getTime() -
-        new Date(b.datePlanifiee).getTime()
-      );
-    });
-
-  // All interventions (filtered by search and status, for admin "Toutes" view)
-  const allInterventions = interventions
-    .filter((intervention) => {
-      // Apply status filter
-      if (statusFilter !== "all" && intervention.statut !== statusFilter)
-        return false;
-
-      return true;
-    })
-    .sort((a, b) => {
-      // Sort by date (most recent first)
-      return (
-        new Date(b.datePlanifiee).getTime() -
-        new Date(a.datePlanifiee).getTime()
-      );
-    });
+  const filteredInterventions = getTodayInterventions(interventions);
+  const allInterventions = getStatusFilteredInterventions(
+    interventions,
+    statusFilter
+  );
 
   if (loading) {
     return (
