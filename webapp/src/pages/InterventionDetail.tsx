@@ -15,6 +15,7 @@ import {
   mapDetailArtifactAttachments,
   mapDetailArtifactPhotos,
 } from "./intervention-detail.utils";
+import { getInterventionDetailStatusBadgeConfig } from "./intervention-detail-status.utils";
 
 import type { Intervention } from "../types";
 
@@ -257,14 +258,8 @@ const InterventionDetail: React.FC = () => {
   };
 
   const getStatusBadge = (statut: string) => {
-    const badges: { [key: string]: { label: string; class: string } } = {
-      planifiee: { label: "🔵 Planifiée", class: "badge-info" },
-      en_cours: { label: "🟠 En cours", class: "badge-warning" }, // Yellow per request
-      terminee: { label: "🟢 Terminée", class: "badge-success" },
-      annulee: { label: "🔴 Annulée", class: "badge-danger" },
-    };
-    const badge = badges[statut] || { label: statut, class: "badge-gray" };
-    return <span className={`badge ${badge.class} `}>{badge.label}</span>;
+    const badge = getInterventionDetailStatusBadgeConfig(statut);
+    return <span className={`badge ${badge.className} `}>{badge.label}</span>;
   };
 
   if (loading) {

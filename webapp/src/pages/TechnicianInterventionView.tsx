@@ -18,6 +18,7 @@ import {
   mapArtifactPhotos,
   TECHNICIAN_INTERVENTION_STEPS,
 } from "./technician-intervention.utils";
+import { validateTechnicianReportStep } from "./technician-intervention-validation";
 
 // HistoryIntervention compatible with global type
 interface HistoryIntervention {
@@ -1263,41 +1264,25 @@ const TechnicianInterventionView: React.FC = () => {
               className={`step-tab ${currentStep === index ? "active" : ""} ${index < currentStep ? "completed" : ""
                 }`}
               onClick={() => {
-                // Validate fields when trying to go from step 3 (Rapport) to step 4 or 5
                 if (currentStep === 3 && index > 3) {
-                  // Validate comment
-                  if (!commentaire.trim()) {
-                    alert(
-                      "⚠️ Veuillez saisir un commentaire avant de continuer"
-                    );
-                    const textarea = document.querySelector(
-                      ".form-textarea"
-                    ) as HTMLTextAreaElement;
-                    if (textarea) {
-                      textarea.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center",
-                      });
-                      setTimeout(() => textarea.focus(), 300);
-                    }
-                    return;
-                  }
-                  // Validate billing (at least one option selected)
-                  if (
-                    !billing.maintenance &&
-                    !billing.garantie &&
-                    !billing.facturable
-                  ) {
-                    alert(
-                      "⚠️ Veuillez sélectionner au moins une option de facturation"
-                    );
-                    return;
-                  }
-                  // Validate systemType
-                  if (!systemType.trim()) {
-                    alert("⚠️ Veuillez sélectionner un type de système");
-                    return;
-                  }
+                  const isValid = validateTechnicianReportStep({
+                    commentaire,
+                    billing,
+                    systemType,
+                    onCommentMissing: () => {
+                      const textarea = document.querySelector(
+                        ".form-textarea"
+                      ) as HTMLTextAreaElement;
+                      if (textarea) {
+                        textarea.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        });
+                        setTimeout(() => textarea.focus(), 300);
+                      }
+                    },
+                  });
+                  if (!isValid) return;
                 }
                 setCurrentStep(index);
               }}
@@ -2009,40 +1994,24 @@ const TechnicianInterventionView: React.FC = () => {
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  // Validate comment
-                  if (!commentaire.trim()) {
-                    alert(
-                      "⚠️ Veuillez saisir un commentaire avant de continuer"
-                    );
-                    // Scroll to and focus the textarea
-                    const textarea = document.querySelector(
-                      ".form-textarea"
-                    ) as HTMLTextAreaElement;
-                    if (textarea) {
-                      textarea.scrollIntoView({
-                        behavior: "smooth",
-                        block: "center",
-                      });
-                      setTimeout(() => textarea.focus(), 300);
-                    }
-                    return;
-                  }
-                  // Validate billing (at least one option selected)
-                  if (
-                    !billing.maintenance &&
-                    !billing.garantie &&
-                    !billing.facturable
-                  ) {
-                    alert(
-                      "⚠️ Veuillez sélectionner au moins une option de facturation"
-                    );
-                    return;
-                  }
-                  // Validate systemType
-                  if (!systemType.trim()) {
-                    alert("⚠️ Veuillez sélectionner un type de système");
-                    return;
-                  }
+                  const isValid = validateTechnicianReportStep({
+                    commentaire,
+                    billing,
+                    systemType,
+                    onCommentMissing: () => {
+                      const textarea = document.querySelector(
+                        ".form-textarea"
+                      ) as HTMLTextAreaElement;
+                      if (textarea) {
+                        textarea.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        });
+                        setTimeout(() => textarea.focus(), 300);
+                      }
+                    },
+                  });
+                  if (!isValid) return;
                   setCurrentStep(4);
                 }}
               >
