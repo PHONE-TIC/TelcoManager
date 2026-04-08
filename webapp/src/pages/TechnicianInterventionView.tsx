@@ -11,6 +11,13 @@ import BarcodeScanner from "../components/BarcodeScanner";
 import { useAuth } from "../contexts/AuthContext";
 import "./TechnicianInterventionView.css";
 import type { Intervention, InterventionEquipment, Photo } from "../types";
+import {
+  extractInterventionTime,
+  findArtifactReport,
+  mapArtifactAttachments,
+  mapArtifactPhotos,
+  TECHNICIAN_INTERVENTION_STEPS,
+} from "./technician-intervention.utils";
 
 // HistoryIntervention compatible with global type
 interface HistoryIntervention {
@@ -19,13 +26,6 @@ interface HistoryIntervention {
   titre: string;
   datePlanifiee: string;
   statut: string;
-}
-
-interface Artifact {
-  type: string;
-  filename: string;
-  url: string;
-  createdAt: string;
 }
 
 interface Equipment {
@@ -56,28 +56,6 @@ interface VehicleStockItem {
   } | null;
 }
 
-const STEPS = [
-  { id: "info", label: "📋 Infos", icon: "📋" },
-  { id: "heures", label: "🕐 Heures", icon: "🕐" },
-  { id: "materiel", label: "🔧 Matériel", icon: "🔧" },
-  { id: "rapport", label: "📝 Rapport", icon: "📝" },
-  { id: "sign-tech", label: "✍️ Tech", icon: "✍️" },
-  { id: "sign-client", label: "✍️ Client", icon: "✍️" },
-];
-
-// Helper to extract HH:mm from ISO
-const extractTime = (isoStr?: string) => {
-  if (!isoStr) return "";
-  try {
-    const d = new Date(isoStr);
-    return d.toLocaleTimeString("fr-FR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "";
-  }
-};
 
 const TechnicianInterventionView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -172,11 +150,11 @@ const TechnicianInterventionView: React.FC = () => {
       // Pre-fill form with existing data
       if (data.heureArrivee) {
         setHeureArrivee(data.heureArrivee); // Keep full ISO for reference
-        setTimeArrivee(extractTime(data.heureArrivee));
+        setTimeArrivee(extractInterventionTime(data.heureArrivee));
       }
       if (data.heureDepart) {
         setHeureDepart(data.heureDepart);
-        setTimeDepart(extractTime(data.heureDepart));
+        setTimeDepart(extractInterventionTime(data.heureDepart));
       }
       if (data.commentaireTechnicien)
         setCommentaire(data.commentaireTechnicien);
@@ -207,47 +185,13 @@ const TechnicianInterventionView: React.FC = () => {
       if (data.statut === "terminee" || data.statut === "annulee") {
         try {
           const artifacts = await apiService.getInterventionArtifacts(id);
-          const loadedPhotos = artifacts
-            .filter((f: Artifact) => f.type.startsWith("photo_"))
-            .map((f: Artifact) => {
-              // Map French types from backend to English types expected by PhotoCapture
-              let photoType: "before" | "after" | "other" = "other";
-              if (f.type === "photo_avant") photoType = "before";
-              else if (f.type === "photo_apres") photoType = "after";
-
-              return {
-                id: f.filename,
-                dataUrl: f.url,
-                type: photoType,
-                timestamp: new Date(f.createdAt),
-                caption: f.filename,
-              };
-            });
+          const loadedPhotos = mapArtifactPhotos(artifacts);
           setPhotos(loadedPhotos);
 
-          // Load non-photo attachments (documents, PDFs, etc.)
-          const otherFiles = artifacts
-            .filter(
-              (f: Artifact) =>
-                !f.type.startsWith("photo_") && f.type !== "rapport_pdf"
-            )
-            .map((f: Artifact) => ({
-              name: f.filename,
-              url: f.url,
-              type: f.type,
-            }));
+          const otherFiles = mapArtifactAttachments(artifacts);
           setLoadedAttachments(otherFiles);
 
-          // Check for existing report
-          // Try exact type match first, then filename convention
-          const report = artifacts.find(
-            (f: Artifact) =>
-              f.type === "rapport_pdf" ||
-              (f.filename &&
-                (f.filename.startsWith("Rapport_") ||
-                  f.filename.startsWith("Bon-Intervention-")) &&
-                f.filename.endsWith(".pdf"))
-          );
+          const report = findArtifactReport(artifacts);
 
           if (report) {
 
@@ -1313,7 +1257,7 @@ const TechnicianInterventionView: React.FC = () => {
       {/* Step Tabs (only for en_cours) */}
       {isEnCours && (
         <div className="step-tabs">
-          {STEPS.map((step, index) => (
+          {TECHNICIAN_INTERVENTION_STEPS.map((step, index) => (
             <button
               key={step.id}
               className={`step-tab ${currentStep === index ? "active" : ""} ${index < currentStep ? "completed" : ""

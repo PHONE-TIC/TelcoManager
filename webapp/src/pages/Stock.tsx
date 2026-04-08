@@ -9,6 +9,7 @@ import {
   parseSerialNumbers,
   type StockWithRelations,
 } from "./stock.utils";
+import { buildStockCsvRows, getFilteredStockItems } from "./stock-list.utils";
 
 function Stock() {
   const navigate = useNavigate();
@@ -112,45 +113,10 @@ function Stock() {
     [stock]
   );
 
-  // Filter and sort stock, with calculated total quantity per reference
-  const filteredStock = useMemo(() => {
-    // First, filter by category
-    const filtered = stock.filter((item) => {
-      const matchesCategory =
-        categoryFilter === "all" || item.categorie === categoryFilter;
-      return matchesCategory;
-    });
-
-    // Calculate total quantity per reference (count of items with same reference)
-    const quantityByReference = new Map<string, number>();
-    for (const item of filtered) {
-      const current = quantityByReference.get(item.reference) || 0;
-      quantityByReference.set(item.reference, current + item.quantite);
-    }
-
-    // Add the total quantity to each item while keeping them individual
-    const result = filtered.map((item) => ({
-      ...item,
-      // Store original quantity and calculated total
-      _totalQuantityForReference:
-        quantityByReference.get(item.reference) || item.quantite,
-    })) as (StockWithRelations & { _totalQuantityForReference: number })[];
-
-    // Sort
-    result.sort((a, b) => {
-      const valA = a[sortColumn];
-      const valB = b[sortColumn];
-      const strA = typeof valA === "string" ? valA.toLowerCase() : valA;
-      const strB = typeof valB === "string" ? valB.toLowerCase() : valB;
-      if (strA === undefined || strA === null) return 1;
-      if (strB === undefined || strB === null) return -1;
-      if (strA < strB) return sortDirection === "asc" ? -1 : 1;
-      if (strA > strB) return sortDirection === "asc" ? 1 : -1;
-      return 0;
-    });
-
-    return result;
-  }, [stock, categoryFilter, sortColumn, sortDirection]);
+  const filteredStock = useMemo(
+    () => getFilteredStockItems(stock, categoryFilter, sortColumn, sortDirection),
+    [stock, categoryFilter, sortColumn, sortDirection]
+  );
 
   // Stock statistics
   const totalItems = stock.length;
@@ -179,16 +145,7 @@ function Stock() {
       "Quantité",
       "Statut",
     ];
-    const rows = filteredStock.map((item) => [
-      item.nomMateriel,
-      item.reference,
-      item.numeroSerie || "",
-      item.codeBarre || "",
-      item.categorie,
-      item.fournisseur || "",
-      item.quantite,
-      filter,
-    ]);
+    const rows = buildStockCsvRows(filteredStock, filter);
     const csvContent = [
       headers.join(";"),
       ...rows.map((r) => r.join(";")),
