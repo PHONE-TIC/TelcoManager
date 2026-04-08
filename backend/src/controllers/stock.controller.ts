@@ -2,11 +2,16 @@ import { Response } from "express";
 import { validationResult } from "express-validator";
 import { prisma } from "../index";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { buildPagination, parsePagination, respondValidationError } from "./controller.utils";
+import { stockClientMiniSelect, stockTechnicienMiniSelect } from "./prisma-selects";
 
 export const getAllStock = async (req: AuthRequest, res: Response) => {
   try {
     const { statut, categorie, search, page = "1", limit = "50" } = req.query;
-    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+    const { page: currentPage, limit: pageSize, skip } = parsePagination({
+      page: page as string,
+      limit: limit as string,
+    });
 
     const where: any = {};
 
@@ -51,24 +56,24 @@ export const getAllStock = async (req: AuthRequest, res: Response) => {
       prisma.stock.findMany({
         where,
         skip,
-        take: parseInt(limit as string),
+        take: pageSize,
         orderBy: { nomMateriel: "asc" },
         include: includeRelations
           ? {
               technicianStocks: {
                 include: {
                   technicien: {
-                    select: { id: true, nom: true },
+                    select: stockTechnicienMiniSelect,
                   },
                   client: {
-                    select: { id: true, nom: true },
+                    select: stockClientMiniSelect,
                   },
                 },
               },
               clientEquipements: {
                 include: {
                   client: {
-                    select: { id: true, nom: true },
+                    select: stockClientMiniSelect,
                   },
                 },
               },
@@ -81,10 +86,7 @@ export const getAllStock = async (req: AuthRequest, res: Response) => {
     res.json({
       stock,
       pagination: {
-        total,
-        page: parseInt(page as string),
-        limit: parseInt(limit as string),
-        totalPages: Math.ceil(total / parseInt(limit as string)),
+        ...buildPagination(currentPage, pageSize, total),
       },
     });
   } catch (error) {
@@ -97,7 +99,7 @@ export const getStockById = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const { id } = req.params;

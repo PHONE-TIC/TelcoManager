@@ -9,6 +9,15 @@ import {
   getClientNomById,
   getTechnicienNomById,
 } from "./interventions.controller.helpers";
+import {
+  buildPagination,
+  parsePagination,
+  respondValidationError,
+} from "./controller.utils";
+import {
+  interventionClientListSelect,
+  interventionTechnicienListSelect,
+} from "./prisma-selects";
 
 export const getAllInterventions = async (req: AuthRequest, res: Response) => {
   try {
@@ -21,7 +30,10 @@ export const getAllInterventions = async (req: AuthRequest, res: Response) => {
       page = "1",
       limit = "20",
     } = req.query;
-    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+    const { page: currentPage, limit: pageSize, skip } = parsePagination({
+      page: page as string,
+      limit: limit as string,
+    });
 
     const where: any = {};
 
@@ -40,24 +52,13 @@ export const getAllInterventions = async (req: AuthRequest, res: Response) => {
       prisma.intervention.findMany({
         where,
         skip,
-        take: parseInt(limit as string),
+        take: pageSize,
         include: {
           client: {
-            select: {
-              id: true,
-              nom: true,
-              rue: true,
-              codePostal: true,
-              ville: true,
-              telephone: true,
-            },
+            select: interventionClientListSelect,
           },
           technicien: {
-            select: {
-              id: true,
-              nom: true,
-              username: true,
-            },
+            select: interventionTechnicienListSelect,
           },
           _count: {
             select: {
@@ -73,10 +74,7 @@ export const getAllInterventions = async (req: AuthRequest, res: Response) => {
     res.json({
       interventions,
       pagination: {
-        total,
-        page: parseInt(page as string),
-        limit: parseInt(limit as string),
-        totalPages: Math.ceil(total / parseInt(limit as string)),
+        ...buildPagination(currentPage, pageSize, total),
       },
     });
   } catch (error) {
@@ -91,7 +89,7 @@ export const getInterventionById = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const { id } = req.params;
@@ -101,11 +99,7 @@ export const getInterventionById = async (req: AuthRequest, res: Response) => {
       include: {
         client: true,
         technicien: {
-          select: {
-            id: true,
-            nom: true,
-            username: true,
-          },
+          select: interventionTechnicienListSelect,
         },
         equipements: {
           include: {
