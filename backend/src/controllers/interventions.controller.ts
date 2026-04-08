@@ -3,6 +3,12 @@ import { validationResult } from "express-validator";
 import { prisma } from "../index";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { notifyNewIntervention } from "../services/push.service";
+import {
+  buildFinalInterventionNumero,
+  buildTemporaryInterventionNumero,
+  getClientNomById,
+  getTechnicienNomById,
+} from "./interventions.controller.helpers";
 
 export const getAllInterventions = async (req: AuthRequest, res: Response) => {
   try {
@@ -153,29 +159,15 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
       type = "SAV",
     } = req.body;
 
-    // Fetch client and technician names to save them for future reference
-    const client = await prisma.client.findUnique({
-      where: { id: clientId },
-      select: { nom: true },
-    });
-    let technicienNom: string | null = null;
-    if (technicienId) {
-      const technicien = await prisma.technicien.findUnique({
-        where: { id: technicienId },
-        select: { nom: true },
-      });
-      technicienNom = technicien?.nom || null;
-    }
-
-    const tempNumero = `TEMP-${Date.now()}-${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
+    const clientNom = await getClientNomById(clientId);
+    const technicienNom = await getTechnicienNomById(technicienId);
+    const tempNumero = buildTemporaryInterventionNumero();
 
     // 1. Create with temp number to get the auto-incremented counter
     const initialIntervention = await prisma.intervention.create({
       data: {
         clientId,
-        clientNom: client?.nom || null,
+        clientNom,
         technicienId,
         technicienNom,
         titre,
@@ -188,11 +180,9 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // 2. Generate final number format: RDV + Year + Counter (padded)
-    const year = new Date().getFullYear();
-    const finalNumero = `RDV${year}${initialIntervention.compteur
-      .toString()
-      .padStart(3, "0")}`;
+    const finalNumero = buildFinalInterventionNumero(
+      initialIntervention.compteur
+    );
 
     // 3. Update with final number and return with relations
     const intervention = await prisma.intervention.update({
@@ -276,21 +266,14 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
       signature,
     } = req.body;
 
-    // If technician is being changed, fetch the new technician's name
     let technicienNom: string | null | undefined = undefined;
     if (
       technicienId !== undefined &&
       technicienId !== existingIntervention.technicienId
     ) {
-      if (technicienId) {
-        const technicien = await prisma.technicien.findUnique({
-          where: { id: technicienId },
-          select: { nom: true },
-        });
-        technicienNom = technicien?.nom || null;
-      } else {
-        technicienNom = null;
-      }
+      technicienNom = technicienId
+        ? await getTechnicienNomById(technicienId)
+        : null;
     }
 
     const data: any = {
