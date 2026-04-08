@@ -265,6 +265,7 @@ function InterventionDetailWrapper() {
 function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
+  const pageTransitionKey = `${location.pathname}${location.search}${location.hash}`;
 
   return (
     <div className="app-container">
@@ -276,7 +277,7 @@ function AppContent() {
         </>
       )}
       <div className="main-content">
-        <div key={location.pathname} className="fade-in">
+        <div key={pageTransitionKey} className="fade-in">
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route

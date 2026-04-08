@@ -794,8 +794,8 @@ function Interventions() {
       >
         {/* Tabs with Search */}
         {!showForm && (
-          <div className="flex justify-between items-center gap-4 mb-6 border-b pb-4 flex-wrap">
-            <div className="flex gap-2">
+          <div className="responsive-stack mb-6 border-b pb-4" style={{ justifyContent: "space-between" }}>
+            <div className="responsive-stack">
               <button
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === "calendar"
                   ? "bg-primary text-white"
@@ -829,7 +829,7 @@ function Interventions() {
             {user?.role === "admin" && (
               <div
                 className="relative"
-                style={{ minWidth: "300px", maxWidth: "400px" }}
+                style={{ minWidth: "min(300px, 100%)", maxWidth: "400px", width: "100%" }}
               ></div>
             )}
           </div>
@@ -837,7 +837,7 @@ function Interventions() {
 
         {viewMode === "list" && !showForm && (
           <div className="fade-in">
-            <div style={{ overflowX: "auto" }}>
+            <div className="responsive-scroll">
               <table className="table">
                 <thead>
                   <tr>
@@ -957,8 +957,8 @@ function Interventions() {
         {/* All Interventions View (Admin only) */}
         {viewMode === "all" && !showForm && user?.role === "admin" && (
           <div className="fade-in">
-            <div className="mb-4 flex justify-between items-center flex-wrap gap-3">
-              <div className="flex flex-col gap-2">
+            <div className="responsive-stack mb-4" style={{ justifyContent: "space-between" }}>
+              <div className="flex flex-col gap-2" style={{ minWidth: 0 }}>
                 <span
                   style={{
                     fontSize: "13px",
@@ -969,7 +969,7 @@ function Interventions() {
                 >
                   Filtrer par statut
                 </span>
-                <div className="flex gap-2 flex-wrap">
+                <div className="responsive-stack">
                   <button
                     onClick={() => setStatusFilter("all")}
                     style={{
@@ -1077,7 +1077,7 @@ function Interventions() {
                 {allInterventions.length !== 1 ? "s" : ""}
               </span>
             </div>
-            <div style={{ overflowX: "auto" }}>
+            <div className="responsive-scroll">
               <table className="table">
                 <thead>
                   <tr>
@@ -1209,7 +1209,7 @@ function Interventions() {
               <div
                 key={calendarKey}
                 className={transitionClass}
-                style={{ width: "100%", overflow: "hidden" }}
+                style={{ width: "100%", overflow: "hidden", minWidth: 0 }}
               >
                 <Calendar
                   localizer={localizer}

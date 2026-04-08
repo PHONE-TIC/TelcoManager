@@ -21,7 +21,6 @@ async function main() {
         console.log('ℹ️  Mode STANDARD : Création de l\'admin si inexistant (mot de passe préservé).');
     }
 
-    // Créer uniquement l'admin
     console.log('👨‍🔧 Vérification/Création de l\'administrateur...');
 
     const adminPassword = await bcrypt.hash('admin123', 10);
@@ -32,7 +31,7 @@ async function main() {
             passwordHash: adminPassword,
             role: 'admin',
             active: true
-        } : {}, // Ne rien mettre à jour si l'admin existe et qu'on n'est pas en mode reset
+        } : {},
         create: {
             nom: 'Administrateur',
             username: 'admin',
@@ -43,7 +42,6 @@ async function main() {
     });
 
     console.log(`   ✅ Admin prêt : ${admin.nom}`);
-
     console.log('\n🎉 Seed terminé avec succès !');
 }
 

@@ -3,15 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { useAuth } from "../contexts/AuthContext";
 import SerialTransferModal from "../components/SerialTransferModal";
-import type { Stock as StockType, Technicien, TechnicianStock } from "../types";
-
-// Extended stock type with additional fields from API
-interface StockWithRelations extends StockType {
-  originalStockId?: string;
-  technicianStockId?: string;
-  // Allow dynamic property access for sorting
-  [key: string]: unknown;
-}
+import type { Technicien, TechnicianStock } from "../types";
+import {
+  getStockLocation,
+  parseSerialNumbers,
+  type StockWithRelations,
+} from "./stock.utils";
 
 function Stock() {
   const navigate = useNavigate();
@@ -31,8 +28,6 @@ function Stock() {
   const [selectedItem, setSelectedItem] = useState<StockWithRelations | null>(
     null
   );
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [detailItem, setDetailItem] = useState<StockWithRelations | null>(null);
   const [formData, setFormData] = useState({
     nomMateriel: "",
     reference: "",
@@ -80,13 +75,6 @@ function Stock() {
   }, [filter, selectedTechnicianId]);
 
   // Parse serial numbers from comma or newline separated input
-  const parseSerialNumbers = (input: string): string[] => {
-    return input
-      .split(/[,\n]/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-  };
-
   // Handle serial numbers change with auto-quantity update
   const handleSerialNumbersChange = (value: string) => {
     const serialNumbers = parseSerialNumbers(value);
@@ -304,84 +292,6 @@ function Stock() {
     }
   };
 
-  // Helper function to determine stock location for general view
-  const getLocation = (
-    item: StockWithRelations
-  ): { label: string; color: string; bgColor: string } => {
-    // Check status first for "Retour Fournisseur" as it overrides location
-    if (item.statut === "retour_fournisseur") {
-      return {
-        label: "↩️ Retour Fournisseur",
-        color: "#d97706", // Amber 600
-        bgColor: "rgba(245, 158, 11, 0.15)", // Amber 500 equivalent with opacity
-      };
-    }
-
-    // Check if assigned to a technician
-    const techStocks = item.technicianStocks as TechnicianStock[] | undefined;
-    if (techStocks && techStocks.length > 0) {
-      // Only check active technician stocks (qty > 0)
-      const activeTechStock = techStocks.find(
-        (ts: TechnicianStock) => ts.quantite > 0
-      );
-
-      if (activeTechStock) {
-        // Check if this specific active stock entry has a client assigned
-        if (activeTechStock.client) {
-          const clientName = activeTechStock.client.nom || "Client";
-          return {
-            label: `🏢 Client: ${clientName}`,
-            color: "#0891b2",
-            bgColor: "rgba(8, 145, 178, 0.15)",
-          };
-        }
-
-        const techName = activeTechStock.technicien?.nom || "Technicien";
-        return {
-          label: `🔧 Tech: ${techName}`,
-          color: "#7c3aed",
-          bgColor: "rgba(124, 58, 237, 0.15)",
-        };
-      }
-    }
-
-    // Check if installed at a client (ClientEquipment)
-    const clientEquips = item.clientEquipements as
-      | { statut: string; client?: { nom: string } }[]
-      | undefined;
-    if (clientEquips && clientEquips.length > 0) {
-      // Only consider installed items
-      const installed = clientEquips.find((ce) => ce.statut === "installe");
-
-      if (installed) {
-        const clientName = installed.client?.nom || "Client";
-        return {
-          label: `🏢 Client: ${clientName}`,
-          color: "#0891b2",
-          bgColor: "rgba(8, 145, 178, 0.15)",
-        };
-      }
-    }
-
-    // Check status
-    if (item.statut === "hs") {
-      return {
-        label: "⚠️ HS",
-        color: "#dc2626",
-        bgColor: "rgba(220, 38, 38, 0.15)",
-      };
-    }
-
-
-
-    // Default: in main stock
-    return {
-      label: "📦 Stock courant",
-      color: "#16a34a",
-      bgColor: "rgba(22, 163, 74, 0.15)",
-    };
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -527,7 +437,7 @@ function Stock() {
           {/* Top Row: Buttons and Search */}
           <div className="flex flex-wrap justify-between items-center gap-4">
             {/* Status buttons */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="responsive-stack" style={{ width: "100%" }}>
               <button
                 className={`btn ${filter === "all" ? "btn-primary" : "btn-secondary"
                   }`}
@@ -580,6 +490,9 @@ function Stock() {
                       filter === "technician"
                         ? "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
                         : undefined,
+                    whiteSpace: "normal",
+                    textAlign: "center",
+                    wordBreak: "break-word",
                   }}
                 >
                   👷 Stock Technicien
@@ -589,7 +502,7 @@ function Stock() {
           </div>
 
           {/* Bottom Row: Dropdowns */}
-          <div className="flex gap-4 items-center">
+          <div className="responsive-stack">
             {/* Technician Select (Visible only when filter is technician) */}
             {filter === "technician" && (
               <select
@@ -644,7 +557,7 @@ function Stock() {
         </div>
 
         {/* Stock Table */}
-        <div style={{ overflowX: "auto" }}>
+        <div className="responsive-scroll">
           <table className="table">
             <thead>
               <tr>
@@ -783,7 +696,7 @@ function Stock() {
                     {filter === "all" && (
                       <td>
                         {(() => {
-                          const location = getLocation(item);
+                          const location = getStockLocation(item);
                           return (
                             <span
                               style={{
@@ -804,7 +717,7 @@ function Stock() {
                       </td>
                     )}
                     <td>
-                      <div style={{ display: "flex", gap: "4px" }}>
+                      <div className="responsive-stack" style={{ gap: "4px" }}>
                         {/* View Details Button */}
                         <button
                           style={{
@@ -1224,157 +1137,6 @@ function Stock() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Detail Modal */}
-      {showDetailModal && detailItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden animate-slide-up">
-            <div className="flex justify-between items-center p-6 border-b bg-gray-50">
-              <h2 className="text-xl font-bold text-gray-800">
-                📦 Détails du matériel
-              </h2>
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setDetailItem(null);
-                }}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">Nom</label>
-                  <div className="font-semibold text-gray-800">
-                    {detailItem.nomMateriel}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">
-                    Référence
-                  </label>
-                  <div className="font-mono text-gray-800">
-                    {detailItem.reference}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">
-                    N° Série
-                  </label>
-                  <div className="font-mono text-gray-800">
-                    {detailItem.numeroSerie || "-"}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">
-                    Code-barres
-                  </label>
-                  <div className="font-mono text-gray-800">
-                    {detailItem.codeBarre || "-"}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">
-                    Catégorie
-                  </label>
-                  <div>
-                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                      {detailItem.categorie}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">
-                    Fournisseur
-                  </label>
-                  <div className="text-gray-800">
-                    {detailItem.fournisseur || "-"}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">
-                    Quantité
-                  </label>
-                  <div>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${detailItem.quantite <= 0
-                        ? "bg-red-50 text-red-600"
-                        : detailItem.quantite <= 2
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-green-100 text-green-800"
-                        }`}
-                    >
-                      {detailItem.quantite} unité
-                      {detailItem.quantite > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 uppercase">
-                    Localisation
-                  </label>
-                  <div>
-                    {(() => {
-                      const loc = getLocation(detailItem);
-                      return (
-                        <span
-                          className="px-2 py-1 rounded-full text-xs font-semibold"
-                          style={{
-                            backgroundColor: loc.bgColor,
-                            color: loc.color,
-                          }}
-                        >
-                          {loc.label}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-              {detailItem.notes && (
-                <div className="pt-4 border-t">
-                  <label className="text-xs text-gray-500 uppercase">
-                    Notes
-                  </label>
-                  <div className="text-gray-700 mt-1">{detailItem.notes}</div>
-                </div>
-              )}
-              <div className="pt-4 border-t text-xs text-gray-400">
-                <div>
-                  Créé le:{" "}
-                  {new Date(detailItem.createdAt).toLocaleDateString("fr-FR")}
-                </div>
-                <div>
-                  Mis à jour:{" "}
-                  {new Date(detailItem.updatedAt).toLocaleDateString("fr-FR")}
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 p-6 border-t bg-gray-50">
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setDetailItem(null);
-                }}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-              >
-                Fermer
-              </button>
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  navigate(`/stock/${detailItem.id}/edit`);
-                }}
-                className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary-dark transition-colors shadow-sm"
-              >
-                ✏️ Modifier
-              </button>
-            </div>
           </div>
         </div>
       )}

@@ -109,6 +109,11 @@
   --error-bg: rgba(248, 113, 113, 0.15);
 }
 
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
@@ -117,29 +122,46 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 @keyframes slideLeft {
   from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateY(-10px);
   }
 
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
 @keyframes slideRight {
   from {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateY(-10px);
   }
 
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
@@ -210,6 +232,8 @@ body {
 
 .main-content {
   flex: 1;
+  min-width: 0;
+  width: 100%;
   padding: 30px;
 }
 
@@ -633,7 +657,33 @@ body {
 
 .page-container {
   max-width: 1400px;
+  width: 100%;
   margin: 0 auto;
+}
+
+.responsive-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-stack {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.responsive-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.responsive-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 /* Premium Form Input - Theme Aware with enhanced visibility */
@@ -919,6 +969,33 @@ body {
 
 /* ===== MOBILE (<768px) ===== */
 @media (max-width: 767px) {
+  html {
+    font-size: 15px;
+  }
+
+  .page-container {
+    max-width: 100%;
+  }
+
+  .responsive-stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .responsive-grid-2,
+  .responsive-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .table,
+  table {
+    min-width: 640px;
+  }
+
+  .rbc-calendar {
+    height: 520px;
+    padding: 12px;
+  }
   /* Hide desktop sidebar */
   .sidebar {
     display: none;
@@ -935,6 +1012,7 @@ body {
   .main-content {
     padding: 15px;
     width: 100%;
+    min-width: 0;
   }
 
   /* Page titles */
@@ -978,6 +1056,7 @@ body {
   .card {
     padding: 15px;
     margin-bottom: 15px;
+    overflow: hidden;
   }
 
   /* Tables - reduce font size */
@@ -988,6 +1067,7 @@ body {
   .table th,
   .table td {
     padding: 8px;
+    white-space: nowrap;
   }
 
   /* Calendar - smaller */
@@ -1122,6 +1202,13 @@ body {
 
 /* ===== TABLET (768px - 1023px) ===== */
 @media (min-width: 768px) and (max-width: 1023px) {
+  html {
+    font-size: 15px;
+  }
+
+  .responsive-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   /* Narrower sidebar */
   .sidebar {
     width: 200px;

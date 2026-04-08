@@ -745,10 +745,11 @@ export const uploadArtifacts = async (req: AuthRequest, res: Response) => {
 
 
     if (files) {
-
-      files.forEach((f) =>
-
-      );
+      files.forEach((f) => {
+        console.log(
+          `[Upload] Saved file for intervention ${id}: ${f.filename} (${f.mimetype}) at ${f.path}`
+        );
+      });
     }
 
     if (!files || files.length === 0) {

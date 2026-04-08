@@ -727,14 +727,7 @@ function Inventaire() {
           </div>
 
           {/* Filter buttons */}
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              flexWrap: "wrap",
-              width: "100%",
-            }}
-          >
+          <div className="responsive-stack" style={{ width: "100%" }}>
             {[
               { key: "all", label: "📦 Tous", count: stats.total },
               {
@@ -795,9 +788,9 @@ function Inventaire() {
             borderRadius: "12px",
             border: "1px solid var(--border-color)",
             padding: "20px",
-            overflowX: "auto",
           }}
         >
+          <div className="responsive-scroll">
           <table className="table" style={{ width: "100%" }}>
             <thead>
               <tr>
@@ -984,6 +977,7 @@ function Inventaire() {
               })}
             </tbody>
           </table>
+          </div>
           {filteredItems.length === 0 && (
             <div
               style={{
