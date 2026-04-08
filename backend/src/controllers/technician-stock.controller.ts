@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../index";
+import {
+  findTechnicianStockItem,
+  getTechnicianStockWhere,
+} from "./technician-stock.controller.helpers";
 
 // Obtenir le stock du véhicule d'un technicien
 export const getTechnicianStock = async (req: Request, res: Response) => {
@@ -38,24 +40,12 @@ export const addItemToVehicle = async (req: Request, res: Response) => {
     }
 
     // Vérifier si le matériel existe déjà dans le véhicule
-    const existing = await prisma.technicianStock.findUnique({
-      where: {
-        technicienId_stockId: {
-          technicienId,
-          stockId,
-        },
-      },
-    });
+    const existing = await findTechnicianStockItem(technicienId, stockId);
 
     if (existing) {
       // Mettre à jour la quantité si le matériel existe déjà
       const updated = await prisma.technicianStock.update({
-        where: {
-          technicienId_stockId: {
-            technicienId,
-            stockId,
-          },
-        },
+        where: getTechnicianStockWhere(technicienId, stockId),
         data: {
           quantite: existing.quantite + (quantite || 1),
         },
@@ -100,24 +90,14 @@ export const updateItemQuantity = async (req: Request, res: Response) => {
     // Si quantité <= 0, supprimer l'élément
     if (quantite <= 0) {
       await prisma.technicianStock.delete({
-        where: {
-          technicienId_stockId: {
-            technicienId,
-            stockId,
-          },
-        },
+        where: getTechnicianStockWhere(technicienId, stockId),
       });
       return res.json({ message: "Matériel retiré du véhicule" });
     }
 
     // Mettre à jour la quantité et/ou l'état
     const updated = await prisma.technicianStock.update({
-      where: {
-        technicienId_stockId: {
-          technicienId,
-          stockId,
-        },
-      },
+      where: getTechnicianStockWhere(technicienId, stockId),
       data: {
         quantite,
         ...(etat && { etat }),
@@ -142,12 +122,7 @@ export const removeItemFromVehicle = async (req: Request, res: Response) => {
     const { technicienId, stockId } = req.params;
 
     await prisma.technicianStock.delete({
-      where: {
-        technicienId_stockId: {
-          technicienId,
-          stockId,
-        },
-      },
+      where: getTechnicianStockWhere(technicienId, stockId),
     });
 
     res.json({ message: "Matériel retiré du véhicule avec succès" });
@@ -224,12 +199,7 @@ export const retrieveFromClient = async (req: Request, res: Response) => {
 
     // Récupérer l'item actuel pour logger le mouvement
     const current = await prisma.technicianStock.findUnique({
-      where: {
-        technicienId_stockId: {
-          technicienId,
-          stockId,
-        },
-      },
+      where: getTechnicianStockWhere(technicienId, stockId),
       include: { client: true, stock: true },
     });
 
@@ -243,12 +213,7 @@ export const retrieveFromClient = async (req: Request, res: Response) => {
 
     // Mettre à jour: enlever l'assignation client, mettre l'état
     const updated = await prisma.technicianStock.update({
-      where: {
-        technicienId_stockId: {
-          technicienId,
-          stockId,
-        },
-      },
+      where: getTechnicianStockWhere(technicienId, stockId),
       data: {
         clientId: null,
         assignedAt: null,
@@ -290,12 +255,7 @@ export const transferHsToGeneralStock = async (req: Request, res: Response) => {
 
     // Vérifier que l'item existe et est HS
     const item = await prisma.technicianStock.findUnique({
-      where: {
-        technicienId_stockId: {
-          technicienId,
-          stockId,
-        },
-      },
+      where: getTechnicianStockWhere(technicienId, stockId),
       include: { stock: true, technicien: true },
     });
 
@@ -313,12 +273,7 @@ export const transferHsToGeneralStock = async (req: Request, res: Response) => {
     await prisma.$transaction(async (tx) => {
       // Supprimer du stock technicien
       await tx.technicianStock.delete({
-        where: {
-          technicienId_stockId: {
-            technicienId,
-            stockId,
-          },
-        },
+        where: getTechnicianStockWhere(technicienId, stockId),
       });
 
       // Passer le stock principal en statut HS

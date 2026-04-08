@@ -3,11 +3,16 @@ import { validationResult } from 'express-validator';
 import * as bcrypt from 'bcryptjs';
 import { prisma } from '../index';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { buildPagination, parsePagination, respondValidationError } from './controller.utils';
+import { interventionClientListSelect } from './prisma-selects';
 
 export const getAllTechniciens = async (req: AuthRequest, res: Response) => {
     try {
         const { active, page = '1', limit = '50' } = req.query;
-        const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+        const { page: currentPage, limit: pageSize, skip } = parsePagination({
+            page: page as string,
+            limit: limit as string,
+        });
 
         const where = active !== undefined ? { active: active === 'true' } : {};
 
@@ -15,7 +20,7 @@ export const getAllTechniciens = async (req: AuthRequest, res: Response) => {
             prisma.technicien.findMany({
                 where,
                 skip,
-                take: parseInt(limit as string),
+                take: pageSize,
                 orderBy: { nom: 'asc' },
                 select: {
                     id: true,
@@ -38,10 +43,7 @@ export const getAllTechniciens = async (req: AuthRequest, res: Response) => {
         res.json({
             techniciens,
             pagination: {
-                total,
-                page: parseInt(page as string),
-                limit: parseInt(limit as string),
-                totalPages: Math.ceil(total / parseInt(limit as string)),
+                ...buildPagination(currentPage, pageSize, total),
             },
         });
     } catch (error) {
@@ -54,7 +56,7 @@ export const getTechnicienById = async (req: AuthRequest, res: Response) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return respondValidationError(res, errors.array());
         }
 
         const { id } = req.params;
@@ -117,14 +119,7 @@ export const getTechnicienPlanning = async (req: AuthRequest, res: Response) => 
             where,
             include: {
                 client: {
-                    select: {
-                        id: true,
-                        nom: true,
-                        rue: true,
-                        codePostal: true,
-                        ville: true,
-                        telephone: true,
-                    },
+                    select: interventionClientListSelect,
                 },
             },
             orderBy: { datePlanifiee: 'asc' },

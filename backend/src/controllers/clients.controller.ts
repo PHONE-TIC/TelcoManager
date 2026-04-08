@@ -2,11 +2,16 @@ import { Response } from "express";
 import { validationResult } from "express-validator";
 import { prisma } from "../index";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { buildPagination, parsePagination, respondValidationError } from "./controller.utils";
+import { interventionTechnicienListSelect } from "./prisma-selects";
 
 export const getAllClients = async (req: AuthRequest, res: Response) => {
   try {
     const { search, page = "1", limit = "20" } = req.query;
-    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+    const { page: currentPage, limit: pageSize, skip } = parsePagination({
+      page: page as string,
+      limit: limit as string,
+    });
 
     const where = search
       ? {
@@ -29,7 +34,7 @@ export const getAllClients = async (req: AuthRequest, res: Response) => {
       prisma.client.findMany({
         where,
         skip,
-        take: parseInt(limit as string),
+        take: pageSize,
         orderBy: { nom: "asc" },
       }),
       prisma.client.count({ where }),
@@ -38,10 +43,7 @@ export const getAllClients = async (req: AuthRequest, res: Response) => {
     res.json({
       clients,
       pagination: {
-        total,
-        page: parseInt(page as string),
-        limit: parseInt(limit as string),
-        totalPages: Math.ceil(total / parseInt(limit as string)),
+        ...buildPagination(currentPage, pageSize, total),
       },
     });
   } catch (error) {
@@ -56,7 +58,7 @@ export const getClientById = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const { id } = req.params;
@@ -102,11 +104,7 @@ export const getClientInterventions = async (
       where: { clientId: id },
       include: {
         technicien: {
-          select: {
-            id: true,
-            nom: true,
-            username: true,
-          },
+          select: interventionTechnicienListSelect,
         },
       },
       orderBy: { datePlanifiee: "desc" },
