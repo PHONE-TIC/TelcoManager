@@ -9,6 +9,7 @@ import PhotoCapture from "../components/PhotoCapture";
 import SignaturePad from "../components/SignaturePad";
 import BarcodeScanner from "../components/BarcodeScanner";
 import { useAuth } from "../contexts/AuthContext";
+import PhotoZoomModal from "./PhotoZoomModal";
 import "./TechnicianInterventionView.css";
 import type { Intervention, InterventionEquipment, Photo } from "../types";
 import {
@@ -126,14 +127,12 @@ const TechnicianInterventionView: React.FC = () => {
   const initialZoomLevel = useRef<number>(1);
 
   const stopAllCameras = () => {
-
     // Find all video elements and stop their streams
     document.querySelectorAll("video").forEach((video) => {
       if (video.srcObject) {
         const stream = video.srcObject as MediaStream;
         stream.getTracks().forEach((track) => {
           track.stop();
-
         });
         video.srcObject = null;
       }
@@ -195,10 +194,7 @@ const TechnicianInterventionView: React.FC = () => {
           const report = findArtifactReport(artifacts);
 
           if (report) {
-
             setReportUrl(report.url);
-          } else {
-
           }
         } catch (artifactErr) {
           console.warn("Could not load artifacts:", artifactErr);
@@ -223,10 +219,16 @@ const TechnicianInterventionView: React.FC = () => {
 
     // Cleanup: stop all cameras when leaving the page
     return () => {
-
       stopAllCameras();
     };
   }, [id, loadIntervention]);
+
+  const closePhotoModal = () => {
+    setModalPhoto(null);
+    setZoomLevel(1);
+    initialPinchDistance.current = null;
+    initialZoomLevel.current = 1;
+  };
 
   const showMessage = (msg: string, isError = false) => {
     if (isError) {
@@ -1028,170 +1030,15 @@ const TechnicianInterventionView: React.FC = () => {
         </div>
 
         {/* Photo Modal with Zoom - for closed interventions view */}
-        {modalPhoto && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.9)",
-              zIndex: 9999,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onClick={() => setModalPhoto(null)}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setModalPhoto(null)}
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                border: "none",
-                background: "rgba(255,255,255,0.2)",
-                color: "white",
-                fontSize: "24px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              ✕
-            </button>
-
-            {/* Zoom controls */}
-            <div
-              style={{
-                position: "absolute",
-                bottom: "30px",
-                display: "flex",
-                gap: "15px",
-                alignItems: "center",
-                background: "rgba(0,0,0,0.6)",
-                padding: "10px 20px",
-                borderRadius: "30px",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "rgba(255,255,255,0.2)",
-                  color: "white",
-                  fontSize: "20px",
-                  cursor: "pointer",
-                }}
-              >
-                −
-              </button>
-              <span
-                style={{
-                  color: "white",
-                  fontSize: "14px",
-                  minWidth: "50px",
-                  textAlign: "center",
-                }}
-              >
-                {Math.round(zoomLevel * 100)}%
-              </span>
-              <button
-                onClick={() => setZoomLevel(Math.min(4, zoomLevel + 0.25))}
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "rgba(255,255,255,0.2)",
-                  color: "white",
-                  fontSize: "20px",
-                  cursor: "pointer",
-                }}
-              >
-                +
-              </button>
-              <button
-                onClick={() => setZoomLevel(1)}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "20px",
-                  border: "none",
-                  background: "rgba(255,255,255,0.2)",
-                  color: "white",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                }}
-              >
-                Reset
-              </button>
-            </div>
-
-            {/* Image */}
-            <div
-              style={{
-                overflow: "auto",
-                maxWidth: "90vw",
-                maxHeight: "80vh",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img
-                src={modalPhoto}
-                alt="Photo agrandie"
-                style={{
-                  transform: `scale(${zoomLevel})`,
-                  transformOrigin: "center center",
-                  transition: "transform 0.1s ease",
-                  maxWidth: zoomLevel === 1 ? "90vw" : "none",
-                  maxHeight: zoomLevel === 1 ? "80vh" : "none",
-                  objectFit: "contain",
-                  touchAction: "none", // Prevent default touch behavior
-                }}
-                onTouchStart={(e) => {
-                  if (e.touches.length === 2) {
-                    const dx = e.touches[0].clientX - e.touches[1].clientX;
-                    const dy = e.touches[0].clientY - e.touches[1].clientY;
-                    initialPinchDistance.current = Math.sqrt(dx * dx + dy * dy);
-                    initialZoomLevel.current = zoomLevel;
-                  }
-                }}
-                onTouchMove={(e) => {
-                  if (e.touches.length === 2 && initialPinchDistance.current) {
-                    e.preventDefault();
-                    const dx = e.touches[0].clientX - e.touches[1].clientX;
-                    const dy = e.touches[0].clientY - e.touches[1].clientY;
-                    const currentDistance = Math.sqrt(dx * dx + dy * dy);
-                    const scale =
-                      currentDistance / initialPinchDistance.current;
-                    const newZoom = Math.min(
-                      4,
-                      Math.max(0.5, initialZoomLevel.current * scale)
-                    );
-                    setZoomLevel(newZoom);
-                  }
-                }}
-                onTouchEnd={() => {
-                  initialPinchDistance.current = null;
-                }}
-              />
-            </div>
-          </div>
-        )}
+        <PhotoZoomModal
+          photoUrl={modalPhoto}
+          zoomLevel={zoomLevel}
+          onClose={closePhotoModal}
+          onZoomChange={setZoomLevel}
+          enableTouchZoom
+          initialPinchDistance={initialPinchDistance}
+          initialZoomLevel={initialZoomLevel}
+        />
       </div>
     );
   }
@@ -2140,143 +1987,12 @@ const TechnicianInterventionView: React.FC = () => {
       )}
 
       {/* Photo Modal with Zoom */}
-      {modalPhoto && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.9)",
-            zIndex: 9999,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onClick={() => setModalPhoto(null)}
-        >
-          {/* Close button */}
-          <button
-            onClick={() => setModalPhoto(null)}
-            style={{
-              position: "absolute",
-              top: "20px",
-              right: "20px",
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              border: "none",
-              background: "rgba(255,255,255,0.2)",
-              color: "white",
-              fontSize: "24px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            ✕
-          </button>
-
-          {/* Zoom controls */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: "30px",
-              display: "flex",
-              gap: "15px",
-              alignItems: "center",
-              background: "rgba(0,0,0,0.6)",
-              padding: "10px 20px",
-              borderRadius: "30px",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                border: "none",
-                background: "rgba(255,255,255,0.2)",
-                color: "white",
-                fontSize: "20px",
-                cursor: "pointer",
-              }}
-            >
-              −
-            </button>
-            <span
-              style={{
-                color: "white",
-                fontSize: "14px",
-                minWidth: "50px",
-                textAlign: "center",
-              }}
-            >
-              {Math.round(zoomLevel * 100)}%
-            </span>
-            <button
-              onClick={() => setZoomLevel(Math.min(4, zoomLevel + 0.25))}
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                border: "none",
-                background: "rgba(255,255,255,0.2)",
-                color: "white",
-                fontSize: "20px",
-                cursor: "pointer",
-              }}
-            >
-              +
-            </button>
-            <button
-              onClick={() => setZoomLevel(1)}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "20px",
-                border: "none",
-                background: "rgba(255,255,255,0.2)",
-                color: "white",
-                fontSize: "12px",
-                cursor: "pointer",
-              }}
-            >
-              Reset
-            </button>
-          </div>
-
-          {/* Image */}
-          <div
-            style={{
-              overflow: "auto",
-              maxWidth: "90vw",
-              maxHeight: "80vh",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={modalPhoto}
-              alt="Photo agrandie"
-              style={{
-                transform: `scale(${zoomLevel})`,
-                transformOrigin: "center center",
-                transition: "transform 0.2s ease",
-                maxWidth: zoomLevel === 1 ? "90vw" : "none",
-                maxHeight: zoomLevel === 1 ? "80vh" : "none",
-                objectFit: "contain",
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <PhotoZoomModal
+        photoUrl={modalPhoto}
+        zoomLevel={zoomLevel}
+        onClose={closePhotoModal}
+        onZoomChange={setZoomLevel}
+      />
 
       {/* Vehicle Stock Selection Modal */}
       {showVehicleStockModal && (

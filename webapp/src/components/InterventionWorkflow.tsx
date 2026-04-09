@@ -225,7 +225,6 @@ export default function InterventionWorkflow({
       });
 
       // --- ARTIFACT UPLOAD ---
-      console.log("=== UPLOAD ARTIFACTS START ===");
       const formData = new FormData();
 
       // Photos

@@ -121,18 +121,11 @@ const GlobalSearch: React.FC = () => {
       setShowHistory(false);
 
       try {
-        console.log(
-          "Performing search with query:",
-          searchQuery,
-          "filters:",
-          filters
-        );
         const data = await apiService.globalSearch({
           q: searchQuery,
           filters,
         });
 
-        console.log("Search results received:", data);
         setResults(data);
 
         // Save to history

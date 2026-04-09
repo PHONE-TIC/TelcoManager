@@ -27,7 +27,6 @@ export const initOfflineDB = (): Promise<IDBDatabase> => {
 
         request.onsuccess = () => {
             db = request.result;
-            console.log('IndexedDB opened successfully');
             resolve(db);
         };
 
@@ -62,7 +61,6 @@ export const cacheInterventions = async (interventions: { id: string; datePlanif
 
     return new Promise((resolve, reject) => {
         transaction.oncomplete = () => {
-            console.log(`Cached ${interventions.length} interventions for offline use`);
             resolve();
         };
         transaction.onerror = () => reject(transaction.error);
@@ -111,7 +109,6 @@ export const queueForSync = async (action: SyncAction): Promise<void> => {
 
     return new Promise((resolve, reject) => {
         transaction.oncomplete = () => {
-            console.log('Action queued for sync:', action.type);
             resolve();
         };
         transaction.onerror = () => reject(transaction.error);
@@ -179,18 +176,14 @@ export const removeSyncAction = async (id: number): Promise<void> => {
 // Process sync queue when back online
 export const processSyncQueue = async (): Promise<{ success: number; failed: number }> => {
     if (!isOnline()) {
-        console.log('Cannot sync: still offline');
         return { success: 0, failed: 0 };
     }
 
     const pendingActions = await getPendingSyncActions();
 
     if (pendingActions.length === 0) {
-        console.log('No pending actions to sync');
         return { success: 0, failed: 0 };
     }
-
-    console.log(`Processing ${pendingActions.length} queued actions...`);
 
     let success = 0;
     let failed = 0;
@@ -219,7 +212,6 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
                 // Remove from queue on success
                 await removeSyncAction((action as any).id);
                 success++;
-                console.log(`Synced action: ${action.type} ${action.endpoint}`);
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 console.error(`Failed to sync action: ${response.status}`, errorData);
@@ -231,7 +223,6 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
         }
     }
 
-    console.log(`Sync complete: ${success} success, ${failed} failed`);
     return { success, failed };
 };
 
@@ -244,8 +235,6 @@ export const enableAutoSync = (): void => {
     syncListenerActive = true;
 
     window.addEventListener('online', async () => {
-        console.log('Back online - starting auto-sync...');
-
         // Small delay to ensure network is stable
         setTimeout(async () => {
             const result = await processSyncQueue();
@@ -258,5 +247,4 @@ export const enableAutoSync = (): void => {
         }, 2000);
     });
 
-    console.log('Auto-sync enabled');
 };

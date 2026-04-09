@@ -101,9 +101,6 @@ export const scheduleReminder = (intervention: Intervention): void => {
         }, timeUntilReminder);
 
         scheduledReminders.set(intervention.id, timeout);
-
-        const reminderTime = new Date(Date.now() + timeUntilReminder);
-        console.log(`Reminder scheduled for intervention ${intervention.id} at ${reminderTime.toLocaleTimeString()}`);
     }
 };
 
@@ -113,15 +110,13 @@ export const cancelReminder = (interventionId: string): void => {
     if (timeout) {
         clearTimeout(timeout);
         scheduledReminders.delete(interventionId);
-        console.log(`Reminder cancelled for intervention ${interventionId}`);
     }
 };
 
 // Cancel all scheduled reminders
 export const cancelAllReminders = (): void => {
-    scheduledReminders.forEach((timeout, id) => {
+    scheduledReminders.forEach((timeout) => {
         clearTimeout(timeout);
-        console.log(`Reminder cancelled for intervention ${id}`);
     });
     scheduledReminders.clear();
 };
@@ -131,7 +126,6 @@ export const scheduleRemindersForInterventions = (interventions: Intervention[])
     const settings = getReminderSettings();
 
     if (!settings.enabled) {
-        console.log('Reminders are disabled');
         return;
     }
 
@@ -145,8 +139,6 @@ export const scheduleRemindersForInterventions = (interventions: Intervention[])
         const date = new Date(intervention.datePlanifiee);
         return date >= today && date < tomorrow;
     });
-
-    console.log(`Scheduling reminders for ${todaysInterventions.length} interventions today`);
 
     todaysInterventions.forEach(intervention => {
         scheduleReminder(intervention);

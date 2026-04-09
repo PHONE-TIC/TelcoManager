@@ -17,7 +17,6 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
 
     try {
         const permission = await Notification.requestPermission();
-        console.log('Notification permission:', permission);
         return permission;
     } catch (error) {
         console.error('Error requesting notification permission:', error);
@@ -106,7 +105,6 @@ export const subscribeToServerPush = async (): Promise<PushSubscription | null> 
             // applicationServerKey would come from your backend
         });
 
-        console.log('Push subscription:', subscription);
         return subscription;
     } catch (error) {
         console.error('Error subscribing to push:', error);

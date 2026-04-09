@@ -44,16 +44,10 @@ export const useOffline = (): UseOfflineReturn => {
         // Listen for connection changes
         const cleanup = onConnectionChange((isNowOnline) => {
             setOnline(isNowOnline);
-            if (isNowOnline) {
-                console.log('Back online! Auto-sync will trigger...');
-            } else {
-                console.log('Gone offline. Using cached data.');
-            }
         });
 
         // Listen for sync completion
-        const handleSyncComplete = (event: CustomEvent) => {
-            console.log('Sync completed:', event.detail);
+        const handleSyncComplete = (_event: CustomEvent) => {
             // Update pending count
             getPendingSyncActions().then(actions => {
                 setPendingSyncCount(actions.length);
