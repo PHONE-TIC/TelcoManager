@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { prisma } from "../index";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { stockMovementStockSelect, stockMovementUserSelect } from "./stock-movement.constants";
 
 // Get movements for a specific stock item
 export const getStockMovements = async (req: AuthRequest, res: Response) => {
@@ -12,10 +13,10 @@ export const getStockMovements = async (req: AuthRequest, res: Response) => {
       where: { stockId: id },
       include: {
         performedBy: {
-          select: { id: true, nom: true, username: true },
+          select: stockMovementUserSelect,
         },
         technicien: {
-          select: { id: true, nom: true, username: true },
+          select: stockMovementUserSelect,
         },
       },
       orderBy: { createdAt: "desc" },
@@ -65,18 +66,13 @@ export const getAllMovements = async (req: AuthRequest, res: Response) => {
       where,
       include: {
         stock: {
-          select: {
-            id: true,
-            nomMateriel: true,
-            reference: true,
-            categorie: true,
-          },
+          select: stockMovementStockSelect,
         },
         performedBy: {
-          select: { id: true, nom: true, username: true },
+          select: stockMovementUserSelect,
         },
         technicien: {
-          select: { id: true, nom: true, username: true },
+          select: stockMovementUserSelect,
         },
       },
       orderBy: { createdAt: "desc" },
