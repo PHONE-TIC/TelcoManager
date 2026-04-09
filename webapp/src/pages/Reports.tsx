@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api.service';
 import moment from 'moment';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import type { Intervention, Technicien } from '../types';
 
 interface ReportStats {
@@ -111,6 +109,11 @@ function Reports() {
     };
 
     const exportPDF = async () => {
+        const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+            import('jspdf'),
+            import('jspdf-autotable')
+        ]);
+
         const doc = new jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
 
