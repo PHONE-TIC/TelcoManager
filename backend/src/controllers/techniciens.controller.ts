@@ -1,10 +1,10 @@
 import { Response } from 'express';
 import { validationResult } from 'express-validator';
-import * as bcrypt from 'bcryptjs';
 import { prisma } from '../index';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { buildPagination, parsePagination, respondValidationError } from './controller.utils';
 import { interventionClientListSelect } from './prisma-selects';
+import { createTechnicienRecord, deleteTechnicienRecord, updateTechnicienRecord } from '../services/technicien-write.service';
 
 export const getAllTechniciens = async (req: AuthRequest, res: Response) => {
     try {
@@ -98,7 +98,7 @@ export const getTechnicienPlanning = async (req: AuthRequest, res: Response) => 
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return respondValidationError(res, errors.array());
         }
 
         const { id } = req.params;
@@ -136,44 +136,14 @@ export const createTechnicien = async (req: AuthRequest, res: Response) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return respondValidationError(res, errors.array());
         }
 
-        const { nom, username, password, role = 'technicien' } = req.body;
-
-        // Vérifier si le nom d'utilisateur existe déjà
-        const existingTechnicien = await prisma.technicien.findUnique({
-            where: { username },
-        });
-
-        if (existingTechnicien) {
-            return res.status(409).json({ error: 'Nom d\'utilisateur déjà utilisé' });
-        }
-
-        // Hasher le mot de passe
-        const passwordHash = await bcrypt.hash(password, 10);
-
-        const technicien = await prisma.technicien.create({
-            data: {
-                nom,
-                username,
-                passwordHash,
-                role,
-            },
-            select: {
-                id: true,
-                nom: true,
-                username: true,
-                role: true,
-                active: true,
-                createdAt: true,
-            },
-        });
-
-        res.status(201).json(technicien);
+        const result = await createTechnicienRecord(req.body);
+        return res.status(result.status).json(result.body);
     } catch (error) {
         console.error('Erreur lors de la création du technicien:', error);
-        res.status(500).json({ error: 'Erreur lors de la création du technicien' });
+        return res.status(500).json({ error: 'Erreur lors de la création du technicien' });
     }
 };
 
@@ -181,47 +151,20 @@ export const updateTechnicien = async (req: AuthRequest, res: Response) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return respondValidationError(res, errors.array());
         }
 
-        const { id } = req.params;
-        const { nom, username, password, role, active } = req.body;
-
-        const data: any = {
-            ...(nom && { nom }),
-            ...(username && { username }),
-            ...(role && { role }),
-            ...(active !== undefined && { active }),
-        };
-
-        // Hasher le nouveau mot de passe si fourni
-        if (password) {
-            data.passwordHash = await bcrypt.hash(password, 10);
-        }
-
-        const technicien = await prisma.technicien.update({
-            where: { id },
-            data,
-            select: {
-                id: true,
-                nom: true,
-                username: true,
-                role: true,
-                active: true,
-                updatedAt: true,
-            },
-        });
-
-        res.json(technicien);
+        const technicien = await updateTechnicienRecord(req.params.id, req.body);
+        return res.json(technicien);
     } catch (error: any) {
         if (error.code === 'P2025') {
             return res.status(404).json({ error: 'Technicien non trouvé' });
         }
         if (error.code === 'P2002') {
-            return res.status(409).json({ error: 'Nom d\'utilisateur déjà utilisé' });
+            return res.status(409).json({ error: "Nom d'utilisateur déjà utilisé" });
         }
         console.error('Erreur lors de la mise à jour du technicien:', error);
-        res.status(500).json({ error: 'Erreur lors de la mise à jour du technicien' });
+        return res.status(500).json({ error: 'Erreur lors de la mise à jour du technicien' });
     }
 };
 
@@ -229,21 +172,16 @@ export const deleteTechnicien = async (req: AuthRequest, res: Response) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return respondValidationError(res, errors.array());
         }
 
-        const { id } = req.params;
-
-        await prisma.technicien.delete({
-            where: { id },
-        });
-
-        res.status(204).send();
+        await deleteTechnicienRecord(req.params.id);
+        return res.status(204).send();
     } catch (error: any) {
         if (error.code === 'P2025') {
             return res.status(404).json({ error: 'Technicien non trouvé' });
         }
         console.error('Erreur lors de la suppression du technicien:', error);
-        res.status(500).json({ error: 'Erreur lors de la suppression du technicien' });
+        return res.status(500).json({ error: 'Erreur lors de la suppression du technicien' });
     }
 };
