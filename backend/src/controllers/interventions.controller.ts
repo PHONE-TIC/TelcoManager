@@ -4,6 +4,9 @@ import { prisma } from "../index";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { notifyNewIntervention } from "../services/push.service";
 import {
+  manageInterventionEquipment,
+} from "../services/intervention-equipment.service";
+import {
   getInterventionLockConflict,
   lockInterventionForUser,
   unlockInterventionById,
@@ -430,186 +433,25 @@ export const signIntervention = async (req: AuthRequest, res: Response) => {
 export const manageEquipement = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const {
-      stockId,
-      action,
-      quantite = 1,
-      notes,
-      etat,
-      nom,
-      marque,
-      modele,
-      serialNumber,
-    } = req.body;
-    // action: 'install', 'retrait'
-    // etat (si retrait): 'ok', 'hs'
-
-    // Validation for stockId OR manual details
-    if (!stockId && !nom) {
-      return res
-        .status(400)
-        .json({ error: "stockId ou nom du matériel requis" });
-    }
-
-    const intervention = await prisma.intervention.findUnique({
-      where: { id },
+    const result = await manageInterventionEquipment({
+      interventionId: id,
+      stockId: req.body.stockId,
+      action: req.body.action,
+      quantite: req.body.quantite,
+      notes: req.body.notes,
+      etat: req.body.etat,
+      nom: req.body.nom,
+      marque: req.body.marque,
+      modele: req.body.modele,
+      serialNumber: req.body.serialNumber,
     });
 
-    if (!intervention)
-      return res.status(404).json({ error: "Intervention non trouvée" });
-
-    if (action === "install") {
-      if (!stockId)
-        return res
-          .status(400)
-          .json({ error: "stockId requis pour installation" });
-
-      const stock = await prisma.stock.findUnique({ where: { id: stockId } });
-      if (!stock) return res.status(404).json({ error: "Article non trouvé" });
-
-      // 1. Décrémenter stock véhicule technicien (OBLIGATOIRE)
-      if (!intervention.technicienId) {
-        return res.status(400).json({
-          error:
-            "Impossible d'installer : aucun technicien assigné à l'intervention.",
-        });
-      }
-
-      try {
-        const techStock = await prisma.technicianStock.findUnique({
-          where: {
-            technicienId_stockId: {
-              technicienId: intervention.technicienId,
-              stockId,
-            },
-          },
-        });
-
-        if (!techStock || techStock.quantite < quantite) {
-          return res.status(400).json({
-            error:
-              "Stock insuffisant dans le véhicule du technicien. Veuillez effectuer un transfert depuis l'entrepôt.",
-          });
-        }
-
-        // Decrementer et supprimer si 0
-        if (techStock.quantite - quantite <= 0) {
-          await prisma.technicianStock.delete({
-            where: { id: techStock.id },
-          });
-        } else {
-          await prisma.technicianStock.update({
-            where: { id: techStock.id },
-            data: { quantite: { decrement: quantite } },
-          });
-        }
-      } catch (e) {
-        console.warn("Tech stock update error:", e);
-        return res.status(400).json({ error: "Erreur stock technicien" });
-      }
-
-      // 2. Créer équipement client
-      await prisma.clientEquipment.create({
-        data: {
-          clientId: intervention.clientId,
-          stockId,
-          referenceMateriel: stock.reference,
-          statut: "installe",
-          notes: `Installé (Int #${intervention.numero})`,
-        },
-      });
-
-      // Log
-      await prisma.interventionEquipment.create({
-        data: {
-          interventionId: id,
-          stockId,
-          action,
-          quantite,
-          notes,
-        },
-      });
-    } else if (action === "retrait") {
-      // Retrait logic
-      // Log the removal
-      await prisma.interventionEquipment.create({
-        data: {
-          interventionId: id,
-          stockId, // Can be null
-          action: action + (etat ? `_${etat}` : ""),
-          quantite,
-          notes: notes || `Etat: ${etat || "Non spécifié"}`,
-          nom,
-          marque,
-          modele,
-          serialNumber,
-        },
-      });
-
-      // If stockId Provided (known item), we update ClientEquipment status and RETURN TO TECH STOCK
-      if (stockId) {
-        const clientEq = await prisma.clientEquipment.findFirst({
-          where: {
-            clientId: intervention.clientId,
-            stockId,
-            statut: "installe",
-          },
-        });
-
-        if (clientEq) {
-          await prisma.clientEquipment.update({
-            where: { id: clientEq.id },
-            data: {
-              statut: etat === "hs" ? "hs" : "retire",
-              notes: `Retiré ${etat?.toUpperCase()} (Int #${intervention.numero
-                })`,
-            },
-          });
-        }
-
-        // Retour dans le stock du technicien (Traçabilité)
-        if (intervention.technicienId) {
-          await prisma.technicianStock.upsert({
-            where: {
-              technicienId_stockId: {
-                technicienId: intervention.technicienId,
-                stockId,
-              },
-            },
-            update: {
-              quantite: { increment: quantite },
-              etat: etat === "hs" ? "hs" : "ok", // Mise à jour de l'état si retourné
-            },
-            create: {
-              technicienId: intervention.technicienId,
-              stockId,
-              quantite,
-              etat: etat === "hs" ? "hs" : "ok",
-            },
-          });
-        } else {
-          // Fallback (ne devrait pas arriver si process respecté, mais au cas où admin retire)
-          console.warn(
-            "Retrait sans technicien : retour stock central (fallback)"
-          );
-          if (etat === "ok") {
-            await prisma.stock.update({
-              where: { id: stockId },
-              data: { quantite: { increment: quantite } },
-            });
-          } else {
-            // Handle HS return to central... complicated without existing HS item logic.
-            // Leaving as gap or assuming OK reuse.
-            // But prioritizing Tech flow as requested.
-          }
-        }
-      }
-    }
-
-    res.status(201).json({ success: true });
+    return res.status(result.status).json(result.body);
   } catch (error) {
     console.error("Erreur manageEquipement:", error);
-    res.status(500).json({ error: "Erreur lors de la gestion du matériel" });
+    return res
+      .status(500)
+      .json({ error: "Erreur lors de la gestion du matériel" });
   }
 };
 
