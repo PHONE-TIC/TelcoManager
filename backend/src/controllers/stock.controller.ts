@@ -4,7 +4,8 @@ import { prisma } from "../index";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { buildPagination, parsePagination, respondValidationError } from "./controller.utils";
 import { stockClientMiniSelect, stockTechnicienMiniSelect } from "./prisma-selects";
-import { generateStockReference, parseSerialNumbers } from "./stock.controller.helpers";
+import { generateStockReference } from "./stock.controller.helpers";
+import { createStockItems, moveStockToHs } from "../services/stock-write.service";
 
 export const getAllStock = async (req: AuthRequest, res: Response) => {
   try {
@@ -191,184 +192,17 @@ export const createStock = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
-    const {
-      nomMateriel,
-      reference,
-      marque,
-      modele,
-      codeBarre,
-      categorie,
-      statut = "courant",
-      quantite = 1,
-      notes,
-      numeroSerie,
-      fournisseur,
-      lowStockThreshold,
-    } = req.body;
-
-    // Générer la référence automatiquement si marque et catégorie sont fournis et pas de référence manuelle
-    let finalReference = reference;
-    if (!reference && marque && categorie) {
-      finalReference = await generateStockReference(marque, categorie, modele);
-    } else if (!reference) {
-      return res.status(400).json({
-        error:
-          "La marque et la catégorie sont requises pour générer la référence automatiquement, ou fournissez une référence manuellement.",
-      });
-    }
-
-    // Générer nomMateriel automatiquement si non fourni
-    const finalNomMateriel =
-      nomMateriel ||
-      (modele ? `${marque} ${modele}` : `${marque} ${categorie}`);
-
-    // Parse serial numbers (comma or newline separated)
-    const serialNumbers = numeroSerie
-      ? String(numeroSerie)
-          .split(/[,\n]/)
-          .map((s: string) => s.trim())
-          .filter((s: string) => s.length > 0)
-      : [];
-
-    // Check for duplicate serial numbers in the database (only for non-empty serial numbers)
-    const nonEmptySerialNumbers = serialNumbers.filter(
-      (sn) => sn && sn.trim() !== ""
-    );
-
-    if (nonEmptySerialNumbers.length > 0) {
-      const existingItems = await prisma.stock.findMany({
-        where: {
-          numeroSerie: {
-            in: nonEmptySerialNumbers,
-          },
-        },
-        include: {
-          technicianStocks: {
-            include: {
-              technicien: {
-                select: { nom: true },
-              },
-            },
-          },
-          clientEquipements: {
-            include: {
-              client: {
-                select: { nom: true },
-              },
-            },
-          },
-        },
-      });
-
-      if (existingItems.length > 0) {
-        // Build detailed error message with location info
-        // Use type assertion to handle Prisma include types
-        const duplicates = (existingItems as any[]).map((item) => {
-          let location = "Stock principal";
-
-          // Check if assigned to a technician (with null safety)
-          if (item.technicianStocks && item.technicianStocks.length > 0) {
-            const techStock = item.technicianStocks[0];
-            if (techStock.technicien) {
-              location = `Véhicule de ${
-                techStock.technicien.nom || "Technicien"
-              }`;
-            }
-          }
-
-          // Check if assigned to a client (with null safety)
-          if (item.clientEquipements && item.clientEquipements.length > 0) {
-            const clientEquip = item.clientEquipements[0];
-            if (clientEquip.client) {
-              location = `Client: ${clientEquip.client.nom || "Inconnu"}`;
-            }
-          }
-
-          return {
-            numeroSerie: item.numeroSerie,
-            reference: item.reference,
-            nomMateriel: item.nomMateriel,
-            location,
-          };
-        });
-
-        const duplicateSerials = duplicates
-          .map((d) => d.numeroSerie)
-          .join(", ");
-        const duplicateDetails = duplicates
-          .map((d) => `• ${d.numeroSerie} (${d.nomMateriel}) - ${d.location}`)
-          .join("\n");
-
-        return res.status(409).json({
-          error: `Numéro(s) de série déjà enregistré(s) : ${duplicateSerials}`,
-          duplicates,
-          details: duplicateDetails,
-        });
-      }
-    }
-
-    // If multiple serial numbers, create individual entries
-    if (serialNumbers.length > 1) {
-      // Générer des références uniques pour chaque article si nécessaire
-      const createdItems = [];
-      for (let i = 0; i < serialNumbers.length; i++) {
-        const sn = serialNumbers[i];
-        let itemRef = finalReference;
-        // Si on génère automatiquement, incrémenter pour chaque article
-        if (!reference && marque && categorie && i > 0) {
-          itemRef = await generateStockReference(marque, categorie, modele);
-        }
-        const item = await prisma.stock.create({
-          data: {
-            nomMateriel: finalNomMateriel,
-            marque,
-            modele,
-            reference: itemRef,
-            codeBarre: null, // Can't have duplicate barcodes
-            categorie,
-            statut,
-            quantite: 1, // Each serial number = 1 unit
-            notes,
-            numeroSerie: sn,
-            fournisseur,
-            lowStockThreshold,
-          },
-        });
-        createdItems.push(item);
-      }
-      return res
-        .status(201)
-        .json({ created: createdItems.length, items: createdItems });
-    }
-
-    // Single or no serial number - default behavior
-    const stock = await prisma.stock.create({
-      data: {
-        nomMateriel: finalNomMateriel,
-        marque,
-        modele,
-        reference: finalReference,
-        codeBarre: codeBarre?.trim() || null,
-        categorie,
-        statut,
-        quantite,
-        notes,
-        numeroSerie: serialNumbers[0] || "",
-        fournisseur,
-        lowStockThreshold,
-      },
-    });
-
-    res.status(201).json(stock);
+    const result = await createStockItems(req.body);
+    return res.status(result.status).json(result.body);
   } catch (error: any) {
     if (error.code === "P2002") {
       return res.status(409).json({ error: "Code-barres déjà utilisé" });
     }
     console.error("Erreur lors de la création de l'article:", error);
-    res.status(500).json({ error: "Erreur lors de la création de l'article" });
+    return res.status(500).json({ error: "Erreur lors de la création de l'article" });
   }
 };
 
@@ -466,75 +300,20 @@ export const moveToHS = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const { id } = req.params;
-    const { quantite, notes } = req.body;
-
-    const stockCourant = await prisma.stock.findUnique({
-      where: { id },
+    const result = await moveStockToHs({
+      stockId: id,
+      quantite: req.body.quantite,
+      notes: req.body.notes,
     });
 
-    if (!stockCourant) {
-      return res.status(404).json({ error: "Article non trouvé" });
-    }
-
-    if (stockCourant.statut !== "courant") {
-      return res
-        .status(400)
-        .json({ error: "Cet article n'est pas en stock courant" });
-    }
-
-    const qteADeplacer = quantite || stockCourant.quantite;
-
-    if (qteADeplacer > stockCourant.quantite) {
-      return res.status(400).json({ error: "Quantité insuffisante en stock" });
-    }
-
-    // Diminuer le stock courant
-    await prisma.stock.update({
-      where: { id },
-      data: {
-        quantite: stockCourant.quantite - qteADeplacer,
-      },
-    });
-
-    // Créer ou mettre à jour le stock HS
-    const stockHS = await prisma.stock.findFirst({
-      where: {
-        reference: stockCourant.reference,
-        statut: "hs",
-      },
-    });
-
-    if (stockHS) {
-      await prisma.stock.update({
-        where: { id: stockHS.id },
-        data: {
-          quantite: stockHS.quantite + qteADeplacer,
-          notes: notes || stockHS.notes,
-        },
-      });
-    } else {
-      await prisma.stock.create({
-        data: {
-          nomMateriel: stockCourant.nomMateriel,
-          reference: stockCourant.reference,
-          categorie: stockCourant.categorie,
-          statut: "hs",
-          quantite: qteADeplacer,
-          notes: notes || "Matériel hors service",
-        },
-      });
-    }
-
-    res.json({
-      message: `${qteADeplacer} unité(s) déplacée(s) vers le stock HS`,
-    });
+    return res.status(result.status).json(result.body);
   } catch (error) {
     console.error("Erreur lors du déplacement vers HS:", error);
-    res.status(500).json({ error: "Erreur lors du déplacement" });
+    return res.status(500).json({ error: "Erreur lors du déplacement" });
   }
 };
 
