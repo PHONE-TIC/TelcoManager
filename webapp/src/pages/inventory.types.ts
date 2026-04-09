@@ -21,4 +21,7 @@ export interface InventorySession {
   status: string;
   items: InventoryItem[];
   notes?: string;
+  _count?: {
+    items?: number;
+  };
 }

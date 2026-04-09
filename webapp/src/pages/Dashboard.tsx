@@ -12,14 +12,45 @@ import {
   Cell,
 } from "recharts";
 import moment from "moment";
+import type { Intervention, Stock } from "../types";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
+interface InterventionStat {
+  name: string;
+  value: number;
+}
+
+interface StockCategorySummary {
+  categorie: string;
+  articles: number;
+  quantite: number;
+}
+
+interface StockSummaryGroup {
+  totalQuantite: number;
+}
+
+interface LowStockItem extends Stock {
+  totalTechniciens?: number;
+}
+
+interface DashboardStats {
+  stock: {
+    stockCourant?: StockSummaryGroup;
+    stockHS?: StockSummaryGroup;
+    stockFaible?: LowStockItem[];
+    parCategorie?: StockCategorySummary[];
+  };
+  totalClients: number;
+  totalInterventions: number;
+}
+
 function Dashboard() {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [recentInterventions, setRecentInterventions] = useState<any[]>([]);
-  const [interventionStats, setInterventionStats] = useState<any[]>([]);
+  const [recentInterventions, setRecentInterventions] = useState<Intervention[]>([]);
+  const [interventionStats, setInterventionStats] = useState<InterventionStat[]>([]);
 
   useEffect(() => {
     loadData();
@@ -396,7 +427,7 @@ function Dashboard() {
             <div>
               {stats.stock.parCategorie
                 .slice(0, 5)
-                .map((cat: any, idx: number) => (
+                .map((cat: StockCategorySummary, idx: number) => (
                   <div
                     key={idx}
                     className="intervention-card-item"

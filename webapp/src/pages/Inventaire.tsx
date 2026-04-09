@@ -7,7 +7,7 @@ import type { FilterType, InventorySession } from "./inventory.types";
 import { getFilteredInventoryItems } from "./inventory.utils";
 
 function Inventaire() {
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessions, setSessions] = useState<InventorySession[]>([]);
   const [currentSession, setCurrentSession] = useState<InventorySession | null>(
     null
   );

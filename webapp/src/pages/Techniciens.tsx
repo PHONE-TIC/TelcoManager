@@ -3,10 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import TableResponsive from "../components/TableResponsive";
 import UserAvatar from "../components/UserAvatar";
+import type { Technicien } from "../types";
+
+interface TechnicienWithCounts extends Technicien {
+  _count?: {
+    interventions?: number;
+  };
+}
 
 function Techniciens() {
   const navigate = useNavigate();
-  const [techniciens, setTechniciens] = useState<any[]>([]);
+  const [techniciens, setTechniciens] = useState<TechnicienWithCounts[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [roleFilter, setRoleFilter] = useState<
@@ -114,7 +121,11 @@ function Techniciens() {
           {/* Role filter dropdown */}
           <select
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value as any)}
+            onChange={(e) =>
+              setRoleFilter(
+                e.target.value as "all" | "admin" | "gestionnaire" | "technicien"
+              )
+            }
             style={{
               padding: "10px 14px",
               backgroundColor: "var(--bg-secondary, #f5f5f5)",

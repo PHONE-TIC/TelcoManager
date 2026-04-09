@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiService } from '../services/api.service';
+import type { Stock } from '../types';
 
 function StockLabels() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const printRef = useRef<HTMLDivElement>(null);
 
-    const [stock, setStock] = useState<any[]>([]);
+    const [stock, setStock] = useState<Stock[]>([]);
     const [selectedItems, setSelectedItems] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [labelSize, setLabelSize] = useState<'small' | 'medium' | 'large'>('medium');

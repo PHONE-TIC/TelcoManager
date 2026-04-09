@@ -3,17 +3,27 @@ import { apiService } from '../services/api.service';
 import moment from 'moment';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import type { Intervention, Technicien } from '../types';
+
+interface ReportStats {
+    total: number;
+    completed: number;
+    pending: number;
+    inProgress: number;
+    completionRate: number;
+    avgDuration: number;
+}
 
 function Reports() {
     const [loading, setLoading] = useState(false);
-    const [stats, setStats] = useState<any>(null);
-    const [interventions, setInterventions] = useState<any[]>([]);
+    const [stats, setStats] = useState<ReportStats | null>(null);
+    const [interventions, setInterventions] = useState<Intervention[]>([]);
     const [dateRange, setDateRange] = useState({
         start: moment().subtract(30, 'days').format('YYYY-MM-DD'),
         end: moment().format('YYYY-MM-DD')
     });
     const [selectedTechnician, setSelectedTechnician] = useState('');
-    const [technicians, setTechnicians] = useState<any[]>([]);
+    const [technicians, setTechnicians] = useState<Technicien[]>([]);
 
     useEffect(() => {
         loadTechnicians();
