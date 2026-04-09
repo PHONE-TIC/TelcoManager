@@ -1,156 +1,154 @@
 # TelcoManager
 
-Une solution complète pour gérer les stocks, les interventions techniques et les planning des techniciens, incluant une interface web unifiée et une base de données robuste.
+TelcoManager est une application de gestion pour le suivi des stocks, des interventions techniques, des techniciens et des inventaires, avec une interface web unifiée et une base PostgreSQL.
 
-## 🎯 Fonctionnalités
+## Fonctionnalités
 
-### Web Application (Single Container)
+### Application web
 
-- **Tableau de bord** : Vue d'ensemble avec statistiques en temps réel.
-- **Gestion des clients** : Création, modification, fiches détaillées avec historique.
-- **Gestion des techniciens** : Comptes utilisateurs avec rôles (admin/gestionnaire/technicien).
-- **Planification des interventions** : Création et assignation aux techniciens.
-- **Gestion du stock** : Stock courant et stock HS (hors service) avec permissions par rôle.
-- **Module inventaire** :
-  - Scan de codes-barres / numéros de série pour comptage rapide.
-  - Auto-incrément des quantités lors du scan.
-  - Révision des écarts avant finalisation.
-  - Export PDF des résultats d'inventaire.
-- **Recherche globale** : Recherche unifiée sur interventions, clients, techniciens et stock.
-- **Authentification** : Sécurisée via JWT.
+- Tableau de bord avec statistiques et raccourcis
+- Gestion des clients avec fiches détaillées
+- Gestion des techniciens avec rôles (`admin`, `gestionnaire`, `technicien`)
+- Planification et suivi des interventions
+- Gestion du stock courant et du stock HS
+- Module d’inventaire avec scan, comptage, écarts et export PDF
+- Recherche globale sur les principales entités
+- Authentification JWT
+- Support PWA
 
-### Application Mobile (Prochainement)
+### Mobile
 
-- Authentification technicien.
-- Planning mensuel.
-- Gestion des interventions.
+Le dépôt contient aussi une base pour l’application mobile technicien, encore en évolution.
 
-## 🏗️ Architecture
+## Architecture
 
-L'application a été simplifiée pour tourner dans un seul conteneur Docker pour le frontend et le backend, orchestré avec une base de données PostgreSQL.
+L’application tourne localement avec :
 
-```
+- un backend Node.js / Express / Prisma,
+- un frontend React / Vite,
+- une base PostgreSQL,
+- un déploiement Docker simplifié.
+
+```text
 telcomanager/
-├── backend/              # API Node.js + Express + Prisma (Sert aussi le Frontend)
+├── backend/              # API Node.js + Express + Prisma
 ├── webapp/               # Frontend React
+├── mobile/               # Application mobile
+├── desktop/              # Application desktop
 ├── postgres/             # Scripts PostgreSQL
-├── docker-compose.yml    # Orchestration Docker
-├── Dockerfile.combined   # Dockerfile unifié (App + API)
-└── publish-docker.sh     # Script de publication Docker Hub
+├── docker-compose.yml    # Orchestration locale
+├── Dockerfile.combined   # Build unifié app + API
+└── publish-docker.sh     # Publication Docker Hub
 ```
 
-## 🚀 Démarrage Rapide
+## Démarrage rapide
 
 ### Prérequis
 
-- Docker et Docker Compose
+- Docker
+- Docker Compose
 
-### Déploiement avec Docker (Recommandé)
+### Lancer l’environnement local
 
-1. **Cloner le projet**
-2. **Démarrer les services**
+```bash
+docker compose up -d
+```
 
-   ```bash
-   docker compose up -d
-   ```
+Services exposés par défaut :
 
-   Cela démarrera :
-
-   - **TelcoManager App** (Frontend + API) sur le port **8081**
-   - **PostgreSQL** sur le port **5435**
-
-   > **Note** : La base de données est automatiquement initialisée et remplie avec des données brutes au premier démarrage.
-
-3. **Accéder à l'application**
-   Ouvrez votre navigateur sur : [http://localhost:8081](http://localhost:8081)
+- application : `http://localhost:8081`
+- PostgreSQL : `localhost:5435`
 
 ### Identifiants par défaut
 
-- **Username** : `admin`
-- **Password** : `admin123`
+- username : `admin`
+- password : `admin123`
 
-### Variables d'Environnement
+## Variables d’environnement principales
 
-| Variable                              | Description                                                            |
-| ------------------------------------- | ---------------------------------------------------------------------- |
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Configuration PostgreSQL                                               |
-| `JWT_SECRET`                          | Clé secrète pour les tokens JWT                                        |
-| `UNYC_BASE_URL`                       | URL de l'API UNYC Atlas (ex: https://atlas-public-api...)              |
-| `UNYC_IAM_URL`                        | URL de l'IAM UNYC (ex: https://accounts.unyc.io...)                    |
-| `UNYC_CLIENT_ID`                      | Client ID UNYC (ex: public-api)                                        |
-| `UNYC_USERNAME`                       | Identifiant de connexion UNYC                                          |
-| `UNYC_PASSWORD`                       | Mot de passe de connexion UNYC                                         |
-| `VAPID_PUBLIC_KEY`                    | Clé publique pour les notifications Push                               |
-| `VAPID_PRIVATE_KEY`                   | Clé privée pour les notifications Push                                 |
-| `VAPID_SUBJECT`                       | Email de contact pour le service Push (ex: mailto:admin@...)           |
-| `SEED_ON_START`                       | `true` pour forcer la réinitialisation de la DB (Admin password reset) |
+| Variable | Description |
+| --- | --- |
+| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Configuration PostgreSQL |
+| `JWT_SECRET` | Secret JWT |
+| `UNYC_BASE_URL` | URL API UNYC |
+| `UNYC_IAM_URL` | URL IAM UNYC |
+| `UNYC_CLIENT_ID` | Client ID UNYC |
+| `UNYC_USERNAME` | Login UNYC |
+| `UNYC_PASSWORD` | Mot de passe UNYC |
+| `VAPID_PUBLIC_KEY` | Clé publique notifications push |
+| `VAPID_PRIVATE_KEY` | Clé privée notifications push |
+| `VAPID_SUBJECT` | Sujet/contact notifications push |
+| `SEED_ON_START` | `true` pour réinitialiser le seed admin au démarrage |
 
-## 📦 Images Docker
+## Images Docker
 
-Les images sont hébergées sur Docker Hub :
+Image publiée :
 
-- **Application** : `phonetic76/telcomanager-app:latest`
+- `phonetic76/telcomanager-app:latest`
 
-Pour mettre à jour votre instance avec la dernière version :
+Mise à jour d’une instance :
 
 ```bash
 docker compose pull
 docker compose up -d
 ```
 
-## 🛠️ Mises à jour techniques (Avril 2026)
+## Développement local
 
-Travail important d’optimisation et de simplification réalisé sans changement fonctionnel volontaire :
+### Backend
 
-- **Frontend allégé** :
-  - lazy-loading des pages par route,
-  - lazy-loading de `GlobalSearch`, de l’interface d’installation PWA et du `ReloadPrompt`,
-  - réduction du bundle initial pour améliorer le chargement.
-- **Transitions et responsive harmonisés** : ajustements non destructifs pour garder le comportement existant tout en améliorant le confort sur mobile.
-- **Refactors frontend progressifs** : extraction de helpers, types et composants utilitaires depuis les grosses pages (`Interventions`, `Inventaire`, `Stock`, `Dashboard`, `TechnicianInterventionView`, `InterventionDetail`, `StockDetail`, `TechnicianDetail`).
-- **Backend simplifié** :
-  - extraction de services métier et services de requête,
-  - centralisation de helpers de pagination, validation et accès Prisma,
-  - allègement progressif des gros contrôleurs sans toucher au schéma Prisma ni aux migrations.
-- **Nettoyage du repo** : suppression de fichiers obsolètes, archivage/documentation rationalisée, déplacement des scripts de debug/test hors du code runtime.
-- **Validation continue** : chaque passe importante a été validée par `npm run build` côté backend/webapp et par `docker compose up -d --build`.
+```bash
+cd backend
+npm install
+npx prisma migrate dev
+npm run dev
+```
 
-## 🔧 Développement Local
+### Frontend
 
-Si vous souhaitez développer sans Docker :
+```bash
+cd webapp
+npm install
+npm run dev
+```
 
-1. **Backend**
+## Mises à jour techniques récentes
 
-   ```bash
-   cd backend
-   npm install
-   # Configurer .env avec votre DB locale
-   npx prisma migrate dev
-   npm run dev
-   ```
+### Avril 2026
 
-2. **Frontend**
-   ```bash
-   cd webapp
-   npm install
-   npm run dev
-   ```
+Optimisations et simplifications importantes, sans modification fonctionnelle volontaire :
 
-## 📚 Structure de la Base de Données
+- lazy-loading des pages au niveau des routes
+- lazy-loading de `GlobalSearch`, de l’UI PWA et du `ReloadPrompt`
+- amélioration du chargement initial du frontend
+- harmonisation responsive et transitions
+- extraction progressive de helpers, types et utilitaires depuis les grosses pages frontend
+- simplification backend par extraction de services métier, services de requête et helpers communs
+- centralisation de pagination, validation et accès Prisma
+- nettoyage de fichiers obsolètes et rationalisation de la documentation
+- validation continue via builds backend/webapp et rebuilds Docker
 
-- **clients** : Informations des clients.
-- **techniciens** : Comptes utilisateurs.
-- **interventions** : Interventions planifiées/réalisées.
-- **stock** : Matériel global.
-- **equipments** : Matériel installé.
+### Décembre 2025
 
-## 📝 Licence
+Travail initial de stabilisation et d’allègement :
 
-## 🛠️ Mises à jour techniques (Décembre 2025)
+- centralisation des types TypeScript
+- amélioration de la vue technicien
+- nettoyage de logs de debug et de code mort
+- correction de problèmes de typage et de robustesse
+- validation du build de production
 
-Refonte majeure pour améliorer la stabilité et la maintenabilité ("Code Lighter") :
+## Structure de données
 
-- **Centralisation des types TypeScript** : Toutes les interfaces (`Intervention`, `Client`, `Photo`, etc.) sont unifiées dans `src/types/index.ts`.
-- **Vue Technicien Optimisée** : Refonte de `TechnicianInterventionView.tsx` avec gestion d'erreurs robuste, support hors-ligne amélioré et génération PDF fiable.
-- **Sécurité & Stabilité** : Correction de nombreuses failles de typage (null safety), suppression de code mort et nettoyage des logs de debug.
-- **Build Production** : Validation complète du build `npm run build` avec 0 erreur.
+Principales entités :
+
+- `clients`
+- `techniciens`
+- `interventions`
+- `stock`
+- `equipments`
+
+## Notes
+
+- Le projet a été optimisé progressivement par petites passes sûres, avec validation régulière.
+- Les changements récents ont été testés localement via Docker avant publication.
