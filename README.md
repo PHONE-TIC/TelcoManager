@@ -1,6 +1,6 @@
 # TelcoManager
 
-TelcoManager est une application de gestion pour le suivi des stocks, des interventions techniques, des techniciens et des inventaires, avec une interface web unifiée et une base PostgreSQL.
+TelcoManager est une application web de gestion pour le suivi des stocks, des interventions techniques, des techniciens et des inventaires, avec une base PostgreSQL et un déploiement Docker simplifié.
 
 ## Fonctionnalités
 
@@ -16,10 +16,6 @@ TelcoManager est une application de gestion pour le suivi des stocks, des interv
 - Authentification JWT
 - Support PWA
 
-### Mobile
-
-Le dépôt contient aussi une base pour l’application mobile technicien, encore en évolution.
-
 ## Architecture
 
 L’application tourne localement avec :
@@ -27,14 +23,12 @@ L’application tourne localement avec :
 - un backend Node.js / Express / Prisma,
 - un frontend React / Vite,
 - une base PostgreSQL,
-- un déploiement Docker simplifié.
+- un déploiement Docker unifié.
 
 ```text
 telcomanager/
 ├── backend/              # API Node.js + Express + Prisma
 ├── webapp/               # Frontend React
-├── mobile/               # Application mobile
-├── desktop/              # Application desktop
 ├── postgres/             # Scripts PostgreSQL
 ├── docker-compose.yml    # Orchestration locale
 ├── Dockerfile.combined   # Build unifié app + API
@@ -150,5 +144,5 @@ Principales entités :
 
 ## Notes
 
-- Le projet a été optimisé progressivement par petites passes sûres, avec validation régulière.
+- Le projet est désormais centré sur la webapp pour tous les usages.
 - Les changements récents ont été testés localement via Docker avant publication.
