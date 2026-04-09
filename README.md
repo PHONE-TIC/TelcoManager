@@ -98,6 +98,23 @@ docker compose pull
 docker compose up -d
 ```
 
+## 🛠️ Mises à jour techniques (Avril 2026)
+
+Travail important d’optimisation et de simplification réalisé sans changement fonctionnel volontaire :
+
+- **Frontend allégé** :
+  - lazy-loading des pages par route,
+  - lazy-loading de `GlobalSearch`, de l’interface d’installation PWA et du `ReloadPrompt`,
+  - réduction du bundle initial pour améliorer le chargement.
+- **Transitions et responsive harmonisés** : ajustements non destructifs pour garder le comportement existant tout en améliorant le confort sur mobile.
+- **Refactors frontend progressifs** : extraction de helpers, types et composants utilitaires depuis les grosses pages (`Interventions`, `Inventaire`, `Stock`, `Dashboard`, `TechnicianInterventionView`, `InterventionDetail`, `StockDetail`, `TechnicianDetail`).
+- **Backend simplifié** :
+  - extraction de services métier et services de requête,
+  - centralisation de helpers de pagination, validation et accès Prisma,
+  - allègement progressif des gros contrôleurs sans toucher au schéma Prisma ni aux migrations.
+- **Nettoyage du repo** : suppression de fichiers obsolètes, archivage/documentation rationalisée, déplacement des scripts de debug/test hors du code runtime.
+- **Validation continue** : chaque passe importante a été validée par `npm run build` côté backend/webapp et par `docker compose up -d --build`.
+
 ## 🔧 Développement Local
 
 Si vous souhaitez développer sans Docker :
