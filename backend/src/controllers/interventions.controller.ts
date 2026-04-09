@@ -4,6 +4,11 @@ import { prisma } from "../index";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { notifyNewIntervention } from "../services/push.service";
 import {
+  getInterventionLockConflict,
+  lockInterventionForUser,
+  unlockInterventionById,
+} from "../services/intervention-lock.service";
+import {
   buildFinalInterventionNumero,
   buildInterventionStatusUpdateData,
   buildTemporaryInterventionNumero,
@@ -616,39 +621,19 @@ export const lockIntervention = async (req: AuthRequest, res: Response) => {
 
     if (!userId) return res.status(401).json({ error: "Non authentifié" });
 
-    const intervention = await prisma.intervention.findUnique({
-      where: { id },
-    });
-    if (!intervention)
+    const lockConflict = await getInterventionLockConflict(id, userId);
+    if (lockConflict.missing) {
       return res.status(404).json({ error: "Intervention non trouvée" });
-
-    // Check if locked by someone else and active (< 5 min)
-    if (
-      intervention.lockedBy &&
-      intervention.lockedBy !== userId &&
-      intervention.lockedAt
-    ) {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-      if (intervention.lockedAt > fiveMinutesAgo) {
-        // Get user name if possible
-        const lockingUser = await prisma.technicien.findUnique({
-          where: { id: intervention.lockedBy },
-        });
-        return res.status(409).json({
-          error: "Intervention verrouillée",
-          lockedBy: lockingUser?.nom || "Un autre utilisateur",
-        });
-      }
     }
 
-    // Apply lock
-    await prisma.intervention.update({
-      where: { id },
-      data: {
-        lockedBy: userId,
-        lockedAt: new Date(),
-      },
-    });
+    if (lockConflict.lockedBy) {
+      return res.status(409).json({
+        error: "Intervention verrouillée",
+        lockedBy: lockConflict.lockedBy,
+      });
+    }
+
+    await lockInterventionForUser(id, userId);
 
     res.json({ success: true, message: "Intervention verrouillée" });
   } catch (error) {
@@ -665,13 +650,7 @@ export const unlockIntervention = async (req: AuthRequest, res: Response) => {
     // Optional: Only allow unlock if locked by self or admin?
     // For MVP, just unlock.
 
-    await prisma.intervention.update({
-      where: { id },
-      data: {
-        lockedBy: null,
-        lockedAt: null,
-      },
-    });
+    await unlockInterventionById(id);
 
     res.json({ success: true, message: "Intervention déverrouillée" });
   } catch (error) {
