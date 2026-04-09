@@ -15,7 +15,7 @@ Ce guide vous permettra de tester complètement le système.
 ### Option A : Script automatique (recommandé)
 
 ```bash
-cd /home/nplacide/.gemini/antigravity/scratch/stock-intervention-system
+cd /path/to/TelcoManager
 ./setup-db.sh
 ```
 

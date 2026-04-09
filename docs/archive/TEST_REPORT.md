@@ -71,7 +71,7 @@ Le backend est maintenant opérationnel. Pour tester l'application desktop :
 
 ```bash
 # Dans un nouveau terminal
-cd /home/nplacide/.gemini/antigravity/scratch/stock-intervention-system/desktop
+cd desktop
 npm run dev
 ```
 
@@ -157,7 +157,7 @@ npm run build:linux
 
 ### Redémarrer le système complet
 ```bash
-cd /home/nplacide/.gemini/antigravity/scratch/stock-intervention-system
+cd /path/to/TelcoManager
 ./start.sh
 ```
 
@@ -188,6 +188,6 @@ Le backend est complètement fonctionnel et prêt pour être utilisé. La base d
 - JWT Secret: Défini dans .env (à changer en production)
 
 **Documentation** :
-- Guide complet de test : [`TESTING.md`](file:///home/nplacide/.gemini/antigravity/scratch/stock-intervention-system/TESTING.md)
-- Guide utilisateur : [`docs/USER_GUIDE.md`](file:///home/nplacide/.gemini/antigravity/scratch/stock-intervention-system/docs/USER_GUIDE.md)
-- Guide de déploiement : [`docs/DEPLOYMENT.md`](file:///home/nplacide/.gemini/antigravity/scratch/stock-intervention-system/docs/DEPLOYMENT.md)
+- Guide complet de test : [`TESTING.md`](../../TESTING.md)
+- Guide utilisateur : [`docs/USER_GUIDE.md`](../USER_GUIDE.md)
+- Guide de déploiement : [`docs/DEPLOYMENT.md`](../DEPLOYMENT.md)
