@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -6,25 +7,27 @@ import {
   useLocation,
   Navigate,
 } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Clients from "./pages/Clients";
-import ClientDetail from "./pages/ClientDetail";
-import ClientForm from "./pages/ClientForm";
-import Techniciens from "./pages/Techniciens";
-import UserForm from "./pages/UserForm";
-import Interventions from "./pages/Interventions";
-import InterventionDetail from "./pages/InterventionDetail";
-import TechnicianInterventionView from "./pages/TechnicianInterventionView";
-import TechnicianDetail from "./pages/TechnicianDetail";
-import Stock from "./pages/Stock";
-import StockTransfer from "./pages/StockTransfer";
-import StockForm from "./pages/StockForm";
-import StockDetail from "./pages/StockDetail";
-import StockLabels from "./pages/StockLabels";
-import Inventaire from "./pages/Inventaire";
-import TechnicianStock from "./pages/TechnicianStock";
-import Reports from "./pages/Reports";
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Clients = lazy(() => import("./pages/Clients"));
+const ClientDetail = lazy(() => import("./pages/ClientDetail"));
+const ClientForm = lazy(() => import("./pages/ClientForm"));
+const Techniciens = lazy(() => import("./pages/Techniciens"));
+const UserForm = lazy(() => import("./pages/UserForm"));
+const Interventions = lazy(() => import("./pages/Interventions"));
+const InterventionDetail = lazy(() => import("./pages/InterventionDetail"));
+const TechnicianInterventionView = lazy(
+  () => import("./pages/TechnicianInterventionView")
+);
+const TechnicianDetail = lazy(() => import("./pages/TechnicianDetail"));
+const Stock = lazy(() => import("./pages/Stock"));
+const StockTransfer = lazy(() => import("./pages/StockTransfer"));
+const StockForm = lazy(() => import("./pages/StockForm"));
+const StockDetail = lazy(() => import("./pages/StockDetail"));
+const StockLabels = lazy(() => import("./pages/StockLabels"));
+const Inventaire = lazy(() => import("./pages/Inventaire"));
+const TechnicianStock = lazy(() => import("./pages/TechnicianStock"));
+const Reports = lazy(() => import("./pages/Reports"));
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import GlobalSearch from "./components/GlobalSearch";
@@ -262,6 +265,12 @@ function InterventionDetailWrapper() {
   return <InterventionDetail />;
 }
 
+function RouteLoadingFallback() {
+  return (
+    <div style={{ padding: "24px", textAlign: "center" }}>Chargement...</div>
+  );
+}
+
 function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
@@ -278,7 +287,8 @@ function AppContent() {
       )}
       <div className="main-content">
         <div key={pageTransitionKey} className="fade-in">
-          <Routes>
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Routes>
             <Route path="/login" element={<Login />} />
             <Route
               path="/"
@@ -440,8 +450,9 @@ function AppContent() {
                 </PrivateRoute>
               }
             />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </Suspense>
         </div>
       </div>
     </div>
