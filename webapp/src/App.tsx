@@ -28,16 +28,25 @@ const StockLabels = lazy(() => import("./pages/StockLabels"));
 const Inventaire = lazy(() => import("./pages/Inventaire"));
 const TechnicianStock = lazy(() => import("./pages/TechnicianStock"));
 const Reports = lazy(() => import("./pages/Reports"));
+const GlobalSearch = lazy(() => import("./components/GlobalSearch"));
+const PwaInstallButton = lazy(() =>
+  import("./components/PwaInstall").then((module) => ({
+    default: module.PwaInstallButton,
+  }))
+);
+const PwaInstallPopup = lazy(() =>
+  import("./components/PwaInstall").then((module) => ({
+    default: module.PwaInstallPopup,
+  }))
+);
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
-import GlobalSearch from "./components/GlobalSearch";
 import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
 import { useNotifications } from "./hooks/useNotifications";
 
 import logo from "./assets/logo.png";
 import ReloadPrompt from "./components/ReloadPrompt";
-import { PwaInstallButton, PwaInstallPopup } from "./components/PwaInstall";
 
 function Navigation() {
   const location = useLocation();
@@ -148,9 +157,11 @@ function Navigation() {
         </div>
       </div>
       {(user.role === "admin" || user.role === "gestionnaire") && (
-        <div style={{ padding: "0 16px", marginBottom: "20px" }}>
-          <GlobalSearch />
-        </div>
+        <Suspense fallback={null}>
+          <div style={{ padding: "0 16px", marginBottom: "20px" }}>
+            <GlobalSearch />
+          </div>
+        </Suspense>
       )}
       <div
         style={{
@@ -178,9 +189,11 @@ function Navigation() {
       </nav>
       <div style={{ marginTop: "auto", paddingTop: "20px" }}>
         {/* PWA Install button for desktop */}
-        <div style={{ marginBottom: "10px" }}>
-          <PwaInstallButton />
-        </div>
+        <Suspense fallback={null}>
+          <div style={{ marginBottom: "10px" }}>
+            <PwaInstallButton />
+          </div>
+        </Suspense>
         {/* Notification toggle for technicians */}
         {isSupported && user?.role === "technicien" && (
           <button
@@ -466,7 +479,9 @@ function App() {
         <AuthProvider>
           <AppContent />
           <ReloadPrompt />
-          <PwaInstallPopup />
+          <Suspense fallback={null}>
+            <PwaInstallPopup />
+          </Suspense>
         </AuthProvider>
       </ThemeProvider>
     </Router>
