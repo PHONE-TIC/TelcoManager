@@ -217,6 +217,79 @@ export async function bulkTransferStockItems(input: BulkTransferInput) {
   });
 }
 
+async function incrementTechnicianStock(
+  tx: Prisma.TransactionClient,
+  input: { technicienId: string; stockId: string; qty: number }
+) {
+  await tx.technicianStock.upsert({
+    where: {
+      technicienId_stockId: {
+        technicienId: input.technicienId,
+        stockId: input.stockId,
+      },
+    },
+    update: {
+      quantite: { increment: input.qty },
+    },
+    create: {
+      technicienId: input.technicienId,
+      stockId: input.stockId,
+      quantite: input.qty,
+    },
+  });
+}
+
+async function getRequiredTechnicianStock(
+  tx: Prisma.TransactionClient,
+  input: { technicienId: string; stockId: string; qty: number }
+) {
+  const techStock = await tx.technicianStock.findUnique({
+    where: {
+      technicienId_stockId: {
+        technicienId: input.technicienId,
+        stockId: input.stockId,
+      },
+    },
+  });
+
+  if (!techStock || techStock.quantite < input.qty) {
+    throw new Error(`Stock technicien insuffisant pour l'article ${input.stockId}`);
+  }
+
+  return techStock;
+}
+
+async function decrementTechnicianStock(
+  tx: Prisma.TransactionClient,
+  input: { technicienId: string; stockId: string; qty: number }
+) {
+  const techStock = await getRequiredTechnicianStock(tx, input);
+  const newQty = techStock.quantite - input.qty;
+
+  if (newQty <= 0) {
+    await tx.technicianStock.delete({
+      where: {
+        technicienId_stockId: {
+          technicienId: input.technicienId,
+          stockId: input.stockId,
+        },
+      },
+    });
+  } else {
+    await tx.technicianStock.update({
+      where: {
+        technicienId_stockId: {
+          technicienId: input.technicienId,
+          stockId: input.stockId,
+        },
+      },
+      data: { quantite: newQty },
+    });
+  }
+
+  return techStock;
+}
+
 async function transferWarehouseToTechnician(
   tx: Prisma.TransactionClient,
   input: {
@@ -238,10 +311,10 @@ async function transferWarehouseToTechnician(
     where: { id: input.stockId },
     data: { quantite: { decrement: input.qty } },
   });
-  await tx.technicianStock.upsert({
-    where: { technicienId_stockId: { technicienId: input.destId, stockId: input.stockId } },
-    update: { quantite: { increment: input.qty } },
-    create: { technicienId: input.destId, stockId: input.stockId, quantite: input.qty },
+  await incrementTechnicianStock(tx, {
+    technicienId: input.destId,
+    stockId: input.stockId,
+    qty: input.qty,
   });
 
   input.movements.push({
@@ -266,34 +339,13 @@ async function transferTechnicianToWarehouse(
     movements: Prisma.StockMovementCreateManyInput[];
   }
 ) {
-  const techStock = await tx.technicianStock.findUnique({
-    where: {
-      technicienId_stockId: { technicienId: input.sourceId, stockId: input.stockId },
-    },
+  const techStock = await decrementTechnicianStock(tx, {
+    technicienId: input.sourceId,
+    stockId: input.stockId,
+    qty: input.qty,
   });
-  if (!techStock || techStock.quantite < input.qty) {
-    throw new Error(`Stock technicien insuffisant pour l'article ${input.stockId}`);
-  }
 
-  const finalStatus = techStock.etat || "ok";
-  const newQty = techStock.quantite - input.qty;
-
-  if (newQty <= 0) {
-    await tx.technicianStock.delete({
-      where: {
-        technicienId_stockId: { technicienId: input.sourceId, stockId: input.stockId },
-      },
-    });
-  } else {
-    await tx.technicianStock.update({
-      where: {
-        technicienId_stockId: { technicienId: input.sourceId, stockId: input.stockId },
-      },
-      data: { quantite: newQty },
-    });
-  }
-
-  if (finalStatus === "hs") {
+  if ((techStock.etat || "ok") === "hs") {
     await returnHsItemToWarehouse(tx, input);
     return;
   }
@@ -402,36 +454,16 @@ async function transferTechnicianToTechnician(
     movements: Prisma.StockMovementCreateManyInput[];
   }
 ) {
-  const techStock = await tx.technicianStock.findUnique({
-    where: {
-      technicienId_stockId: { technicienId: input.sourceId, stockId: input.stockId },
-    },
+  await decrementTechnicianStock(tx, {
+    technicienId: input.sourceId,
+    stockId: input.stockId,
+    qty: input.qty,
   });
-  if (!techStock || techStock.quantite < input.qty) {
-    throw new Error(`Stock technicien insuffisant pour l'article ${input.stockId}`);
-  }
 
-  const newQty = techStock.quantite - input.qty;
-
-  if (newQty <= 0) {
-    await tx.technicianStock.delete({
-      where: {
-        technicienId_stockId: { technicienId: input.sourceId, stockId: input.stockId },
-      },
-    });
-  } else {
-    await tx.technicianStock.update({
-      where: {
-        technicienId_stockId: { technicienId: input.sourceId, stockId: input.stockId },
-      },
-      data: { quantite: newQty },
-    });
-  }
-
-  await tx.technicianStock.upsert({
-    where: { technicienId_stockId: { technicienId: input.destId, stockId: input.stockId } },
-    update: { quantite: { increment: input.qty } },
-    create: { technicienId: input.destId, stockId: input.stockId, quantite: input.qty },
+  await incrementTechnicianStock(tx, {
+    technicienId: input.destId,
+    stockId: input.stockId,
+    qty: input.qty,
   });
 
   const stock = await tx.stock.findUnique({ where: { id: input.stockId } });
