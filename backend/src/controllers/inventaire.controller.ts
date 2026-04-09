@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { validationResult } from 'express-validator';
-import { prisma } from '../index';
+import { prisma } from '../db';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { respondValidationError } from './controller.utils';
 import { createInventorySession, deleteInventorySession, finalizeInventorySession, updateInventorySessionItems } from '../services/inventory-session.service';

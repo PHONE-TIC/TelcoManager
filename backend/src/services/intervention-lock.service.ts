@@ -1,4 +1,4 @@
-import { prisma } from "../index";
+import { prisma } from "../db";
 
 const INTERVENTION_LOCK_DURATION_MS = 5 * 60 * 1000;
 

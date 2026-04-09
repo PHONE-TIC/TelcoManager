@@ -1,4 +1,4 @@
-import { prisma } from "../index";
+import { prisma } from "../db";
 
 function buildTechnicianStockWhere(technicienId: string, stockId: string) {
   return {

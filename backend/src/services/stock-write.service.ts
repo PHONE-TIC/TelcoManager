@@ -1,4 +1,4 @@
-import { prisma } from "../index";
+import { prisma } from "../db";
 import { generateStockReference, parseSerialNumbers } from "../controllers/stock.controller.helpers";
 
 type StockWriteInput = {

@@ -1,4 +1,4 @@
-import { prisma } from "../index";
+import { prisma } from "../db";
 
 export function normalizeReferenceSegment(value: string): string {
   return value

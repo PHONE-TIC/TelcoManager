@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { prisma } from '../index';
+import { prisma } from '../db';
 
 // UNYC Atlas API Configuration
 const UNYC_BASE_URL = process.env.UNYC_BASE_URL || 'https://atlas-public-api.web.production.unyc.io';

@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { validationResult } from "express-validator";
-import { prisma } from "../index";
+import { prisma } from "../db";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { buildPagination, parsePagination, respondValidationError } from "./controller.utils";
 import { stockClientMiniSelect, stockTechnicienMiniSelect } from "./prisma-selects";

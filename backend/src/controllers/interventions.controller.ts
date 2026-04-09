@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { validationResult } from "express-validator";
-import { prisma } from "../index";
+import { prisma } from "../db";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { notifyNewIntervention } from "../services/push.service";
 import {
