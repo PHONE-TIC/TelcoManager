@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -261,8 +261,45 @@ function Interventions() {
     );
   };
 
-  // Count overdue interventions
-  const overdueCount = getOverdueInterventionsCount(interventions);
+  const filteredClients = useMemo(
+    () => filterClientsForSelection(clients, clientSearch),
+    [clients, clientSearch]
+  );
+
+  const filteredTechnicians = useMemo(
+    () => filterTechniciansForSelection(techniciens, technicianSearch),
+    [techniciens, technicianSearch]
+  );
+
+  const interventionStats = useMemo(
+    () => [
+      { value: interventions.length, label: "Total", color: "#f97316" },
+      {
+        value: interventions.filter((intervention) => intervention.statut === "planifiee")
+          .length,
+        label: "Planifiées",
+        color: "#3b82f6",
+      },
+      {
+        value: interventions.filter((intervention) => intervention.statut === "en_cours")
+          .length,
+        label: "En cours",
+        color: "#f59e0b",
+      },
+      {
+        value: interventions.filter((intervention) => intervention.statut === "terminee")
+          .length,
+        label: "Terminées",
+        color: "#10b981",
+      },
+    ],
+    [interventions]
+  );
+
+  const overdueCount = useMemo(
+    () => getOverdueInterventionsCount(interventions),
+    [interventions]
+  );
 
   // Column sorting handler
   const handleSort = (column: string) => {
@@ -307,13 +344,19 @@ function Interventions() {
   };
 
   // Calendar events mapping - use local time (moment without UTC)
-  const calendarEvents = interventions.map((intervention) => ({
-    id: intervention.id,
-    title: buildCalendarEventTitle(intervention),
-    start: new Date(intervention.datePlanifiee),
-    end: new Date(new Date(intervention.datePlanifiee).getTime() + 2 * 60 * 60 * 1000),
-    resource: intervention,
-  }));
+  const calendarEvents = useMemo(
+    () =>
+      interventions.map((intervention) => ({
+        id: intervention.id,
+        title: buildCalendarEventTitle(intervention),
+        start: new Date(intervention.datePlanifiee),
+        end: new Date(
+          new Date(intervention.datePlanifiee).getTime() + 2 * 60 * 60 * 1000
+        ),
+        resource: intervention,
+      })),
+    [interventions]
+  );
 
   const eventStyleGetter = (event: any) => {
     let backgroundColor = "#3174ad"; // Default blue
@@ -337,10 +380,36 @@ function Interventions() {
     };
   };
 
-  const filteredInterventions = getTodayInterventions(interventions);
-  const allInterventions = getStatusFilteredInterventions(
-    interventions,
-    statusFilter
+  const filteredInterventions = useMemo(
+    () => getTodayInterventions(interventions),
+    [interventions]
+  );
+
+  const sortedTodayInterventions = useMemo(
+    () => sortInterventions(filteredInterventions),
+    [filteredInterventions, sortColumn, sortDirection]
+  );
+
+  const allInterventions = useMemo(
+    () => getStatusFilteredInterventions(interventions, statusFilter),
+    [interventions, statusFilter]
+  );
+
+  const sortedAllInterventions = useMemo(
+    () => sortInterventions(allInterventions),
+    [allInterventions, sortColumn, sortDirection]
+  );
+
+  const mobilePlanningInterventions = useMemo(
+    () =>
+      interventions.map((intervention) => ({
+        ...intervention,
+        client: clients.find((client) => client.id === intervention.clientId),
+        technicien: techniciens.find(
+          (technicien) => technicien.id === intervention.technicienId
+        ),
+      })),
+    [clients, interventions, techniciens]
   );
 
   if (loading) {
@@ -442,27 +511,7 @@ function Interventions() {
             gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
           }}
         >
-          {[
-            { value: interventions.length, label: "Total", color: "#f97316" },
-            {
-              value: interventions.filter((i) => i.statut === "planifiee")
-                .length,
-              label: "Planifiées",
-              color: "#3b82f6",
-            },
-            {
-              value: interventions.filter((i) => i.statut === "en_cours")
-                .length,
-              label: "En cours",
-              color: "#f59e0b",
-            },
-            {
-              value: interventions.filter((i) => i.statut === "terminee")
-                .length,
-              label: "Terminées",
-              color: "#10b981",
-            },
-          ].map((stat, idx) => (
+          {interventionStats.map((stat, idx) => (
             <div
               key={idx}
               style={{
@@ -581,9 +630,8 @@ function Interventions() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortInterventions(filteredInterventions).length > 0 ? (
-                    sortInterventions(filteredInterventions).map(
-                      (intervention) => (
+                  {sortedTodayInterventions.length > 0 ? (
+                    sortedTodayInterventions.map((intervention) => (
                         <tr
                           key={intervention.id}
                           className="clickable-row"
@@ -659,9 +707,8 @@ function Interventions() {
                             </div>
                           </td>
                         </tr>
-                      )
-                    )
-                  ) : (
+                      ))
+                    ) : (
                     <tr>
                       <td colSpan={user?.role === "admin" ? 6 : 5}>
                         <div className="text-center py-12">
@@ -820,8 +867,8 @@ function Interventions() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortInterventions(allInterventions).length > 0 ? (
-                    sortInterventions(allInterventions).map((intervention) => (
+                  {sortedAllInterventions.length > 0 ? (
+                    sortedAllInterventions.map((intervention) => (
                       <tr
                         key={intervention.id}
                         className="clickable-row"
@@ -921,13 +968,7 @@ function Interventions() {
         {/* Mobile Planning View - Only show in calendar mode */}
         {viewMode === "calendar" && !showForm && (
           <div className="mobile-only">
-            <MobilePlanning
-              interventions={interventions.map((int) => ({
-                ...int,
-                client: clients.find((c) => c.id === int.clientId),
-                technicien: techniciens.find((t) => t.id === int.technicienId),
-              }))}
-            />
+            <MobilePlanning interventions={mobilePlanningInterventions} />
           </div>
         )}
 
@@ -1060,7 +1101,7 @@ function Interventions() {
                     <div className="form-group">
                       <label className="form-label">Liste des clients *</label>
                       <div className="selection-list">
-                        {filterClientsForSelection(clients, clientSearch).map((client) => (
+                        {filteredClients.map((client) => (
                             <div
                               key={client.id}
                               className={`selection-item ${formData.clientId === client.id
@@ -1088,7 +1129,7 @@ function Interventions() {
                               <div className="selection-check">✓</div>
                             </div>
                           ))}
-                        {filterClientsForSelection(clients, clientSearch).length === 0 && (
+                        {filteredClients.length === 0 && (
                             <div
                               style={{
                                 padding: "10px",
@@ -1222,7 +1263,7 @@ function Interventions() {
                       </div>
 
                       <div className="selection-list">
-                        {filterTechniciansForSelection(techniciens, technicianSearch).map((tech) => (
+                        {filteredTechnicians.map((tech) => (
                             <div
                               key={tech.id}
                               className={`selection-item ${formData.technicienId === tech.id
@@ -1247,7 +1288,7 @@ function Interventions() {
                               <div className="selection-check">✓</div>
                             </div>
                           ))}
-                        {filterTechniciansForSelection(techniciens, technicianSearch).length === 0 && (
+                        {filteredTechnicians.length === 0 && (
                             <div
                               style={{
                                 padding: "10px",
