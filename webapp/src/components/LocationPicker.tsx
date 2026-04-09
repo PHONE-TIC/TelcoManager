@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import './LocationPicker.css';
 
 interface LocationPickerProps {
@@ -14,17 +14,10 @@ export default function LocationPicker({
     initialLng,
     clientAddress
 }: LocationPickerProps) {
-    const [latitude, setLatitude] = useState<number | null>(initialLat || null);
-    const [longitude, setLongitude] = useState<number | null>(initialLng || null);
+    const [latitude, setLatitude] = useState<number | null>(initialLat ?? null);
+    const [longitude, setLongitude] = useState<number | null>(initialLng ?? null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (initialLat && initialLng) {
-            setLatitude(initialLat);
-            setLongitude(initialLng);
-        }
-    }, [initialLat, initialLng]);
 
     const getCurrentPosition = () => {
         if (!navigator.geolocation) {

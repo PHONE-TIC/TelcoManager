@@ -110,10 +110,11 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
         switch (filter) {
             case 'today':
                 return currentDate.format('dddd D MMMM YYYY');
-            case 'week':
+            case 'week': {
                 const weekStart = currentDate.clone().startOf('week');
                 const weekEnd = currentDate.clone().endOf('week');
                 return `${weekStart.format('D MMM')} - ${weekEnd.format('D MMM YYYY')}`;
+            }
             case 'month':
                 return currentDate.format('MMMM YYYY');
             case 'custom':

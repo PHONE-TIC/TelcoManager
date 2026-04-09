@@ -16,8 +16,8 @@ export default function PhotoZoomModal({
   onClose,
   onZoomChange,
   enableTouchZoom = false,
-  initialPinchDistance,
-  initialZoomLevel,
+  initialPinchDistance: initialPinchDistanceRef,
+  initialZoomLevel: initialZoomLevelRef,
 }: PhotoZoomModalProps) {
   if (!photoUrl) return null;
 
@@ -155,29 +155,29 @@ export default function PhotoZoomModal({
             ...(enableTouchZoom ? { touchAction: "none" } : {}),
           }}
           onTouchStart={
-            enableTouchZoom && initialPinchDistance && initialZoomLevel
+            enableTouchZoom && initialPinchDistanceRef && initialZoomLevelRef
               ? (event) => {
                   if (event.touches.length === 2) {
                     const dx = event.touches[0].clientX - event.touches[1].clientX;
                     const dy = event.touches[0].clientY - event.touches[1].clientY;
-                    initialPinchDistance.current = Math.sqrt(dx * dx + dy * dy);
-                    initialZoomLevel.current = zoomLevel;
+                    initialPinchDistanceRef.current = Math.sqrt(dx * dx + dy * dy);
+                    initialZoomLevelRef.current = zoomLevel;
                   }
                 }
               : undefined
           }
           onTouchMove={
-            enableTouchZoom && initialPinchDistance && initialZoomLevel
+            enableTouchZoom && initialPinchDistanceRef && initialZoomLevelRef
               ? (event) => {
-                  if (event.touches.length === 2 && initialPinchDistance.current) {
+                  if (event.touches.length === 2 && initialPinchDistanceRef.current) {
                     event.preventDefault();
                     const dx = event.touches[0].clientX - event.touches[1].clientX;
                     const dy = event.touches[0].clientY - event.touches[1].clientY;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    const scale = distance / initialPinchDistance.current;
+                    const scale = distance / initialPinchDistanceRef.current;
                     const newZoom = Math.max(
                       0.5,
-                      Math.min(4, initialZoomLevel.current * scale)
+                      Math.min(4, initialZoomLevelRef.current * scale)
                     );
                     onZoomChange(newZoom);
                   }
@@ -185,9 +185,9 @@ export default function PhotoZoomModal({
               : undefined
           }
           onTouchEnd={
-            enableTouchZoom && initialPinchDistance
+            enableTouchZoom && initialPinchDistanceRef
               ? () => {
-                  initialPinchDistance.current = null;
+                  initialPinchDistanceRef.current = null;
                 }
               : undefined
           }

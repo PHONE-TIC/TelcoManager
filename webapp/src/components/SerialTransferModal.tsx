@@ -20,6 +20,14 @@ interface Technician {
   nom: string;
 }
 
+interface ApiError {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+}
+
 function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
   const [techniciens, setTechniciens] = useState<Technician[]>([]);
   const [selectedTechnicien, setSelectedTechnicien] = useState("");
@@ -120,7 +128,7 @@ function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
       });
       onSuccess();
     } catch (err: unknown) {
-      setError((err as any).response?.data?.error || "Erreur lors du transfert");
+      setError((err as ApiError).response?.data?.error || "Erreur lors du transfert");
     } finally {
       setLoading(false);
     }

@@ -9,11 +9,16 @@ interface StockLocationModalProps {
     onSuccess: () => void;
 }
 
+interface Technician {
+    id: string;
+    nom: string;
+}
+
 function StockLocationModal({ stockId, currentStatut, currentTechnicianId, onClose, onSuccess }: StockLocationModalProps) {
     const [statut, setStatut] = useState(currentStatut);
     const [locationType, setLocationType] = useState<'warehouse' | 'technician'>(currentTechnicianId ? 'technician' : 'warehouse');
     const [selectedTechnician, setSelectedTechnician] = useState(currentTechnicianId || '');
-    const [techniciens, setTechniciens] = useState<any[]>([]);
+    const [techniciens, setTechniciens] = useState<Technician[]>([]);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

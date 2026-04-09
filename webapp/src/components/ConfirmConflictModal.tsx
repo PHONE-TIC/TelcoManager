@@ -8,7 +8,10 @@ interface ConfirmConflictModalProps {
     id: string;
     numero?: string | number;
     titre: string;
-    [key: string]: any;
+    datePlanifiee?: string;
+    client?: {
+      nom?: string;
+    };
   };
   newDate: string;
 }
@@ -55,9 +58,11 @@ const ConfirmConflictModal: React.FC<ConfirmConflictModalProps> = ({
             <br />
             <span style={{ fontSize: "0.9rem" }}>
               📅{" "}
-              {new Date(conflictingIntervention.datePlanifiee).toLocaleString(
-                "fr-FR"
-              )}
+              {conflictingIntervention.datePlanifiee
+                ? new Date(conflictingIntervention.datePlanifiee).toLocaleString(
+                    "fr-FR"
+                  )
+                : "Date non disponible"}
             </span>
             <br />
             <span style={{ fontSize: "0.9rem" }}>

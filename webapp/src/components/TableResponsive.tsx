@@ -14,12 +14,13 @@ interface TableResponsiveProps<T> {
     actions?: (item: T) => ReactNode;
 }
 
-export default function TableResponsive<T extends Record<string, any>>({
+export default function TableResponsive<T extends object>({
     data,
     columns,
     onRowClick,
     actions,
 }: TableResponsiveProps<T>) {
+    const getCellValue = (item: T, key: string) => (item as Record<string, ReactNode>)[key];
     return (
         <>
             {/* Desktop Table */}
@@ -42,7 +43,7 @@ export default function TableResponsive<T extends Record<string, any>>({
                             >
                                 {columns.map((col) => (
                                     <td key={col.key}>
-                                        {col.render ? col.render(item) : item[col.key]}
+                                        {col.render ? col.render(item) : getCellValue(item, col.key)}
                                     </td>
                                 ))}
                                 {actions && <td>{actions(item)}</td>}
@@ -64,7 +65,7 @@ export default function TableResponsive<T extends Record<string, any>>({
                             <div key={col.key} className="card-row">
                                 <span className="card-label">{col.label}:</span>
                                 <span className="card-value">
-                                    {col.render ? col.render(item) : item[col.key]}
+                                    {col.render ? col.render(item) : getCellValue(item, col.key)}
                                 </span>
                             </div>
                         ))}

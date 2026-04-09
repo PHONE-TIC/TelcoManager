@@ -9,8 +9,21 @@ interface StockTransferModalProps {
     onSuccess: () => void;
 }
 
+interface Technician {
+    id: string;
+    nom: string;
+}
+
+interface ApiError {
+    response?: {
+        data?: {
+            error?: string;
+        };
+    };
+}
+
 function StockTransferModal({ stockId, stockName, maxQuantite, onClose, onSuccess }: StockTransferModalProps) {
-    const [techniciens, setTechniciens] = useState<any[]>([]);
+    const [techniciens, setTechniciens] = useState<Technician[]>([]);
     const [selectedTechnicien, setSelectedTechnicien] = useState('');
     const [quantite, setQuantite] = useState(1);
     const [reason, setReason] = useState('');
@@ -52,7 +65,7 @@ function StockTransferModal({ stockId, stockName, maxQuantite, onClose, onSucces
             });
             onSuccess();
         } catch (err: unknown) {
-            setError((err as any).response?.data?.error || 'Erreur lors du transfert');
+            setError((err as ApiError).response?.data?.error || 'Erreur lors du transfert');
         } finally {
             setLoading(false);
         }
