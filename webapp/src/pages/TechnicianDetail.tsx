@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import UserAvatar from "../components/UserAvatar";
+import { getTechnicianRoleBadgeClass } from "./technician-detail.utils";
 
 type TabType = "info" | "stock" | "journal";
 
@@ -132,12 +133,7 @@ function TechnicianDetail() {
                 }}
               >
                 <span
-                  className={`badge ${technician.role === "admin"
-                      ? "badge-danger"
-                      : technician.role === "gestionnaire"
-                        ? "bg-red-100 text-red-900"
-                        : "badge-info"
-                    }`}
+                  className={`badge ${getTechnicianRoleBadgeClass(technician.role)}`}
                 >
                   {technician.role}
                 </span>
@@ -196,12 +192,7 @@ function TechnicianDetail() {
                 <label>Rôle</label>
                 <div className="info-value">
                   <span
-                    className={`badge ${technician.role === "admin"
-                        ? "badge-danger"
-                        : technician.role === "gestionnaire"
-                          ? "bg-red-100 text-red-900"
-                          : "badge-info"
-                      }`}
+                    className={`badge ${getTechnicianRoleBadgeClass(technician.role)}`}
                   >
                     {technician.role}
                   </span>

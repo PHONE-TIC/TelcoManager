@@ -1,10 +1,9 @@
 import type { TechnicianStock, Stock as StockType } from "../types";
 
-export interface StockWithRelations extends StockType {
+export type StockWithRelations = StockType & {
   originalStockId?: string;
   technicianStockId?: string;
-  [key: string]: unknown;
-}
+};
 
 export function parseSerialNumbers(input: string): string[] {
   return input

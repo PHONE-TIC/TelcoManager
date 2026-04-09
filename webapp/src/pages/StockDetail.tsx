@@ -3,14 +3,22 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import StockTransferModal from "../components/StockTransferModal";
 import StockLocationModal from "../components/StockLocationModal";
+import {
+  getMovementMeta,
+  getStockQuantityBadgeConfig,
+  getStockStatusBadgeConfig,
+  resolveStockDetailLocation,
+} from "./stock-detail.utils";
+
+import type { Stock, StockMovement } from "../types";
 
 function StockDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [item, setItem] = useState<any>(null);
+  const [item, setItem] = useState<Stock | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [movements, setMovements] = useState<any[]>([]);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
   const [movementsLoading, setMovementsLoading] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -44,64 +52,9 @@ function StockDetail() {
     loadMovements();
   }, [loadStock, loadMovements]);
 
-  const getMovementIcon = (type: string) => {
-    switch (type) {
-      case "creation":
-        return "➕";
-      case "entree":
-        return "📥";
-      case "sortie":
-        return "📤";
-      case "transfert":
-        return "🚚";
-      case "ajustement":
-        return "🔧";
-      case "hs":
-        return "⚠️";
-      default:
-        return "📋";
-    }
-  };
-
-  const getMovementColor = (type: string) => {
-    switch (type) {
-      case "creation":
-        return "#10b981";
-      case "entree":
-        return "#3b82f6";
-      case "sortie":
-        return "#f59e0b";
-      case "transfert":
-        return "#8b5cf6";
-      case "ajustement":
-        return "#6b7280";
-      case "hs":
-        return "#ef4444";
-      default:
-        return "#6b7280";
-    }
-  };
-
-  const getMovementLabel = (type: string) => {
-    switch (type) {
-      case "creation":
-        return "Création";
-      case "entree":
-        return "Entrée";
-      case "sortie":
-        return "Sortie";
-      case "transfert":
-        return "Transfert";
-      case "ajustement":
-        return "Ajustement";
-      case "hs":
-        return "Mise HS";
-      default:
-        return type;
-    }
-  };
 
   const handleMoveToHS = async () => {
+    if (!item) return;
     if (!window.confirm(`Déplacer "${item.nomMateriel}" vers le stock HS ?`))
       return;
     try {
@@ -167,37 +120,28 @@ function StockDetail() {
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3 flex-wrap">
               📦 {item.nomMateriel}
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 12px",
-                  borderRadius: "20px",
-                  fontSize: "0.8rem",
-                  fontWeight: 600,
-                  background:
-                    item.statut === "courant"
-                      ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                      : item.statut === "retour_fournisseur"
-                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
-                        : "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-                  color: "white",
-                  boxShadow:
-                    item.statut === "courant"
-                      ? "0 2px 8px rgba(16, 185, 129, 0.35)"
-                      : item.statut === "retour_fournisseur"
-                        ? "0 2px 8px rgba(245, 158, 11, 0.35)"
-                        : "0 2px 8px rgba(239, 68, 68, 0.35)",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                }}
-              >
-                {item.statut === "courant"
-                  ? "✅ En stock"
-                  : item.statut === "retour_fournisseur"
-                    ? "↩️ Retour Frn"
-                    : "⚠️ Hors Service"}
-              </span>
+              {(() => {
+                const statusBadge = getStockStatusBadgeConfig(item.statut);
+                return (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "6px 12px",
+                      borderRadius: "20px",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      background: statusBadge.background,
+                      color: "white",
+                      boxShadow: statusBadge.boxShadow,
+                      border: "1px solid rgba(255,255,255,0.2)",
+                    }}
+                  >
+                    {statusBadge.label}
+                  </span>
+                );
+              })()}
             </h1>
             <p className="text-gray-500 mt-1">Référence: {item.reference}</p>
           </div>
@@ -385,34 +329,28 @@ function StockDetail() {
               <label className="text-sm text-gray-500 uppercase font-medium">
                 Quantité
               </label>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 14px",
-                  borderRadius: "20px",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  background:
-                    item.quantite <= 0
-                      ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
-                      : item.quantite <= 2
-                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
-                        : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                  color: "white",
-                  boxShadow:
-                    item.quantite <= 0
-                      ? "0 2px 8px rgba(239, 68, 68, 0.35)"
-                      : item.quantite <= 2
-                        ? "0 2px 8px rgba(245, 158, 11, 0.35)"
-                        : "0 2px 8px rgba(16, 185, 129, 0.35)",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                }}
-              >
-                {item.quantite <= 0 ? "🔴" : item.quantite <= 2 ? "🟡" : "🟢"}{" "}
-                {item.quantite} unité{item.quantite > 1 ? "s" : ""}
-              </span>
+              {(() => {
+                const quantityBadge = getStockQuantityBadgeConfig(item.quantite);
+                return (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 14px",
+                      borderRadius: "20px",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      background: quantityBadge.background,
+                      color: "white",
+                      boxShadow: quantityBadge.boxShadow,
+                      border: "1px solid rgba(255,255,255,0.2)",
+                    }}
+                  >
+                    {quantityBadge.icon} {item.quantite} unité{item.quantite > 1 ? "s" : ""}
+                  </span>
+                );
+              })()}
             </div>
 
             {/* Statut */}
@@ -428,37 +366,28 @@ function StockDetail() {
               <label className="text-sm text-gray-500 uppercase font-medium">
                 Statut
               </label>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 14px",
-                  borderRadius: "20px",
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  background:
-                    item.statut === "courant"
-                      ? "linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                      : item.statut === "retour_fournisseur"
-                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
-                        : "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-                  color: "white",
-                  boxShadow:
-                    item.statut === "courant"
-                      ? "0 2px 8px rgba(16, 185, 129, 0.35)"
-                      : item.statut === "retour_fournisseur"
-                        ? "0 2px 8px rgba(245, 158, 11, 0.35)"
-                        : "0 2px 8px rgba(239, 68, 68, 0.35)",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                }}
-              >
-                {item.statut === "courant"
-                  ? "✅ En stock"
-                  : item.statut === "retour_fournisseur"
-                    ? "↩️ Retour Frn"
-                    : "⚠️ Hors Service"}
-              </span>
+              {(() => {
+                const statusBadge = getStockStatusBadgeConfig(item.statut);
+                return (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 14px",
+                      borderRadius: "20px",
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      background: statusBadge.background,
+                      color: "white",
+                      boxShadow: statusBadge.boxShadow,
+                      border: "1px solid rgba(255,255,255,0.2)",
+                    }}
+                  >
+                    {statusBadge.label}
+                  </span>
+                );
+              })()}
             </div>
 
             {/* Localisation */}
@@ -474,59 +403,7 @@ function StockDetail() {
                 Localisation
               </label>
               {(() => {
-                let location = {
-                  label: "📦 Stock courant",
-                  color: "#16a34a",
-                  bgColor: "rgba(22, 163, 74, 0.15)",
-                };
-
-                if (item.statut === "hs") {
-                  location = {
-                    label: "⚠️ HS",
-                    color: "#dc2626",
-                    bgColor: "rgba(220, 38, 38, 0.15)",
-                  };
-                } else if (item.statut === "retour_fournisseur") {
-                  location = {
-                    label: "↩️ Retour Fournisseur",
-                    color: "#d97706",
-                    bgColor: "rgba(245, 158, 11, 0.15)",
-                  };
-                } else if (
-                  item.technicianStocks &&
-                  item.technicianStocks.length > 0
-                ) {
-                  const clientAssignment = item.technicianStocks.find(
-                    (ts: { client?: { id: string; nom: string } }) => ts.client
-                  );
-                  if (clientAssignment) {
-                    const clientName = clientAssignment.client.nom || "Client";
-                    location = {
-                      label: `🏢 Client: ${clientName}`,
-                      color: "#0891b2",
-                      bgColor: "rgba(8, 145, 178, 0.15)",
-                    };
-                  } else {
-                    const techName =
-                      item.technicianStocks[0].technicien?.nom || "Technicien";
-                    location = {
-                      label: `🔧 Tech: ${techName}`,
-                      color: "#7c3aed",
-                      bgColor: "rgba(124, 58, 237, 0.15)",
-                    };
-                  }
-                } else if (
-                  item.clientEquipements &&
-                  item.clientEquipements.length > 0
-                ) {
-                  const clientName =
-                    item.clientEquipements[0].client?.nom || "Client";
-                  location = {
-                    label: `🏢 Client: ${clientName}`,
-                    color: "#0891b2",
-                    bgColor: "rgba(8, 145, 178, 0.15)",
-                  };
-                }
+                const location = resolveStockDetailLocation(item);
 
                 return (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -653,7 +530,7 @@ function StockDetail() {
                     width: "40px",
                     height: "40px",
                     borderRadius: "50%",
-                    backgroundColor: getMovementColor(movement.type),
+                    backgroundColor: getMovementMeta(movement.type).color,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -661,7 +538,7 @@ function StockDetail() {
                     flexShrink: 0,
                   }}
                 >
-                  {getMovementIcon(movement.type)}
+                  {getMovementMeta(movement.type).icon}
                 </div>
 
                 {/* Content */}
@@ -677,11 +554,11 @@ function StockDetail() {
                     <span
                       style={{
                         fontWeight: 600,
-                        color: getMovementColor(movement.type),
+                        color: getMovementMeta(movement.type).color,
                         fontSize: "0.9rem",
                       }}
                     >
-                      {getMovementLabel(movement.type)}
+                      {getMovementMeta(movement.type).label}
                     </span>
                     <span className="text-xs text-gray-500">
                       {new Date(movement.createdAt).toLocaleDateString(

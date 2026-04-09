@@ -29,8 +29,9 @@ export function getFilteredStockItems(
   })) as StockItemWithComputedQuantity[];
 
   result.sort((a, b) => {
-    const valueA = a[sortColumn];
-    const valueB = b[sortColumn];
+    const sortKey = sortColumn as keyof StockItemWithComputedQuantity;
+    const valueA = a[sortKey];
+    const valueB = b[sortKey];
     const normalizedA = typeof valueA === "string" ? valueA.toLowerCase() : valueA;
     const normalizedB = typeof valueB === "string" ? valueB.toLowerCase() : valueB;
 
