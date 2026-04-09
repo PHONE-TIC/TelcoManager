@@ -12,39 +12,20 @@ import {
   Cell,
 } from "recharts";
 import moment from "moment";
-import type { Intervention, Stock } from "../types";
-
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
-
-interface InterventionStat {
-  name: string;
-  value: number;
-}
-
-interface StockCategorySummary {
-  categorie: string;
-  articles: number;
-  quantite: number;
-}
-
-interface StockSummaryGroup {
-  totalQuantite: number;
-}
-
-interface LowStockItem extends Stock {
-  totalTechniciens?: number;
-}
-
-interface DashboardStats {
-  stock: {
-    stockCourant?: StockSummaryGroup;
-    stockHS?: StockSummaryGroup;
-    stockFaible?: LowStockItem[];
-    parCategorie?: StockCategorySummary[];
-  };
-  totalClients: number;
-  totalInterventions: number;
-}
+import type { Intervention } from "../types";
+import {
+  buildInterventionStats,
+  DASHBOARD_COLORS,
+  DASHBOARD_PANEL_STYLE,
+  getDashboardStatCards,
+  getInterventionStatusBadge,
+  getLowStockStyles,
+  getRecentInterventionTitle,
+  QUICK_LINKS,
+  type DashboardStats,
+  type InterventionStat,
+  type StockCategorySummary,
+} from "./dashboard.utils";
 
 function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -71,23 +52,8 @@ function Dashboard() {
         apiService.getInterventions({ limit: 5, sort: "datePlanifiee:desc" }),
       ]);
 
-      // Process intervention stats
       const interventions = interventionsData.interventions || [];
-      const statusCounts = interventions.reduce(
-        (acc: Record<string, number>, curr: { statut: string }) => {
-          const status = curr.statut || "Inconnu";
-          acc[status] = (acc[status] || 0) + 1;
-          return acc;
-        },
-        {}
-      );
-
-      const processedInterventionStats = Object.keys(statusCounts).map(
-        (status) => ({
-          name: status.charAt(0).toUpperCase() + status.slice(1),
-          value: statusCounts[status],
-        })
-      );
+      const processedInterventionStats = buildInterventionStats(interventions);
 
       setStats({
         stock: stockStats,
@@ -118,12 +84,7 @@ function Dashboard() {
     >
       {/* Header with Quick Actions */}
       <div
-        style={{
-          backgroundColor: "var(--bg-primary)",
-          padding: "20px",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-        }}
+        style={DASHBOARD_PANEL_STYLE}
         className="animate-fade-in-1"
       >
         <div className="flex justify-between items-center flex-wrap gap-3">
@@ -136,13 +97,7 @@ function Dashboard() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {[
-              { to: "/interventions", icon: "📅", label: "Interventions" },
-              { to: "/clients", icon: "👥", label: "Clients" },
-              { to: "/stock", icon: "📦", label: "Stock" },
-              { to: "/inventaire", icon: "🔍", label: "Inventaire" },
-              { to: "/rapports", icon: "📈", label: "Rapports" },
-            ].map((link) => (
+            {QUICK_LINKS.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
@@ -173,28 +128,7 @@ function Dashboard() {
         className="grid gap-3 animate-fade-in-2"
         style={{ gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}
       >
-        {[
-          {
-            value: stats?.totalClients || 0,
-            label: "Clients",
-            color: "#3b82f6",
-          },
-          {
-            value: stats?.totalInterventions || 0,
-            label: "Interventions",
-            color: "#10b981",
-          },
-          {
-            value: stats?.stock?.stockCourant?.totalQuantite || 0,
-            label: "Pièces Stock",
-            color: "#f97316",
-          },
-          {
-            value: stats?.stock?.stockHS?.totalQuantite || 0,
-            label: "Pièces HS",
-            color: "#ef4444",
-          },
-        ].map((stat, idx) => (
+        {getDashboardStatCards(stats).map((stat, idx) => (
           <div
             key={idx}
             style={{
@@ -246,12 +180,7 @@ function Dashboard() {
         {/* Chart */}
         <div
           className="lg:col-span-2"
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            padding: "20px",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-          }}
+          style={DASHBOARD_PANEL_STYLE}
         >
           <h2
             style={{
@@ -294,7 +223,9 @@ function Dashboard() {
                     {interventionStats.map((_entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
+                        fill={
+                          DASHBOARD_COLORS[index % DASHBOARD_COLORS.length]
+                        }
                       />
                     ))}
                   </Bar>
@@ -313,12 +244,7 @@ function Dashboard() {
 
         {/* Recent Interventions */}
         <div
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            padding: "20px",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-          }}
+          style={DASHBOARD_PANEL_STYLE}
         >
           <h2
             style={{
@@ -337,50 +263,40 @@ function Dashboard() {
                   to={`/interventions/${intervention.id}`}
                   className="intervention-card-item"
                 >
-                  <div className="flex justify-between items-center mb-1">
-                    <span
-                      className="font-semibold text-sm"
-                      style={{ color: "var(--text-primary)" }}
-                    >
-                      {intervention.client?.nom || "Client inconnu"}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        padding: "4px 10px",
-                        borderRadius: "12px",
-                        fontWeight: 600,
-                        backgroundColor:
-                          intervention.statut === "terminee"
-                            ? "#10b981"
-                            : intervention.statut === "planifiee"
-                            ? "#3b82f6"
-                            : intervention.statut === "en_cours"
-                            ? "#f59e0b"
-                            : intervention.statut === "annulee"
-                            ? "#ef4444"
-                            : "#6b7280",
-                        color: "white",
-                      }}
-                    >
-                      {intervention.statut === "terminee"
-                        ? "✓ Terminée"
-                        : intervention.statut === "planifiee"
-                        ? "📅 Planifiée"
-                        : intervention.statut === "en_cours"
-                        ? "⏳ En cours"
-                        : intervention.statut === "annulee"
-                        ? "✕ Annulée"
-                        : intervention.statut}
-                    </span>
-                  </div>
+                  {(() => {
+                    const statusBadge = getInterventionStatusBadge(
+                      intervention.statut
+                    );
+
+                    return (
+                      <div className="flex justify-between items-center mb-1">
+                        <span
+                          className="font-semibold text-sm"
+                          style={{ color: "var(--text-primary)" }}
+                        >
+                          {intervention.client?.nom || "Client inconnu"}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            padding: "4px 10px",
+                            borderRadius: "12px",
+                            fontWeight: 600,
+                            backgroundColor: statusBadge.backgroundColor,
+                            color: "white",
+                          }}
+                        >
+                          {statusBadge.label}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <div
                     className="flex justify-between items-center text-xs"
                     style={{ color: "var(--text-secondary)" }}
                   >
                     <span>
-                      {intervention.titre?.substring(0, 30) || "Sans titre"}
-                      {intervention.titre?.length > 30 ? "..." : ""}
+                      {getRecentInterventionTitle(intervention.titre)}
                     </span>
                     <span className="font-medium">
                       {moment(intervention.datePlanifiee).format(
@@ -407,12 +323,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-in-4">
         {/* Stock by Category */}
         <div
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            padding: "20px",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-          }}
+          style={DASHBOARD_PANEL_STYLE}
         >
           <h2
             style={{
@@ -528,10 +439,8 @@ function Dashboard() {
                         marginBottom: "8px",
                         borderRadius: "8px",
                         border: "1px solid var(--border-color)",
-                        backgroundColor:
-                          item.quantite === 0
-                            ? "rgba(239, 68, 68, 0.1)"
-                            : "rgba(249, 115, 22, 0.1)",
+                        backgroundColor: getLowStockStyles(item.quantite)
+                          .containerColor,
                       }}
                     >
                       <span
@@ -548,8 +457,8 @@ function Dashboard() {
                           fontSize: "14px",
                           padding: "4px 12px",
                           borderRadius: "6px",
-                          backgroundColor:
-                            item.quantite === 0 ? "#ef4444" : "#f97316",
+                          backgroundColor: getLowStockStyles(item.quantite)
+                            .badgeColor,
                           color: "white",
                         }}
                       >
