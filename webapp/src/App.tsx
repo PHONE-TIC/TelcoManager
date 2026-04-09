@@ -39,6 +39,7 @@ const PwaInstallPopup = lazy(() =>
     default: module.PwaInstallPopup,
   }))
 );
+const ReloadPrompt = lazy(() => import("./components/ReloadPrompt"));
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import MobileNav from "./components/MobileNav";
@@ -46,7 +47,6 @@ import MobileHeader from "./components/MobileHeader";
 import { useNotifications } from "./hooks/useNotifications";
 
 import logo from "./assets/logo.png";
-import ReloadPrompt from "./components/ReloadPrompt";
 
 function Navigation() {
   const location = useLocation();
@@ -478,8 +478,8 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <AppContent />
-          <ReloadPrompt />
           <Suspense fallback={null}>
+            <ReloadPrompt />
             <PwaInstallPopup />
           </Suspense>
         </AuthProvider>
