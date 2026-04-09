@@ -1,39 +1,21 @@
 import { Response } from "express";
 import { prisma } from "../index";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { stockMovementStockSelect, stockMovementUserSelect } from "./stock-movement.constants";
+import {
+  getAllStockMovementList,
+  getStockMovementList,
+} from "../services/stock-movement-query.service";
 
 // Get movements for a specific stock item
 export const getStockMovements = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const { limit = 50, offset = 0 } = req.query;
-
-    const movements = await prisma.stockMovement.findMany({
-      where: { stockId: id },
-      include: {
-        performedBy: {
-          select: stockMovementUserSelect,
-        },
-        technicien: {
-          select: stockMovementUserSelect,
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: Number(limit),
-      skip: Number(offset),
+    const result = await getStockMovementList({
+      stockId: req.params.id,
+      limit: req.query.limit,
+      offset: req.query.offset,
     });
 
-    const total = await prisma.stockMovement.count({
-      where: { stockId: id },
-    });
-
-    res.json({
-      movements,
-      total,
-      limit: Number(limit),
-      offset: Number(offset),
-    });
+    res.json(result);
   } catch (error) {
     console.error("Erreur récupération mouvements stock:", error);
     res.status(500).json({ error: "Erreur serveur" });
@@ -43,51 +25,16 @@ export const getStockMovements = async (req: AuthRequest, res: Response) => {
 // Get all movements (for dashboard/reports)
 export const getAllMovements = async (req: AuthRequest, res: Response) => {
   try {
-    const {
-      limit = 100,
-      offset = 0,
-      type,
-      stockId,
-      startDate,
-      endDate,
-    } = req.query;
-
-    const where: any = {};
-
-    if (type) where.type = type;
-    if (stockId) where.stockId = stockId;
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) where.createdAt.gte = new Date(startDate as string);
-      if (endDate) where.createdAt.lte = new Date(endDate as string);
-    }
-
-    const movements = await prisma.stockMovement.findMany({
-      where,
-      include: {
-        stock: {
-          select: stockMovementStockSelect,
-        },
-        performedBy: {
-          select: stockMovementUserSelect,
-        },
-        technicien: {
-          select: stockMovementUserSelect,
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: Number(limit),
-      skip: Number(offset),
+    const result = await getAllStockMovementList({
+      limit: req.query.limit,
+      offset: req.query.offset,
+      type: req.query.type,
+      stockId: req.query.stockId,
+      startDate: req.query.startDate,
+      endDate: req.query.endDate,
     });
 
-    const total = await prisma.stockMovement.count({ where });
-
-    res.json({
-      movements,
-      total,
-      limit: Number(limit),
-      offset: Number(offset),
-    });
+    res.json(result);
   } catch (error) {
     console.error("Erreur récupération tous mouvements:", error);
     res.status(500).json({ error: "Erreur serveur" });
