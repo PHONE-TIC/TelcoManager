@@ -5,9 +5,12 @@ import { AuthRequest } from "../middleware/auth.middleware";
 import { notifyNewIntervention } from "../services/push.service";
 import {
   buildFinalInterventionNumero,
+  buildInterventionStatusUpdateData,
   buildTemporaryInterventionNumero,
   getClientNomById,
   getTechnicienNomById,
+  isClosedInterventionStatus,
+  isDateScheduledForToday,
 } from "./interventions.controller.helpers";
 import {
   buildPagination,
@@ -18,6 +21,9 @@ import {
   interventionClientListSelect,
   interventionTechnicienListSelect,
 } from "./prisma-selects";
+import {
+  interventionCreateReturnInclude,
+} from "./interventions.controller.constants";
 
 export const getAllInterventions = async (req: AuthRequest, res: Response) => {
   try {
@@ -140,7 +146,7 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const {
@@ -182,18 +188,7 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
     const intervention = await prisma.intervention.update({
       where: { id: initialIntervention.id },
       data: { numero: finalNumero },
-      include: {
-        client: {
-          select: {
-            nom: true,
-          },
-        },
-        technicien: {
-          select: {
-            nom: true,
-          },
-        },
-      },
+      include: interventionCreateReturnInclude,
     });
 
     // Send push notification to assigned technician
@@ -222,7 +217,7 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const { id } = req.params;
@@ -237,15 +232,13 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
     }
 
     // Technicians cannot modify closed interventions
-    if (req.user?.role === "technicien") {
-      if (
-        existingIntervention.statut === "terminee" ||
-        existingIntervention.statut === "annulee"
-      ) {
-        return res.status(403).json({
-          error: "Les interventions clôturées ne peuvent pas être modifiées",
-        });
-      }
+    if (
+      req.user?.role === "technicien" &&
+      isClosedInterventionStatus(existingIntervention.statut)
+    ) {
+      return res.status(403).json({
+        error: "Les interventions clôturées ne peuvent pas être modifiées",
+      });
     }
 
     const {
@@ -286,18 +279,7 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
     const intervention = await prisma.intervention.update({
       where: { id },
       data,
-      include: {
-        client: {
-          select: {
-            nom: true,
-          },
-        },
-        technicien: {
-          select: {
-            nom: true,
-          },
-        },
-      },
+      include: interventionCreateReturnInclude,
     });
 
     res.json(intervention);
@@ -316,7 +298,7 @@ export const deleteIntervention = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const { id } = req.params;
@@ -357,14 +339,7 @@ export const updateInterventionStatus = async (
 
     // Validate that intervention is scheduled for today when starting (en_cours)
     if (statut === "en_cours" && existingIntervention.statut === "planifiee") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const scheduledDate = new Date(existingIntervention.datePlanifiee);
-
-      if (scheduledDate < today || scheduledDate >= tomorrow) {
+      if (!isDateScheduledForToday(existingIntervention.datePlanifiee)) {
         return res.status(400).json({
           error:
             "Impossible de prendre en charge une intervention qui n'est pas prévue pour aujourd'hui",
@@ -372,20 +347,11 @@ export const updateInterventionStatus = async (
       }
     }
 
-    const data: any = { statut };
-
-    if (statut === "en_cours" && datePriseEnCharge) {
-      data.datePriseEnCharge = new Date(datePriseEnCharge);
-    }
-
-    if (statut === "terminee") {
-      // Validation finale (optionnelle, selon rigueur voulue)
-      data.dateRealisee = new Date();
-    }
-
-    if (commentaireTechnicien) {
-      data.commentaireTechnicien = commentaireTechnicien;
-    }
+    const data = buildInterventionStatusUpdateData({
+      statut,
+      datePriseEnCharge,
+      commentaireTechnicien,
+    });
 
     const intervention = await prisma.intervention.update({
       where: { id },

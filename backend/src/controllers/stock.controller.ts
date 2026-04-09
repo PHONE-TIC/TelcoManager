@@ -4,6 +4,7 @@ import { prisma } from "../index";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { buildPagination, parsePagination, respondValidationError } from "./controller.utils";
 import { stockClientMiniSelect, stockTechnicienMiniSelect } from "./prisma-selects";
+import { generateStockReference, parseSerialNumbers } from "./stock.controller.helpers";
 
 export const getAllStock = async (req: AuthRequest, res: Response) => {
   try {
@@ -186,76 +187,6 @@ export const getStockBySerial = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Fonction de génération automatique de référence
-// Format: [3 lettres marque][3 lettres catégorie][numéro séquentiel sur 5 chiffres]
-// Exemple: YEATEL00001
-// IMPORTANT: Si un article avec la même marque + catégorie + modèle existe déjà,
-// on réutilise sa référence pour garder la cohérence.
-const generateReference = async (
-  marque: string,
-  categorie: string,
-  modele?: string | null
-): Promise<string> => {
-  // Nettoyer et extraire les 3 premières lettres
-  const cleanStr = (str: string): string => {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Supprimer les accents
-      .replace(/[^a-zA-Z]/g, "") // Garder uniquement les lettres
-      .toUpperCase()
-      .substring(0, 3)
-      .padEnd(3, "X"); // Compléter avec X si moins de 3 lettres
-  };
-
-  // 1. D'abord, chercher si un article avec la même marque + catégorie + modèle existe déjà
-  const existingItem = await prisma.stock.findFirst({
-    where: {
-      marque: { equals: marque, mode: "insensitive" },
-      categorie: { equals: categorie, mode: "insensitive" },
-      // Le modèle doit correspondre (ou les deux doivent être vides/null)
-      ...(modele
-        ? { modele: { equals: modele, mode: "insensitive" } }
-        : { OR: [{ modele: null }, { modele: "" }] }),
-    },
-    select: { reference: true },
-    orderBy: { createdAt: "asc" }, // Prendre le premier créé
-  });
-
-  // Si un article identique existe, réutiliser sa référence
-  if (existingItem && existingItem.reference) {
-    return existingItem.reference;
-  }
-
-  // 2. Sinon, générer une nouvelle référence avec le numéro séquentiel suivant
-  const prefixMarque = cleanStr(marque);
-  const prefixCategorie = cleanStr(categorie);
-  const prefix = `${prefixMarque}${prefixCategorie}`;
-
-  // Trouver le plus grand numéro existant avec ce préfixe
-  const existingRefs = await prisma.stock.findMany({
-    where: {
-      reference: {
-        startsWith: prefix,
-      },
-    },
-    select: { reference: true },
-    orderBy: { reference: "desc" },
-    take: 100,
-  });
-
-  let maxNumber = 0;
-  for (const item of existingRefs) {
-    const numPart = item.reference.substring(prefix.length);
-    const num = parseInt(numPart, 10);
-    if (!isNaN(num) && num > maxNumber) {
-      maxNumber = num;
-    }
-  }
-
-  const nextNumber = (maxNumber + 1).toString().padStart(5, "0");
-  return `${prefix}${nextNumber}`;
-};
-
 export const createStock = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
@@ -281,7 +212,7 @@ export const createStock = async (req: AuthRequest, res: Response) => {
     // Générer la référence automatiquement si marque et catégorie sont fournis et pas de référence manuelle
     let finalReference = reference;
     if (!reference && marque && categorie) {
-      finalReference = await generateReference(marque, categorie, modele);
+      finalReference = await generateStockReference(marque, categorie, modele);
     } else if (!reference) {
       return res.status(400).json({
         error:
@@ -388,7 +319,7 @@ export const createStock = async (req: AuthRequest, res: Response) => {
         let itemRef = finalReference;
         // Si on génère automatiquement, incrémenter pour chaque article
         if (!reference && marque && categorie && i > 0) {
-          itemRef = await generateReference(marque, categorie, modele);
+          itemRef = await generateStockReference(marque, categorie, modele);
         }
         const item = await prisma.stock.create({
           data: {
