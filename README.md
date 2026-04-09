@@ -120,7 +120,9 @@ Optimisations et simplifications importantes, sans modification fonctionnelle vo
 - simplification backend par extraction de services métier, services de requête et helpers communs
 - centralisation de pagination, validation et accès Prisma
 - nettoyage de fichiers obsolètes et rationalisation de la documentation
-- validation continue via builds backend/webapp et rebuilds Docker
+- suppression complète de l’application mobile et de l’application desktop pour recentrer le projet sur la webapp
+- mise à jour du README, des guides de déploiement, de test et du guide utilisateur pour refléter une architecture web-only
+- validation continue via builds backend/webapp, rebuilds Docker, push GitHub et publication DockerHub
 
 ### Décembre 2025
 
