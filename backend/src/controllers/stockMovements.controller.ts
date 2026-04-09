@@ -11,6 +11,20 @@ import {
   transferStockToTechnician,
 } from "../services/stock-movement-write.service";
 
+function getAuthenticatedUserId(req: AuthRequest) {
+  return req.user!.id;
+}
+
+function hasImportItems(items: unknown): items is Array<Record<string, unknown>> {
+  return Array.isArray(items) && items.length > 0;
+}
+
+function hasTransferItems(
+  items: unknown
+): items is Array<{ stockId: string; quantite: number; status?: "ok" | "hs" }> {
+  return Array.isArray(items) && items.length > 0;
+}
+
 // Get movements for a specific stock item
 export const getStockMovements = async (req: AuthRequest, res: Response) => {
   try {
@@ -54,7 +68,7 @@ export const transferToTechnician = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { technicienId, quantite, reason } = req.body;
-    const performedById = req.user!.id;
+    const performedById = getAuthenticatedUserId(req);
 
     if (!technicienId || !quantite || quantite <= 0) {
       return res.status(400).json({ error: "Technicien et quantité requis" });
@@ -79,9 +93,9 @@ export const transferToTechnician = async (req: AuthRequest, res: Response) => {
 export const bulkImportStock = async (req: AuthRequest, res: Response) => {
   try {
     const { items } = req.body;
-    const performedById = req.user!.id;
+    const performedById = getAuthenticatedUserId(req);
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!hasImportItems(items)) {
       return res.status(400).json({ error: "Liste d'articles requise" });
     }
 
@@ -101,9 +115,9 @@ export const bulkImportStock = async (req: AuthRequest, res: Response) => {
 export const bulkTransfer = async (req: AuthRequest, res: Response) => {
   try {
     const { sourceType, sourceId, destType, destId, items } = req.body;
-    const performedById = req.user!.id;
+    const performedById = getAuthenticatedUserId(req);
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
+    if (!hasTransferItems(items)) {
       return res.status(400).json({ error: "Liste d'articles requise" });
     }
 

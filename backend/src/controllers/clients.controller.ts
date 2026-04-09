@@ -109,7 +109,7 @@ export const getClientInterventions = async (
         },
       },
       orderBy: { datePlanifiee: "desc" },
-      take: parseInt(limit as string),
+      take: Number.parseInt(limit as string, 10),
     });
 
     res.json(interventions);
@@ -125,7 +125,7 @@ export const getClientEquipements = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const { id } = req.params;

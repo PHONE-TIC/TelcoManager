@@ -23,3 +23,7 @@ export function buildPagination(page: number, limit: number, total: number) {
 export function respondValidationError(res: Response, errors: unknown[]) {
   return res.status(400).json({ errors });
 }
+
+export function respondAdminOnly(res: Response, message = "Accès réservé aux administrateurs") {
+  return res.status(403).json({ error: message });
+}

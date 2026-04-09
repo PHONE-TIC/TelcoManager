@@ -4,7 +4,6 @@ import { prisma } from "../db";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { buildPagination, parsePagination, respondValidationError } from "./controller.utils";
 import { stockClientMiniSelect, stockTechnicienMiniSelect } from "./prisma-selects";
-import { generateStockReference } from "./stock.controller.helpers";
 import { createStockItems, moveStockToHs } from "../services/stock-write.service";
 
 export const getAllStock = async (req: AuthRequest, res: Response) => {
@@ -210,7 +209,7 @@ export const updateStock = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const { id } = req.params;
@@ -268,7 +267,7 @@ export const deleteStock = async (req: AuthRequest, res: Response) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return respondValidationError(res, errors.array());
     }
 
     const { id } = req.params;
