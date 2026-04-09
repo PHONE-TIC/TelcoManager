@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { prisma } from '../db';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { findStockByBarcode, getInventorySessionDetails, getInventorySessions } from '../services/inventory-query.service';
 import { createInventorySession, deleteInventorySession, finalizeInventorySession, updateInventorySessionItems } from '../services/inventory-session.service';
 
 // Créer une nouvelle session d'inventaire (Snapshot du stock actuel)
@@ -17,14 +17,7 @@ export const createSession = async (req: AuthRequest, res: Response) => {
 // Récupérer toutes les sessions
 export const getSessions = async (req: AuthRequest, res: Response) => {
     try {
-        const sessions = await prisma.inventorySession.findMany({
-            orderBy: { date: 'desc' },
-            include: {
-                _count: {
-                    select: { items: true }
-                }
-            }
-        });
+        const sessions = await getInventorySessions();
         res.json(sessions);
     } catch (error) {
         console.error('Erreur récupération sessions:', error);
@@ -36,19 +29,7 @@ export const getSessions = async (req: AuthRequest, res: Response) => {
 export const getSessionDetails = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const session = await prisma.inventorySession.findUnique({
-            where: { id },
-            include: {
-                items: {
-                    include: {
-                        stock: true // Inclure les détails du stock (nom, ref, code barre)
-                    },
-                    orderBy: {
-                        stock: { nomMateriel: 'asc' }
-                    }
-                }
-            }
-        });
+        const session = await getInventorySessionDetails(id);
 
         if (!session) return res.status(404).json({ error: 'Session non trouvée' });
 
@@ -106,9 +87,7 @@ export const scanBarcode = async (req: AuthRequest, res: Response) => {
     // ... Garder la fonction scan simple pour vérification ponctuelle
     try {
         const { codeBarre } = req.body;
-        const stock = await prisma.stock.findUnique({
-            where: { codeBarre },
-        });
+        const stock = await findStockByBarcode(codeBarre);
         if (!stock) return res.status(404).json({ error: 'Non trouvé' });
         res.json(stock);
     } catch (error) {

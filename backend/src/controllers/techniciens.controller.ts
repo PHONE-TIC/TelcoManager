@@ -1,9 +1,12 @@
 import { Response } from 'express';
 import { validationResult } from 'express-validator';
-import { prisma } from '../db';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { buildPagination, parsePagination, respondValidationError } from './controller.utils';
-import { interventionClientListSelect } from './prisma-selects';
+import {
+    getTechnicienDetails,
+    getTechnicienList,
+    getTechnicienPlanningList,
+} from '../services/technicien-query.service';
 import { createTechnicienRecord, deleteTechnicienRecord, updateTechnicienRecord } from '../services/technicien-write.service';
 
 export const getAllTechniciens = async (req: AuthRequest, res: Response) => {
@@ -14,31 +17,11 @@ export const getAllTechniciens = async (req: AuthRequest, res: Response) => {
             limit: limit as string,
         });
 
-        const where = active !== undefined ? { active: active === 'true' } : {};
-
-        const [techniciens, total] = await Promise.all([
-            prisma.technicien.findMany({
-                where,
-                skip,
-                take: pageSize,
-                orderBy: { nom: 'asc' },
-                select: {
-                    id: true,
-                    nom: true,
-                    username: true,
-                    role: true,
-                    active: true,
-                    lastLogin: true,
-                    createdAt: true,
-                    _count: {
-                        select: {
-                            interventions: true,
-                        },
-                    },
-                },
-            }),
-            prisma.technicien.count({ where }),
-        ]);
+        const { techniciens, total } = await getTechnicienList({
+            active,
+            skip,
+            take: pageSize,
+        });
 
         res.json({
             techniciens,
@@ -61,27 +44,7 @@ export const getTechnicienById = async (req: AuthRequest, res: Response) => {
 
         const { id } = req.params;
 
-        const technicien = await prisma.technicien.findUnique({
-            where: { id },
-            select: {
-                id: true,
-                nom: true,
-                username: true,
-                role: true,
-                active: true,
-                lastLogin: true,
-                createdAt: true,
-                _count: {
-                    select: {
-                        interventions: true,
-                    },
-                },
-                activityLogs: {
-                    take: 20,
-                    orderBy: { createdAt: 'desc' },
-                },
-            },
-        });
+        const technicien = await getTechnicienDetails(id);
 
         if (!technicien) {
             return res.status(404).json({ error: 'Technicien non trouvé' });
@@ -104,25 +67,10 @@ export const getTechnicienPlanning = async (req: AuthRequest, res: Response) => 
         const { id } = req.params;
         const { startDate, endDate } = req.query;
 
-        const where: any = {
-            technicienId: id,
-        };
-
-        if (startDate && endDate) {
-            where.datePlanifiee = {
-                gte: new Date(startDate as string),
-                lte: new Date(endDate as string),
-            };
-        }
-
-        const interventions = await prisma.intervention.findMany({
-            where,
-            include: {
-                client: {
-                    select: interventionClientListSelect,
-                },
-            },
-            orderBy: { datePlanifiee: 'asc' },
+        const interventions = await getTechnicienPlanningList({
+            id,
+            startDate,
+            endDate,
         });
 
         res.json(interventions);

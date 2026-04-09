@@ -1,10 +1,18 @@
 import { Response } from "express";
 import { validationResult } from "express-validator";
-import { prisma } from "../db";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { buildPagination, parsePagination, respondValidationError } from "./controller.utils";
-import { interventionTechnicienListSelect } from "./prisma-selects";
-import { createClientRecord, deleteClientRecord, updateClientRecord } from "../services/client-write.service";
+import {
+  getClientDetails,
+  getClientEquipmentList,
+  getClientInterventionList,
+  getClientList,
+} from "../services/client-query.service";
+import {
+  createClientRecord,
+  deleteClientRecord,
+  updateClientRecord,
+} from "../services/client-write.service";
 
 export const getAllClients = async (req: AuthRequest, res: Response) => {
   try {
@@ -14,32 +22,11 @@ export const getAllClients = async (req: AuthRequest, res: Response) => {
       limit: limit as string,
     });
 
-    const where = search
-      ? {
-          OR: [
-            {
-              nom: { contains: search as string, mode: "insensitive" as const },
-            },
-            {
-              contact: {
-                contains: search as string,
-                mode: "insensitive" as const,
-              },
-            },
-            { telephone: { contains: search as string } },
-          ],
-        }
-      : {};
-
-    const [clients, total] = await Promise.all([
-      prisma.client.findMany({
-        where,
-        skip,
-        take: pageSize,
-        orderBy: { nom: "asc" },
-      }),
-      prisma.client.count({ where }),
-    ]);
+    const { clients, total } = await getClientList({
+      search,
+      skip,
+      take: pageSize,
+    });
 
     res.json({
       clients,
@@ -64,17 +51,7 @@ export const getClientById = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    const client = await prisma.client.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            interventions: true,
-            equipements: true,
-          },
-        },
-      },
-    });
+    const client = await getClientDetails(id);
 
     if (!client) {
       return res.status(404).json({ error: "Client non trouvé" });
@@ -100,17 +77,10 @@ export const getClientInterventions = async (
     const { id } = req.params;
     const { limit = "5" } = req.query;
 
-    // Récupérer les 5 dernières interventions
-    const interventions = await prisma.intervention.findMany({
-      where: { clientId: id },
-      include: {
-        technicien: {
-          select: interventionTechnicienListSelect,
-        },
-      },
-      orderBy: { datePlanifiee: "desc" },
-      take: Number.parseInt(limit as string, 10),
-    });
+    const interventions = await getClientInterventionList(
+      id,
+      Number.parseInt(limit as string, 10)
+    );
 
     res.json(interventions);
   } catch (error) {
@@ -130,19 +100,7 @@ export const getClientEquipements = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    const equipements = await prisma.clientEquipment.findMany({
-      where: { clientId: id },
-      include: {
-        stock: {
-          select: {
-            nomMateriel: true,
-            reference: true,
-            categorie: true,
-          },
-        },
-      },
-      orderBy: { dateInstallation: "desc" },
-    });
+    const equipements = await getClientEquipmentList(id);
 
     res.json(equipements);
   } catch (error) {
