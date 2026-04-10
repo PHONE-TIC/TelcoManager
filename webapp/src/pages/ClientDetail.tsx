@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
 
@@ -32,11 +32,7 @@ function ClientDetail() {
     const [interventions, setInterventions] = useState<Intervention[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadClientData();
-    }, [id]);
-
-    const loadClientData = async () => {
+    const loadClientData = useCallback(async () => {
         try {
             setLoading(true);
             const [clientData, interventionsData] = await Promise.all([
@@ -50,7 +46,11 @@ function ClientDetail() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        loadClientData();
+    }, [loadClientData]);
 
     const getStatusBadge = (statut: string) => {
         const badges: { [key: string]: { label: string; color: string; bg: string } } = {

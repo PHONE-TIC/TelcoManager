@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/api.service';
 import moment from 'moment';
 import type { Intervention, Technicien } from '../types';
@@ -23,24 +23,16 @@ function Reports() {
     const [selectedTechnician, setSelectedTechnician] = useState('');
     const [technicians, setTechnicians] = useState<Technicien[]>([]);
 
-    useEffect(() => {
-        loadTechnicians();
-    }, []);
-
-    useEffect(() => {
-        loadData();
-    }, [dateRange, selectedTechnician]);
-
-    const loadTechnicians = async () => {
+    const loadTechnicians = useCallback(async () => {
         try {
             const data = await apiService.getTechniciens();
             setTechnicians(data.techniciens || data || []);
         } catch (error) {
             console.error('Error loading technicians:', error);
         }
-    };
+    }, []);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const params: Record<string, string> = {
@@ -83,7 +75,15 @@ function Reports() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [dateRange, selectedTechnician]);
+
+    useEffect(() => {
+        loadTechnicians();
+    }, [loadTechnicians]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const exportCSV = () => {
         const headers = ['N°', 'Date', 'Client', 'Titre', 'Technicien', 'Statut', 'Durée'];

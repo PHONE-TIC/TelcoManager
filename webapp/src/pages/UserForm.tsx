@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
 
@@ -20,28 +20,7 @@ function UserForm() {
         active: true,
     });
 
-    useEffect(() => {
-        if (isEditing) {
-            loadUser();
-        } else {
-            generatePassword();
-        }
-    }, [id]);
-
-    // Auto-generate username when Preom/Nom change (only if not editing or username is empty/default)
-    useEffect(() => {
-        if (!isEditing && formData.prenom && formData.nomFamille) {
-            const p = formData.prenom.trim().charAt(0).toLowerCase();
-            const n = formData.nomFamille.trim().toLowerCase().replace(/\s+/g, '');
-            // Simple normalization (remove accents)
-            const normalizedP = p.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const normalizedN = n.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-            setFormData(prev => ({ ...prev, username: `${normalizedP}${normalizedN}` }));
-        }
-    }, [formData.prenom, formData.nomFamille, isEditing]);
-
-    const generatePassword = () => {
+    const generatePassword = useCallback(() => {
         const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let pass = '';
         for (let i = 0; i < 6; i++) {
@@ -49,9 +28,9 @@ function UserForm() {
         }
         setFormData(prev => ({ ...prev, password: pass }));
         setShowPassword(true); // Show password when generated
-    };
+    }, []);
 
-    const loadUser = async () => {
+    const loadUser = useCallback(async () => {
         try {
             const user = await apiService.getTechnicienById(id!);
             // Heuristic to split name
@@ -73,7 +52,28 @@ function UserForm() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        if (isEditing) {
+            loadUser();
+        } else {
+            generatePassword();
+        }
+    }, [generatePassword, isEditing, loadUser]);
+
+    // Auto-generate username when Preom/Nom change (only if not editing or username is empty/default)
+    useEffect(() => {
+        if (!isEditing && formData.prenom && formData.nomFamille) {
+            const p = formData.prenom.trim().charAt(0).toLowerCase();
+            const n = formData.nomFamille.trim().toLowerCase().replace(/\s+/g, '');
+            // Simple normalization (remove accents)
+            const normalizedP = p.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const normalizedN = n.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+            setFormData(prev => ({ ...prev, username: `${normalizedP}${normalizedN}` }));
+        }
+    }, [formData.prenom, formData.nomFamille, isEditing]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
