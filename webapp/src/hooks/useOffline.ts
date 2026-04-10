@@ -9,14 +9,17 @@ import {
     processSyncQueue,
     getPendingSyncActions,
 } from '../services/offline.service';
+import type { Intervention } from '../types';
+
+type OfflineIntervention = Intervention;
 
 interface UseOfflineReturn {
     isOnline: boolean;
     hasCachedData: boolean;
     pendingSyncCount: number;
-    getCachedInterventionsList: () => Promise<any[]>;
-    getCachedInterventionById: (id: string) => Promise<any | null>;
-    cacheInterventionsList: (interventions: { id: string; datePlanifiee: string; technicienId?: string }[]) => Promise<void>;
+    getCachedInterventionsList: () => Promise<OfflineIntervention[]>;
+    getCachedInterventionById: (id: string) => Promise<OfflineIntervention | null>;
+    cacheInterventionsList: (interventions: OfflineIntervention[]) => Promise<void>;
     syncNow: () => Promise<{ success: number; failed: number }>;
 }
 
@@ -47,7 +50,7 @@ export const useOffline = (): UseOfflineReturn => {
         });
 
         // Listen for sync completion
-        const handleSyncComplete = (_event: CustomEvent) => {
+        const handleSyncComplete = () => {
             // Update pending count
             getPendingSyncActions().then(actions => {
                 setPendingSyncCount(actions.length);
@@ -62,15 +65,15 @@ export const useOffline = (): UseOfflineReturn => {
         };
     }, []);
 
-    const getCachedInterventionsList = useCallback(async (): Promise<any[]> => {
+    const getCachedInterventionsList = useCallback(async (): Promise<OfflineIntervention[]> => {
         return getCachedInterventions();
     }, []);
 
-    const getCachedInterventionById = useCallback(async (id: string): Promise<any | null> => {
+    const getCachedInterventionById = useCallback(async (id: string): Promise<OfflineIntervention | null> => {
         return getCachedIntervention(id);
     }, []);
 
-    const cacheInterventionsList = useCallback(async (interventions: { id: string; datePlanifiee: string; technicienId?: string }[]): Promise<void> => {
+    const cacheInterventionsList = useCallback(async (interventions: OfflineIntervention[]): Promise<void> => {
         await cacheInterventions(interventions);
         setHasCachedData(true);
     }, []);

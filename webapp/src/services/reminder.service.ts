@@ -4,6 +4,7 @@
  */
 
 import { showNotification } from './notification.service';
+import type { Intervention as AppIntervention } from '../types';
 
 // Store scheduled reminder timeouts
 const scheduledReminders: Map<string, ReturnType<typeof setTimeout>> = new Map();
@@ -19,17 +20,13 @@ interface ReminderSettings {
     minutesBefore: number;
 }
 
-interface Intervention {
-    id: string;
-    numero?: number;
-    titre: string;
-    datePlanifiee: string;
+type ReminderIntervention = Pick<AppIntervention, 'id' | 'titre' | 'datePlanifiee'> & {
     client?: {
         nom: string;
         rue?: string;
         ville?: string;
     };
-}
+};
 
 // Get reminder settings from localStorage
 export const getReminderSettings = (): ReminderSettings => {
@@ -62,7 +59,7 @@ const getTimeUntilReminder = (datePlanifiee: string, minutesBefore: number): num
 };
 
 // Show reminder notification
-const showReminderNotification = (intervention: Intervention, minutesBefore: number): void => {
+const showReminderNotification = (intervention: ReminderIntervention, minutesBefore: number): void => {
     const clientName = intervention.client?.nom || 'Client inconnu';
     const address = intervention.client?.rue
         ? `${intervention.client.rue}, ${intervention.client.ville || ''}`
@@ -78,7 +75,7 @@ const showReminderNotification = (intervention: Intervention, minutesBefore: num
 };
 
 // Schedule a reminder for a single intervention
-export const scheduleReminder = (intervention: Intervention): void => {
+export const scheduleReminder = (intervention: ReminderIntervention): void => {
     const settings = getReminderSettings();
 
     if (!settings.enabled) {
@@ -122,7 +119,7 @@ export const cancelAllReminders = (): void => {
 };
 
 // Schedule reminders for multiple interventions (typically today's interventions)
-export const scheduleRemindersForInterventions = (interventions: Intervention[]): void => {
+export const scheduleRemindersForInterventions = (interventions: ReminderIntervention[]): void => {
     const settings = getReminderSettings();
 
     if (!settings.enabled) {

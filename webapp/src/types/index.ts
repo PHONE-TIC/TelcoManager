@@ -110,7 +110,6 @@ export interface Intervention {
   client?: Client;
   technicien?: Technicien;
   equipements?: InterventionEquipment[];
-  [key: string]: any;
 }
 
 export interface InterventionEquipment {

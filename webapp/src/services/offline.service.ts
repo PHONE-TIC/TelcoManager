@@ -3,6 +3,8 @@
  * Caches interventions for offline access
  */
 
+import type { Intervention } from '../types';
+
 const DB_NAME = 'TelcoManagerOffline';
 const DB_VERSION = 1;
 const STORE_INTERVENTIONS = 'interventions';
@@ -49,8 +51,18 @@ export const initOfflineDB = (): Promise<IDBDatabase> => {
     });
 };
 
+export type CachedIntervention = Intervention;
+
+interface SyncAction {
+    id?: number;
+    type: 'update' | 'create';
+    endpoint: string;
+    data: Record<string, unknown>;
+    timestamp: number;
+}
+
 // Save interventions to IndexedDB
-export const cacheInterventions = async (interventions: { id: string; datePlanifiee: string; technicienId?: string }[]): Promise<void> => {
+export const cacheInterventions = async (interventions: CachedIntervention[]): Promise<void> => {
     const database = await initOfflineDB();
     const transaction = database.transaction([STORE_INTERVENTIONS], 'readwrite');
     const store = transaction.objectStore(STORE_INTERVENTIONS);
@@ -68,7 +80,7 @@ export const cacheInterventions = async (interventions: { id: string; datePlanif
 };
 
 // Get cached interventions
-export const getCachedInterventions = async (): Promise<any[]> => {
+export const getCachedInterventions = async (): Promise<CachedIntervention[]> => {
     const database = await initOfflineDB();
     const transaction = database.transaction([STORE_INTERVENTIONS], 'readonly');
     const store = transaction.objectStore(STORE_INTERVENTIONS);
@@ -81,7 +93,7 @@ export const getCachedInterventions = async (): Promise<any[]> => {
 };
 
 // Get a single cached intervention
-export const getCachedIntervention = async (id: string): Promise<any | null> => {
+export const getCachedIntervention = async (id: string): Promise<CachedIntervention | null> => {
     const database = await initOfflineDB();
     const transaction = database.transaction([STORE_INTERVENTIONS], 'readonly');
     const store = transaction.objectStore(STORE_INTERVENTIONS);
@@ -94,13 +106,6 @@ export const getCachedIntervention = async (id: string): Promise<any | null> => 
 };
 
 // Queue an action for sync when back online
-interface SyncAction {
-    type: 'update' | 'create';
-    endpoint: string;
-    data: Record<string, unknown>;
-    timestamp: number;
-}
-
 export const queueForSync = async (action: SyncAction): Promise<void> => {
     const database = await initOfflineDB();
     const transaction = database.transaction([STORE_SYNC_QUEUE], 'readwrite');
@@ -210,7 +215,9 @@ export const processSyncQueue = async (): Promise<{ success: number; failed: num
 
             if (response.ok) {
                 // Remove from queue on success
-                await removeSyncAction((action as any).id);
+                if (action.id !== undefined) {
+                    await removeSyncAction(action.id);
+                }
                 success++;
             } else {
                 const errorData = await response.json().catch(() => ({}));

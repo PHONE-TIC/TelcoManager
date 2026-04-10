@@ -1,7 +1,7 @@
 export type FilterType = "all" | "uncounted" | "discrepancy" | "ok";
 
 export interface InventoryItem {
-  [key: string]: any;
+  [key: string]: unknown;
   id: string;
   stockId: string;
   expectedQuantity: number;

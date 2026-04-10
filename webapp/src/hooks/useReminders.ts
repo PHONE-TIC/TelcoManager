@@ -7,6 +7,7 @@ import {
   getActiveRemindersCount,
   areRemindersSupported,
 } from "../services/reminder.service";
+import type { Intervention } from "../types";
 
 interface ReminderSettings {
   enabled: boolean;
@@ -18,15 +19,7 @@ interface UseRemindersReturn {
   settings: ReminderSettings;
   activeRemindersCount: number;
   updateSettings: (settings: ReminderSettings) => void;
-  scheduleForInterventions: (
-    interventions: {
-      id: string;
-      datePlanifiee: string;
-      technicienId?: string;
-      titre: string;
-      [key: string]: any;
-    }[]
-  ) => void;
+  scheduleForInterventions: (interventions: Intervention[]) => void;
   cancelAll: () => void;
 }
 
@@ -61,15 +54,7 @@ export const useReminders = (): UseRemindersReturn => {
   }, []);
 
   const scheduleForInterventions = useCallback(
-    (
-      interventions: {
-        id: string;
-        datePlanifiee: string;
-        technicienId?: string;
-        titre: string;
-        [key: string]: any;
-      }[]
-    ) => {
+    (interventions: Intervention[]) => {
       if (!isSupported || !settings.enabled) {
         return;
       }
