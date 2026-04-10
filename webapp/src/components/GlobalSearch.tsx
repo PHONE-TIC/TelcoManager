@@ -14,14 +14,15 @@ import type {
   Technicien,
 } from "../types";
 
-interface SearchFilters {
+type SearchFilterValue = string | string[] | undefined;
+
+type SearchFilters = {
   dateFrom?: string;
   dateTo?: string;
   status?: string[];
   category?: string[];
   technicianId?: string;
-  [key: string]: any;
-}
+} & Record<string, SearchFilterValue>;
 
 interface SearchResults {
   clients: Client[];
@@ -32,6 +33,37 @@ interface SearchResults {
 }
 
 type EntityTab = "all" | "clients" | "interventions" | "stock" | "techniciens";
+
+type SearchResultItem =
+  | { type: "client"; data: Client }
+  | { type: "intervention"; data: Intervention }
+  | { type: "stock"; data: StockItem }
+  | { type: "technicien"; data: Technicien };
+
+const getPersistedFilters = (
+  searchFilters: SearchFilters
+): Record<string, string | string[]> => {
+  const persistedFilters: Record<string, string | string[]> = {};
+
+  Object.entries(searchFilters).forEach(([key, value]) => {
+    if (value !== undefined) {
+      persistedFilters[key] = value;
+    }
+  });
+
+  return persistedFilters;
+};
+
+const getApiFilters = (searchFilters: SearchFilters): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(searchFilters).flatMap(([key, value]) => {
+      if (typeof value === "string") {
+        return [[key, value]];
+      }
+
+      return [];
+    })
+  );
 
 const GlobalSearch: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -123,13 +155,13 @@ const GlobalSearch: React.FC = () => {
       try {
         const data = await apiService.globalSearch({
           q: searchQuery,
-          filters,
+          filters: getApiFilters(filters),
         });
 
         setResults(data);
 
         // Save to history
-        searchHistory.saveSearch(searchQuery, filters);
+        searchHistory.saveSearch(searchQuery, getPersistedFilters(filters));
       } catch (error) {
         console.error("Search error:", error);
       } finally {
@@ -164,8 +196,8 @@ const GlobalSearch: React.FC = () => {
   };
 
   // Get flat list of all results for keyboard navigation
-  const getAllResults = () => {
-    const allResults: { type: string; data: any }[] = [];
+  const getAllResults = (): SearchResultItem[] => {
+    const allResults: SearchResultItem[] = [];
 
     if (activeTab === "all" || activeTab === "clients") {
       results.clients.forEach((item) =>
@@ -207,7 +239,7 @@ const GlobalSearch: React.FC = () => {
     }
   };
 
-  const handleResultClick = (result: { type: string; data: any }) => {
+  const handleResultClick = (result: SearchResultItem) => {
     const { type, data } = result;
 
     switch (type) {
@@ -240,7 +272,7 @@ const GlobalSearch: React.FC = () => {
     );
   };
 
-  const renderResult = (result: { type: string; data: any }, index: number) => {
+  const renderResult = (result: SearchResultItem, index: number) => {
     const isSelected = index === selectedIndex;
     const { type, data } = result;
 
