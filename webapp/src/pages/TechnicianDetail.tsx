@@ -1,60 +1,71 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import UserAvatar from "../components/UserAvatar";
 import { getTechnicianRoleBadgeClass } from "./technician-detail.utils";
+import type { TechnicianStock, Technicien } from "../types";
 
 type TabType = "info" | "stock" | "journal";
+
+interface TechnicianActivityLog {
+  id: string;
+  action: string;
+  createdAt: string;
+  details?: string;
+}
+
+interface TechnicianDetailData extends Technicien {
+  _count?: {
+    interventions?: number;
+  };
+  activityLogs?: TechnicianActivityLog[];
+}
 
 function TechnicianDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [technician, setTechnician] = useState<any>(null);
+  const [technician, setTechnician] = useState<TechnicianDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("info");
 
   // Stock véhicule
-  const [vehicleStock, setVehicleStock] = useState<any[]>([]);
+  const [vehicleStock, setVehicleStock] = useState<TechnicianStock[]>([]);
   const [loadingStock, setLoadingStock] = useState(false);
 
-
-  useEffect(() => {
-    loadTechnician();
-
-  }, [id]);
-
-  useEffect(() => {
-    if (activeTab === "stock" && id) {
-      loadVehicleStock();
-    }
-  }, [activeTab, id]);
-
-  const loadTechnician = async () => {
+  const loadTechnician = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await apiService.getTechnicienById(id!);
+      const data = (await apiService.getTechnicienById(id!)) as TechnicianDetailData;
       setTechnician(data);
     } catch (error) {
       console.error("Erreur:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-
-
-  const loadVehicleStock = async () => {
+  const loadVehicleStock = useCallback(async () => {
     try {
       setLoadingStock(true);
-      const stock = await apiService.getTechnicianStock(id!);
+      const stock = (await apiService.getTechnicianStock(id!)) as TechnicianStock[];
       setVehicleStock(stock);
     } catch (error) {
       console.error("Erreur:", error);
     } finally {
       setLoadingStock(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    void loadTechnician();
+  }, [loadTechnician]);
+
+  useEffect(() => {
+    if (activeTab === "stock" && id) {
+      void loadVehicleStock();
+    }
+  }, [activeTab, id, loadVehicleStock]);
 
   const handleUpdateQuantity = async (
     stockId: string,
@@ -79,6 +90,8 @@ function TechnicianDetail() {
       console.error("Erreur:", error);
     }
   };
+
+  const activityLogs = technician?.activityLogs ?? [];
 
   if (loading) {
     return (
@@ -244,7 +257,12 @@ function TechnicianDetail() {
                 <div className="loading">Chargement du stock...</div>
               ) : vehicleStock.length > 0 ? (
                 <div className="vehicle-stock-list">
-                  {vehicleStock.map((item) => (
+                  {vehicleStock.map((item) => {
+                    if (!item.stock) {
+                      return null;
+                    }
+
+                    return (
                     <div key={item.id} className="vehicle-stock-item">
                       <div className="stock-item-info">
                         <strong>{item.stock.nomMateriel}</strong>
@@ -367,7 +385,8 @@ function TechnicianDetail() {
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="empty-stock">
@@ -405,8 +424,8 @@ function TechnicianDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {technician.activityLogs?.length > 0 ? (
-                    technician.activityLogs.map((log: { id: string; action: string; createdAt: string; details?: string }) => (
+                  {activityLogs.length > 0 ? (
+                    activityLogs.map((log) => (
                       <tr key={log.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 whitespace-nowrap text-gray-600">
                           {new Date(log.createdAt).toLocaleString("fr-FR")}

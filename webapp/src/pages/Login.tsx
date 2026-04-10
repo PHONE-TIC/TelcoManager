@@ -1,8 +1,13 @@
 import { useState } from "react";
+import type { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 import { useTheme } from "../contexts/useTheme";
 import logo from "../assets/logo.png";
+
+interface ApiErrorResponse {
+  error?: string;
+}
 
 function Login() {
   const [username, setUsername] = useState("");
@@ -22,7 +27,8 @@ function Login() {
       await login(username, password);
       navigate("/");
     } catch (err: unknown) {
-      setError((err as any).response?.data?.error || "Erreur de connexion");
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      setError(axiosError.response?.data?.error || "Erreur de connexion");
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,27 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import AutocompleteInput from "../components/AutocompleteInput";
+import type { Stock, StockListResponse } from "../types";
+
+interface StockModelOption {
+  brand: string;
+  model: string;
+}
+
+interface StockFormData {
+  marque: string;
+  modele: string;
+  reference: string;
+  numeroSerie: string;
+  codeBarre: string;
+  categorie: string;
+  fournisseur: string;
+  quantite: number;
+  lowStockThreshold: number;
+  notes: string;
+  statut: Stock["statut"];
+}
 
 function StockForm() {
   const { id } = useParams<{ id: string }>();
@@ -13,7 +33,7 @@ function StockForm() {
   const [error, setError] = useState<string | null>(null);
 
   const [serialNumbersCount, setSerialNumbersCount] = useState(0);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<StockFormData>({
     marque: "",
     modele: "",
     reference: "",
@@ -29,7 +49,7 @@ function StockForm() {
 
   // Suggestions state
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
-  const [allModels, setAllModels] = useState<{ brand: string, model: string }[]>([]);
+  const [allModels, setAllModels] = useState<StockModelOption[]>([]);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
 
   // Initial load for suggestions
@@ -38,10 +58,18 @@ function StockForm() {
       try {
         // Fetch a larger list to get representative unique values
         // Ideally backend should provide /api/stock/brands and /api/stock/models
-        const response = await apiService.getStock({ limit: 1000 });
+        const response = (await apiService.getStock({ limit: 1000 })) as StockListResponse;
         if (response.stock) {
-          const brands = Array.from(new Set(response.stock.map((i: any) => i.marque).filter(Boolean))) as string[];
-          const models = response.stock.map((i: any) => ({ brand: i.marque, model: i.modele })).filter((i: any) => i.model);
+          const brands = Array.from(
+            new Set(
+              response.stock
+                .map((item) => item.marque)
+                .filter((brand): brand is string => Boolean(brand))
+            )
+          );
+          const models = response.stock
+            .map((item) => ({ brand: item.marque ?? "", model: item.modele ?? "" }))
+            .filter((item): item is StockModelOption => item.model.length > 0);
 
           setAvailableBrands(brands.sort());
           setAllModels(models);
@@ -57,13 +85,15 @@ function StockForm() {
 
   // Filter models when brand changes
   useEffect(() => {
-    if (formData.marque) {
+    const selectedBrand = formData.marque;
+
+    if (selectedBrand) {
       const brandModels = allModels
-        .filter(m => m.brand?.toUpperCase() === formData.marque.toUpperCase())
-        .map(m => m.model);
-      setAvailableModels(Array.from(new Set(brandModels)).sort() as string[]);
+        .filter((model) => model.brand.toUpperCase() === selectedBrand.toUpperCase())
+        .map((model) => model.model);
+      setAvailableModels(Array.from(new Set(brandModels)).sort());
     } else {
-      setAvailableModels(Array.from(new Set(allModels.map(m => m.model))).sort() as string[]);
+      setAvailableModels(Array.from(new Set(allModels.map((model) => model.model))).sort());
     }
   }, [formData.marque, allModels]);
 
@@ -108,15 +138,9 @@ function StockForm() {
     }));
   };
 
-  useEffect(() => {
-    if (isEditing) {
-      loadStock();
-    }
-  }, [id, isEditing]);
-
-  const loadStock = async () => {
+  const loadStock = useCallback(async () => {
     try {
-      const item = await apiService.getStockById(id!);
+      const item = (await apiService.getStockById(id!)) as Stock;
       setFormData({
         marque: item.marque || "",
         modele: item.modele || "",
@@ -136,7 +160,13 @@ function StockForm() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (isEditing) {
+      void loadStock();
+    }
+  }, [isEditing, loadStock]);
 
   // Liste des champs obligatoires (pour un nouvel article)
   const requiredFields = [
@@ -192,10 +222,12 @@ function StockForm() {
     setSaving(true);
 
     try {
+      const payload: Record<string, string | number> = { ...formData };
+
       if (isEditing) {
-        await apiService.updateStock(id!, formData);
+        await apiService.updateStock(id!, payload);
       } else {
-        await apiService.createStock(formData);
+        await apiService.createStock(payload);
       }
       navigate("/stock");
     } catch (err: unknown) {

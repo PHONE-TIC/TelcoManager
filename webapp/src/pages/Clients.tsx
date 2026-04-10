@@ -1,28 +1,23 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { AxiosError } from "axios";
 import { apiService } from "../services/api.service";
 import TableResponsive from "../components/TableResponsive";
 import { useAuth } from "../contexts/useAuth";
+import type { Client, ClientsListResponse } from "../types";
 
-interface Client {
-  id: string;
-  nom: string;
-  sousLieu?: string;
-  rue: string;
-  codePostal: string;
-  ville: string;
-  contact: string;
-  telephone: string;
-  email?: string;
-  notes?: string;
+interface ApiErrorResponse {
+  error?: string;
 }
+
+type ClientSortField = "nom" | "ville";
 
 function Clients() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [sortField, setSortField] = useState<string>("nom");
+  const [sortField, setSortField] = useState<ClientSortField>("nom");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [cityFilter, setCityFilter] = useState<string>("");
 
@@ -51,8 +46,9 @@ function Clients() {
       alert(result.message || "Synchronisation terminée");
       loadClients();
     } catch (error: unknown) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
       alert(
-        (error as any).response?.data?.error || "Erreur lors de la synchronisation UNYC"
+        axiosError.response?.data?.error || "Erreur lors de la synchronisation UNYC"
       );
     } finally {
       setSyncing(false);
@@ -66,8 +62,8 @@ function Clients() {
   const sortedClients = [...clients]
     .filter((c) => !cityFilter || c.ville === cityFilter)
     .sort((a, b) => {
-      const valA = (a as any)[sortField]?.toLowerCase() || "";
-      const valB = (b as any)[sortField]?.toLowerCase() || "";
+      const valA = a[sortField]?.toLowerCase() || "";
+      const valB = b[sortField]?.toLowerCase() || "";
       if (valA < valB) return sortDir === "asc" ? -1 : 1;
       if (valA > valB) return sortDir === "asc" ? 1 : -1;
       return 0;
@@ -80,7 +76,7 @@ function Clients() {
     currentPage * itemsPerPage
   );
 
-  const handleSort = (field: string) => {
+  const handleSort = (field: ClientSortField) => {
     if (sortField === field) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
@@ -90,20 +86,20 @@ function Clients() {
     setCurrentPage(1); // Reset to first page on sort
   };
 
-  useEffect(() => {
-    loadClients();
-  }, []);
-
-  const loadClients = async () => {
+  const loadClients = useCallback(async () => {
     try {
-      const data = await apiService.getClients({ limit: 100 });
+      const data = (await apiService.getClients({ limit: 100 })) as ClientsListResponse;
       setClients(data.clients);
     } catch (error) {
       console.error("Erreur lors du chargement des clients:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadClients();
+  }, [loadClients]);
 
   const handleDelete = (client: Client) => {
     setDeleteModal({ show: true, client });

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
+import type { AxiosError } from "axios";
 import { apiService } from "../services/api.service";
 import { useNavigate } from "react-router-dom";
+import type { Stock, TechnicianStock, Technicien, TechniciensListResponse } from "../types";
 
-interface Technician {
-  id: string;
-  nom: string;
-  role: string;
+interface ApiErrorResponse {
+  error?: string;
 }
+
+type Technician = Pick<Technicien, "id" | "nom" | "role">;
 
 interface TransferItem {
   id: string; // unique ID for list (can be serial or stockId + date)
@@ -20,10 +22,12 @@ interface TransferItem {
   itemStatus?: "ok" | "hs"; // New field for return status
 }
 
-interface TechnicianStockItem {
-  stockId: string;
-  quantite: number;
-}
+type TechnicianStockItem = Pick<TechnicianStock, "stockId" | "quantite">;
+
+type TransferLookupStockItem = Pick<
+  Stock,
+  "id" | "nomMateriel" | "numeroSerie" | "codeBarre"
+>;
 
 const StockTransfer = () => {
   const navigate = useNavigate();
@@ -52,13 +56,13 @@ const StockTransfer = () => {
 
   const loadTechnicians = async () => {
     try {
-      const data = await apiService.getTechniciens({ limit: 100 });
+      const data = (await apiService.getTechniciens({ limit: 100 })) as
+        | Technician[]
+        | TechniciensListResponse;
       if (Array.isArray(data)) {
-        setTechnicians(data.filter((t: Technician) => t.role === "technicien"));
+        setTechnicians(data.filter((t) => t.role === "technicien"));
       } else if (data && data.techniciens) {
-        setTechnicians(
-          data.techniciens.filter((t: Technician) => t.role === "technicien")
-        );
+        setTechnicians(data.techniciens.filter((t) => t.role === "technicien"));
       } else {
         setTechnicians([]);
       }
@@ -74,7 +78,7 @@ const StockTransfer = () => {
 
     try {
       // Try to find item
-      let stockItem;
+      let stockItem: TransferLookupStockItem | undefined;
       try {
         stockItem = await apiService.getStockBySerial(code);
       } catch {
@@ -109,7 +113,7 @@ const StockTransfer = () => {
           return;
         }
         try {
-          const techStockList = await apiService.getTechnicianStock(sourceId);
+          const techStockList = (await apiService.getTechnicianStock(sourceId)) as TechnicianStockItem[];
           const isInStock = Array.isArray(techStockList)
             ? techStockList.some(
                 (i: TechnicianStockItem) =>
@@ -214,7 +218,8 @@ const StockTransfer = () => {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: unknown) {
       console.error(err);
-      setError((err as any).response?.data?.error || "Erreur lors du transfert");
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      setError(axiosError.response?.data?.error || "Erreur lors du transfert");
     } finally {
       setLoading(false);
     }
