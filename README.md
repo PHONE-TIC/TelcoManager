@@ -113,16 +113,17 @@ npm run dev
 Optimisations et simplifications importantes, sans modification fonctionnelle volontaire :
 
 - lazy-loading des pages au niveau des routes
-- lazy-loading de `GlobalSearch`, de l’UI PWA et du `ReloadPrompt`
+- lazy-loading de `GlobalSearch`, des dépendances PDF à l’export, de l’UI PWA et du `ReloadPrompt`
 - amélioration du chargement initial du frontend
 - harmonisation responsive et transitions
-- extraction progressive de helpers, types et utilitaires depuis les grosses pages frontend
+- extraction progressive de helpers, types, sections et utilitaires depuis les grosses pages frontend (`Dashboard`, `Interventions`, pages détail, imports, PDF)
 - simplification backend par extraction de services métier, services de requête et helpers communs
 - centralisation de pagination, validation et accès Prisma
 - nettoyage de fichiers obsolètes et rationalisation de la documentation
 - suppression complète de l’application mobile et de l’application desktop pour recentrer le projet sur la webapp
 - mise à jour du README, des guides de déploiement, de test et du guide utilisateur pour refléter une architecture web-only
-- validation continue via builds backend/webapp, rebuilds Docker, push GitHub et publication DockerHub
+- réduction progressive puis correction complète des erreurs lint frontend, avec passage final à 0 erreur
+- validation continue via lint frontend, builds backend/webapp, rebuilds Docker, push GitHub et publication DockerHub
 
 ### Décembre 2025
 
