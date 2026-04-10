@@ -3,6 +3,7 @@ import { apiService } from "../services/api.service";
 import SignaturePad from "./SignaturePad";
 import BarcodeScanner from "./BarcodeScanner";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
+import type { Intervention } from "../types";
 import "./InterventionWorkflow.css";
 
 interface Photo {
@@ -23,21 +24,34 @@ interface Equipment {
   serialNumber?: string;
 }
 
+type WorkflowIntervention = Pick<
+  Intervention,
+  | "id"
+  | "technicienId"
+  | "statut"
+  | "heureArrivee"
+  | "heureDepart"
+  | "commentaireTechnicien"
+  | "signature"
+  | "signatureTechnicien"
+  | "numero"
+> &
+  Partial<Intervention>;
+
 interface InterventionWorkflowProps {
-  intervention: {
-    id: string;
-    technicienId?: string;
-    statut?: string;
-    heureArrivee?: string;
-    heureDepart?: string;
-    commentaireTechnicien?: string;
-    signature?: string;
-    [key: string]: any;
-  };
+  intervention: WorkflowIntervention;
   photos: Photo[];
   onStatusChange: () => void;
   readOnly?: boolean;
 }
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+};
 
 export default function InterventionWorkflow({
   intervention,
@@ -178,7 +192,7 @@ export default function InterventionWorkflow({
       });
       showMessage("Heures enregistrées");
       setCurrentStep(2);
-    } catch (err: unknown) {
+    } catch {
       showMessage("Erreur sauvegarde heures", true);
     } finally {
       setLoading(false);
@@ -248,9 +262,9 @@ export default function InterventionWorkflow({
         heureDepart: isoHeureDepart,
         commentaireTechnicien: commentaire,
         signature,
-        signatureTechnicien, // Include in PDF data
-        statut: "terminee",
-      };
+        signatureTechnicien: signatureTechnicien || undefined,
+        statut: "terminee" as const,
+      } as Intervention;
 
       const extraData = {
         billing,
@@ -260,7 +274,7 @@ export default function InterventionWorkflow({
       };
 
       const pdfBlob = await generateInterventionPDF(
-        latestIntervention as any,
+        latestIntervention,
         true,
         photos,
         extraData
@@ -269,7 +283,7 @@ export default function InterventionWorkflow({
         formData.append(
           "files",
           pdfBlob,
-          `Rapport_${(latestIntervention as any).numero || "Intervention"}.pdf`
+          `Rapport_${latestIntervention.numero || "Intervention"}.pdf`
         );
       }
 
@@ -281,7 +295,7 @@ export default function InterventionWorkflow({
       showMessage("Intervention clôturée avec succès !");
       onStatusChange();
     } catch (err: unknown) {
-      showMessage((err as any).message || "Erreur de clôture", true);
+      showMessage(getErrorMessage(err, "Erreur de clôture"), true);
     } finally {
       setLoading(false);
     }
@@ -330,7 +344,7 @@ export default function InterventionWorkflow({
       }
       showMessage("Matériel enregistré");
       setEquipments([]);
-    } catch (e) {
+    } catch {
       showMessage("Erreur save matériel", true);
     } finally {
       setLoading(false);
@@ -559,12 +573,13 @@ export default function InterventionWorkflow({
                   <select
                     className="form-input"
                     value={newEquipment.action}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const action = e.target.value as Equipment["action"];
                       setNewEquipment({
                         ...newEquipment,
-                        action: e.target.value as any,
-                      })
-                    }
+                        action,
+                      });
+                    }}
                   >
                     <option value="install">Install</option>
                     <option value="retrait">Retrait</option>
