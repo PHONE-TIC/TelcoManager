@@ -1,11 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, type ReactNode } from 'react';
-
-interface ThemeContextType {
-    theme: 'light' | 'dark';
-    toggleTheme: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+import React, { useState, useEffect, useMemo, useCallback, type ReactNode } from 'react';
+import { ThemeContext } from './theme-context';
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // Par défaut : thème sombre
@@ -37,10 +31,3 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
 };
 
-export const useTheme = () => {
-    const context = useContext(ThemeContext);
-    if (context === undefined) {
-        throw new Error('useTheme must be used within a ThemeProvider');
-    }
-    return context;
-};

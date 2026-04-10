@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 import SerialTransferModal from "../components/SerialTransferModal";
 import type { Technicien, TechnicianStock } from "../types";
 import {

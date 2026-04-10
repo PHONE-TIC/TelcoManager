@@ -5,7 +5,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../styles/calendar-dark-theme.css";
 import moment from "../utils/momentFrConfig"; // Use shared French locale config
 import { apiService } from "../services/api.service";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 import MobilePlanning from "../components/MobilePlanning";
 import ConfirmConflictModal from "../components/ConfirmConflictModal";
 import { useOffline } from "../hooks/useOffline";

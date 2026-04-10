@@ -1,5 +1,30 @@
+import axios from "axios";
 import { useState } from "react";
 import { apiService } from "../services/api.service";
+
+interface StockImportItem {
+  nomMateriel: string;
+  reference: string;
+  categorie: string;
+  numeroSerie?: string;
+  codeBarre?: string;
+  lowStockThreshold?: number;
+  quantite?: number;
+  fournisseur?: string;
+  notes?: string;
+  [key: string]: string | number | undefined;
+}
+
+interface StockImportError {
+  row?: number;
+  message?: string;
+  error?: string;
+}
+
+interface StockImportResult {
+  created: number;
+  errors: StockImportError[];
+}
 
 interface StockImportModalProps {
   onClose: () => void;
@@ -7,13 +32,10 @@ interface StockImportModalProps {
 }
 
 function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
-  const [csvData, setCsvData] = useState<any[]>([]);
+  const [csvData, setCsvData] = useState<StockImportItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{
-    created: number;
-    errors: { row: number; message: string }[];
-  } | null>(null);
+  const [result, setResult] = useState<StockImportResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,21 +71,27 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
 
         const items = lines.slice(1).map((line) => {
           const values = line.split(";").map((v) => v.trim());
-          const item: Record<string, any> = {};
+          const item: StockImportItem = {
+            nomMateriel: "",
+            reference: "",
+            categorie: "",
+          };
           headers.forEach((header, i) => {
             if (header === "nommateriel") item.nomMateriel = values[i];
             else if (header === "numeroserie") item.numeroSerie = values[i];
             else if (header === "codebarre") item.codeBarre = values[i];
             else if (header === "lowstockthreshold")
-              item.lowStockThreshold = parseInt(values[i]) || 5;
+              item.lowStockThreshold = Number.parseInt(values[i] || "", 10) || 5;
             else item[header] = values[i];
           });
-          if (item.quantite) item.quantite = parseInt(item.quantite) || 1;
+          if (item.quantite) {
+            item.quantite = Number.parseInt(String(item.quantite), 10) || 1;
+          }
           return item;
         });
 
         setCsvData(items);
-      } catch (err) {
+      } catch {
         setParseError("Erreur lors de la lecture du fichier CSV");
       }
     };
@@ -77,7 +105,9 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
     setError(null);
 
     try {
-      const response = await apiService.bulkImportStock(csvData);
+      const response = (await apiService.bulkImportStock(
+        csvData
+      )) as StockImportResult;
       setResult(response);
       if (response.created > 0) {
         setTimeout(() => {
@@ -85,7 +115,14 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
         }, 2000);
       }
     } catch (err: unknown) {
-      setError((err as any).response?.data?.error || "Erreur lors de l'import");
+      if (axios.isAxiosError(err)) {
+        setError(
+          (err.response?.data as { error?: string } | undefined)?.error ||
+            "Erreur lors de l'import"
+        );
+      } else {
+        setError("Erreur lors de l'import");
+      }
     } finally {
       setLoading(false);
     }
@@ -305,7 +342,7 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
                 <ul style={{ marginLeft: "16px", marginTop: "4px" }}>
                   {result.errors.slice(0, 5).map((err, i) => (
                     <li key={i}>
-                      Ligne {(err as any).row}: {(err as any).error}
+                      Ligne {err.row ?? "?"}: {err.error || err.message || "Erreur inconnue"}
                     </li>
                   ))}
                 </ul>

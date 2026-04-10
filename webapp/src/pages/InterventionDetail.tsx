@@ -6,7 +6,7 @@ import { formatDateTimeLocal } from "../utils/dateUtils";
 import InterventionLocation from "../components/InterventionLocation";
 import PhotoCapture from "../components/PhotoCapture";
 import InterventionWorkflow from "../components/InterventionWorkflow";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 import {
   canEditInterventionByRole,
   findDetailArtifactReport,

@@ -8,7 +8,7 @@ import type { TravelEstimate } from "../services/geolocation.service";
 import PhotoCapture from "../components/PhotoCapture";
 import SignaturePad from "../components/SignaturePad";
 import BarcodeScanner from "../components/BarcodeScanner";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../contexts/useAuth";
 import PhotoZoomModal from "./PhotoZoomModal";
 import "./TechnicianInterventionView.css";
 import type { Intervention, InterventionEquipment, Photo } from "../types";

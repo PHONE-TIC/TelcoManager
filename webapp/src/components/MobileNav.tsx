@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/useTheme';
+import { useAuth } from '../contexts/useAuth';
 import { useNotifications } from '../hooks/useNotifications';
 import './MobileNav.css';
 

@@ -40,8 +40,10 @@ const PwaInstallPopup = lazy(() =>
   }))
 );
 const ReloadPrompt = lazy(() => import("./components/ReloadPrompt"));
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { useAuth } from "./contexts/useAuth";
+import { useTheme } from "./contexts/useTheme";
 import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
 import { useNotifications } from "./hooks/useNotifications";
