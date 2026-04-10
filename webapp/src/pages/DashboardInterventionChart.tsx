@@ -1,14 +1,4 @@
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
-import {
   DASHBOARD_COLORS,
   type InterventionStat,
 } from "./dashboard.utils";
@@ -17,54 +7,94 @@ interface DashboardInterventionChartProps {
   interventionStats: InterventionStat[];
 }
 
+const CHART_HEIGHT = 250;
+const BAR_GAP = 12;
+const BAR_RADIUS = 8;
+const MAX_BAR_HEIGHT = 150;
+
 function DashboardInterventionChart({
   interventionStats,
 }: DashboardInterventionChartProps) {
+  if (interventionStats.length === 0) {
+    return (
+      <div
+        className="flex items-center justify-center"
+        style={{ height: `${CHART_HEIGHT}px`, color: "var(--text-secondary)" }}
+      >
+        Aucune donnée disponible
+      </div>
+    );
+  }
+
+  const maxValue = Math.max(...interventionStats.map((stat) => stat.value), 1);
+  const barWidth = `calc((100% - ${(interventionStats.length - 1) * BAR_GAP}px) / ${interventionStats.length})`;
+
   return (
-    <div style={{ height: "250px" }}>
-      {interventionStats.length > 0 ? (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={interventionStats}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="var(--border-color)"
-            />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 12, fill: "var(--text-secondary)" }}
-            />
-            <YAxis tick={{ fontSize: 12, fill: "var(--text-secondary)" }} />
-            <Tooltip
-              contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                backgroundColor: "var(--bg-primary)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    <div
+      aria-label="Répartition des interventions"
+      role="img"
+      style={{
+        height: `${CHART_HEIGHT}px`,
+        display: "flex",
+        alignItems: "flex-end",
+        gap: `${BAR_GAP}px`,
+        padding: "16px 0 8px",
+      }}
+    >
+      {interventionStats.map((stat, index) => {
+        const height = Math.max((stat.value / maxValue) * MAX_BAR_HEIGHT, 10);
+        const color = DASHBOARD_COLORS[index % DASHBOARD_COLORS.length];
+
+        return (
+          <div
+            key={stat.name}
+            title={`${stat.name}: ${stat.value}`}
+            style={{
+              width: barWidth,
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              height: "100%",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                marginBottom: "8px",
+                color: "var(--text-primary)",
+              }}
+            >
+              {stat.value}
+            </span>
+            <div
+              aria-hidden="true"
+              style={{
+                width: "100%",
+                height: `${height}px`,
+                minHeight: "10px",
+                background: `linear-gradient(180deg, ${color}, ${color}cc)`,
+                borderRadius: `${BAR_RADIUS}px ${BAR_RADIUS}px 0 0`,
+                boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.15)",
               }}
             />
-            <Bar
-              dataKey="value"
-              name="Interventions"
-              fill="#3b82f6"
-              radius={[4, 4, 0, 0]}
+            <span
+              style={{
+                marginTop: "10px",
+                fontSize: "0.75rem",
+                textAlign: "center",
+                color: "var(--text-secondary)",
+                lineHeight: 1.3,
+                wordBreak: "break-word",
+              }}
             >
-              {interventionStats.map((_entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={DASHBOARD_COLORS[index % DASHBOARD_COLORS.length]}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      ) : (
-        <div
-          className="flex items-center justify-center h-full"
-          style={{ color: "var(--text-secondary)" }}
-        >
-          Aucune donnée disponible
-        </div>
-      )}
+              {stat.name}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

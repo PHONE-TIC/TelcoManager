@@ -1,9 +1,6 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar, momentLocalizer, type View } from "react-big-calendar";
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import "../styles/calendar-dark-theme.css";
-import moment from "../utils/momentFrConfig"; // Use shared French locale config
+import type { View } from "react-big-calendar";
 import { apiService } from "../services/api.service";
 import { useAuth } from "../contexts/useAuth";
 import MobilePlanning from "../components/MobilePlanning";
@@ -34,20 +31,13 @@ import {
   getTechnicianAvatar,
 } from "./interventions-ui.utils";
 
-const localizer = momentLocalizer(moment);
-
 import type { Client, Intervention, Technicien } from "../types";
+import type { CalendarEvent } from "./InterventionsCalendar";
+
+const InterventionsCalendar = lazy(() => import("./InterventionsCalendar"));
 
 type InterventionsLocationState = {
   viewMode?: "list" | "calendar" | "all";
-};
-
-type CalendarEvent = {
-  id: string;
-  title: string;
-  start: Date;
-  end: Date;
-  resource: Intervention;
 };
 
 function Interventions() {
@@ -1004,52 +994,35 @@ function Interventions() {
                 className={transitionClass}
                 style={{ width: "100%", overflow: "hidden", minWidth: 0 }}
               >
-                <Calendar
-                  localizer={localizer}
-                  culture="fr"
-                  defaultView="month"
-                  selectable
-                  min={new Date(0, 0, 0, 0, 0, 0)} // Start at 00:00
-                  max={new Date(0, 0, 0, 23, 59, 59)} // End at 23:59
-                  events={calendarEvents}
-                  startAccessor="start"
-                  endAccessor="end"
-                  style={{
-                    height: "calc(100vh - 400px)",
-                    minHeight: "450px",
-                    maxHeight: "700px",
-                  }}
-                  date={calendarDate}
-                  onNavigate={handleNavigate}
-                  view={calendarView}
-                  onView={handleViewChange}
-                  eventPropGetter={eventStyleGetter}
-                  formats={{
-                    dayFormat: (date: Date) => moment(date).format("dddd D"),
-                    weekdayFormat: (date: Date) => moment(date).format("dddd"),
-                    monthHeaderFormat: (date: Date) =>
-                      moment(date).format("MMMM YYYY"),
-                    dayHeaderFormat: (date: Date) =>
-                      moment(date).format("dddd D MMMM"),
-                  }}
-                  messages={{
-                    next: "Suivant",
-                    previous: "Précédent",
-                    today: "Aujourd'hui",
-                    month: "Mois",
-                    week: "Semaine",
-                    day: "Jour",
-                    agenda: "Agenda",
-                    date: "Date",
-                    time: "Heure",
-                    event: "Événement",
-                  }}
-                  onSelectEvent={(event: CalendarEvent) =>
-                    navigate(`/interventions/${event.resource.id}`, {
-                      state: { from: "calendar" },
-                    })
+                <Suspense
+                  fallback={
+                    <div
+                      className="flex items-center justify-center"
+                      style={{
+                        height: "calc(100vh - 400px)",
+                        minHeight: "450px",
+                        maxHeight: "700px",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Chargement du calendrier...
+                    </div>
                   }
-                />
+                >
+                  <InterventionsCalendar
+                    calendarDate={calendarDate}
+                    calendarEvents={calendarEvents}
+                    calendarView={calendarView}
+                    eventStyleGetter={eventStyleGetter}
+                    handleNavigate={handleNavigate}
+                    handleViewChange={handleViewChange}
+                    onSelectEvent={(event: CalendarEvent) =>
+                      navigate(`/interventions/${event.resource.id}`, {
+                        state: { from: "calendar" },
+                      })
+                    }
+                  />
+                </Suspense>
               </div>
             </div>
           )}
