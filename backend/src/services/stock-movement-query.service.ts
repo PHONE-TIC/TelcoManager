@@ -1,16 +1,26 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import {
   stockMovementStockSelect,
   stockMovementUserSelect,
 } from "../controllers/stock-movement.constants";
 
+function parseNonNegativeInteger(value: unknown, fallback: number) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+
+  return Math.floor(parsed);
+}
+
 export async function getStockMovementList(input: {
   stockId: string;
   limit?: unknown;
   offset?: unknown;
 }) {
-  const limit = Number(input.limit ?? 50);
-  const offset = Number(input.offset ?? 0);
+  const limit = parseNonNegativeInteger(input.limit, 50);
+  const offset = parseNonNegativeInteger(input.offset, 0);
 
   const [movements, total] = await Promise.all([
     prisma.stockMovement.findMany({
@@ -48,9 +58,9 @@ export async function getAllStockMovementList(input: {
   startDate?: unknown;
   endDate?: unknown;
 }) {
-  const limit = Number(input.limit ?? 100);
-  const offset = Number(input.offset ?? 0);
-  const where: any = {};
+  const limit = parseNonNegativeInteger(input.limit, 100);
+  const offset = parseNonNegativeInteger(input.offset, 0);
+  const where: Prisma.StockMovementWhereInput = {};
 
   if (input.type) where.type = input.type;
   if (input.stockId) where.stockId = input.stockId;

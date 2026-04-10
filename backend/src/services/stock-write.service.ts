@@ -16,6 +16,21 @@ type StockWriteInput = {
   lowStockThreshold?: number;
 };
 
+function getDuplicateStockLocation(item: {
+  technicianStocks?: Array<{ technicien?: { nom: string | null } | null }>;
+  clientEquipements?: Array<{ client?: { nom: string | null } | null }>;
+}) {
+  if (item.technicianStocks?.[0]?.technicien) {
+    return `Véhicule de ${item.technicianStocks[0].technicien.nom || "Technicien"}`;
+  }
+
+  if (item.clientEquipements?.[0]?.client) {
+    return `Client: ${item.clientEquipements[0].client.nom || "Inconnu"}`;
+  }
+
+  return "Stock principal";
+}
+
 export async function createStockItems(input: StockWriteInput) {
   const {
     nomMateriel,
@@ -80,24 +95,12 @@ export async function createStockItems(input: StockWriteInput) {
     });
 
     if (existingItems.length > 0) {
-      const duplicates = (existingItems as any[]).map((item) => {
-        let location = "Stock principal";
-
-        if (item.technicianStocks?.length > 0 && item.technicianStocks[0].technicien) {
-          location = `Véhicule de ${item.technicianStocks[0].technicien.nom || "Technicien"}`;
-        }
-
-        if (item.clientEquipements?.length > 0 && item.clientEquipements[0].client) {
-          location = `Client: ${item.clientEquipements[0].client.nom || "Inconnu"}`;
-        }
-
-        return {
-          numeroSerie: item.numeroSerie,
-          reference: item.reference,
-          nomMateriel: item.nomMateriel,
-          location,
-        };
-      });
+      const duplicates = existingItems.map((item) => ({
+        numeroSerie: item.numeroSerie,
+        reference: item.reference,
+        nomMateriel: item.nomMateriel,
+        location: getDuplicateStockLocation(item),
+      }));
 
       return {
         status: 409 as const,

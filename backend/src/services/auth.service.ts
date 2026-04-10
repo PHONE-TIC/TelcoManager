@@ -1,9 +1,10 @@
 import * as bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { type SignOptions } from "jsonwebtoken";
 import { prisma } from "../db";
 
 const getJwtSecret = () => process.env.JWT_SECRET || "your-secret-key";
-const getJwtExpiresIn = () => process.env.JWT_EXPIRES_IN || "24h";
+const getJwtExpiresIn = (): SignOptions["expiresIn"] =>
+  (process.env.JWT_EXPIRES_IN || "24h") as SignOptions["expiresIn"];
 
 type JwtPayload = {
   id: string;
@@ -50,7 +51,7 @@ export async function authenticateUser(username: string, password: string) {
       role: technicien.role,
     },
     getJwtSecret(),
-    { expiresIn: getJwtExpiresIn() as any }
+    { expiresIn: getJwtExpiresIn() }
   );
 
   return {
@@ -78,7 +79,7 @@ export function refreshJwtToken(token: string) {
       role: decoded.role,
     },
     getJwtSecret(),
-    { expiresIn: getJwtExpiresIn() as any }
+    { expiresIn: getJwtExpiresIn() }
   );
 }
 
