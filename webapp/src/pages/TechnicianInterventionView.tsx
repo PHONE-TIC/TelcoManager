@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import type { AxiosError } from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
@@ -37,6 +38,11 @@ interface Equipment {
   etat?: "ok" | "hs";
   quantite: number;
 }
+
+type ApiErrorResponse = {
+  error?: string;
+  message?: string;
+};
 
 interface VehicleStockItem {
   id: string;
@@ -207,7 +213,7 @@ const TechnicianInterventionView: React.FC = () => {
       } else if (data.statut === "en_cours") {
         setCurrentStep(1); // Start at heures
       }
-    } catch (err) {
+    } catch {
       setError("Erreur lors du chargement");
     } finally {
       setLoading(false);
@@ -256,7 +262,8 @@ const TechnicianInterventionView: React.FC = () => {
       await loadIntervention();
       setCurrentStep(1); // Go to heures step
     } catch (err: unknown) {
-      showMessage((err as any).response?.data?.error || "Erreur", true);
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      showMessage(axiosError.response?.data?.error || "Erreur", true);
     }
   };
 
@@ -292,7 +299,8 @@ const TechnicianInterventionView: React.FC = () => {
       showMessage("Heures enregistrées");
       return true;
     } catch (err: unknown) {
-      showMessage((err as any).response?.data?.error || "Erreur", true);
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      showMessage(axiosError.response?.data?.error || "Erreur", true);
       return false;
     }
   };
@@ -333,7 +341,8 @@ const TechnicianInterventionView: React.FC = () => {
       // Restore current step after reload
       setCurrentStep(savedStep);
     } catch (err: unknown) {
-      showMessage((err as any).response?.data?.error || "Erreur", true);
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      showMessage(axiosError.response?.data?.error || "Erreur", true);
     }
   };
 
@@ -393,9 +402,10 @@ const TechnicianInterventionView: React.FC = () => {
       );
       loadVehicleStock(); // Refresh vehicle stock
     } catch (error: unknown) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
       console.error("Erreur installation:", error);
       showMessage(
-        (error as any).response?.data?.error || "Erreur lors de l'installation",
+        axiosError.response?.data?.error || "Erreur lors de l'installation",
         true
       );
     }
@@ -436,9 +446,10 @@ const TechnicianInterventionView: React.FC = () => {
       );
       loadVehicleStock(); // Refresh vehicle stock
     } catch (error: unknown) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
       console.error("Erreur reprise:", error);
       showMessage(
-        (error as any).response?.data?.error || "Erreur lors de la reprise",
+        axiosError.response?.data?.error || "Erreur lors de la reprise",
         true
       );
     }
@@ -476,9 +487,10 @@ const TechnicianInterventionView: React.FC = () => {
       setEquipments(equipments.filter((_, idx) => idx !== index));
       loadVehicleStock(); // Refresh vehicle stock
     } catch (error: unknown) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
       console.error("Erreur lors de la suppression:", error);
       showMessage(
-        (error as any).response?.data?.error || "Erreur lors de la suppression",
+        axiosError.response?.data?.error || "Erreur lors de la suppression",
         true
       );
     }
@@ -602,12 +614,13 @@ const TechnicianInterventionView: React.FC = () => {
       alert("✅ Intervention clôturée avec succès !");
       navigate("/interventions");
     } catch (err: unknown) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
       console.error("Error closing intervention:", err);
       setLoading(false);
       alert(
         "❌ Erreur: " +
-        ((err as any).response?.data?.error ||
-          (err as any).message ||
+        (axiosError.response?.data?.error ||
+          axiosError.message ||
           "Erreur lors de la clôture")
       );
     }

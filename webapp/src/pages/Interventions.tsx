@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar, momentLocalizer } from "react-big-calendar";
+import { Calendar, momentLocalizer, type View } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../styles/calendar-dark-theme.css";
 import moment from "../utils/momentFrConfig"; // Use shared French locale config
@@ -26,6 +26,7 @@ import {
   getStatusFilteredInterventions,
   getTodayInterventions,
   sortInterventionsList,
+  type InterventionSortColumn,
 } from "./interventions-list.utils";
 import {
   getInterventionPriorityIndicator,
@@ -35,7 +36,19 @@ import {
 
 const localizer = momentLocalizer(moment);
 
-import type { Intervention } from "../types";
+import type { Client, Intervention, Technicien } from "../types";
+
+type InterventionsLocationState = {
+  viewMode?: "list" | "calendar" | "all";
+};
+
+type CalendarEvent = {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  resource: Intervention;
+};
 
 function Interventions() {
   const navigate = useNavigate();
@@ -50,18 +63,19 @@ function Interventions() {
   const { scheduleForInterventions } = useReminders();
 
   // Restore viewMode from navigation state if present
-  const initialViewMode = (location.state as any)?.viewMode || "list";
+  const initialViewMode =
+    (location.state as InterventionsLocationState | null)?.viewMode || "list";
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "all">(
     initialViewMode
   );
 
-  const [calendarView, setCalendarView] = useState<any>("month"); // Default to Month view
+  const [calendarView, setCalendarView] = useState<View>("month"); // Default to Month view
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [calendarKey, setCalendarKey] = useState(0);
   const [transitionClass, setTransitionClass] = useState("fade-in");
   const [interventions, setInterventions] = useState<Intervention[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
-  const [techniciens, setTechniciens] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [techniciens, setTechniciens] = useState<Technicien[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -71,7 +85,7 @@ function Interventions() {
   >("all");
 
   // Column sorting state
-  const [sortColumn, setSortColumn] = useState<string>("id");
+  const [sortColumn, setSortColumn] = useState<InterventionSortColumn>("id");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Conflict detection state
@@ -96,15 +110,7 @@ function Interventions() {
   const [clientSearch, setClientSearch] = useState("");
   const [technicianSearch, setTechnicianSearch] = useState("");
 
-  useEffect(() => {
-    loadData();
-    const interval = setInterval(() => {
-      loadData(true); // Silent reload
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadData = async (silent = false) => {
+  const loadData = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
 
@@ -173,7 +179,22 @@ function Interventions() {
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, [
+    cacheInterventionsList,
+    getCachedInterventionsList,
+    isOnline,
+    scheduleForInterventions,
+    user?.id,
+    user?.role,
+  ]);
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(() => {
+      loadData(true); // Silent reload
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [loadData]);
 
   const validateStep = (step: number) => validateInterventionStep(step, formData);
 
@@ -302,7 +323,7 @@ function Interventions() {
   );
 
   // Column sorting handler
-  const handleSort = (column: string) => {
+  const handleSort = (column: InterventionSortColumn) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -312,7 +333,7 @@ function Interventions() {
   };
 
   // Sortable header component
-  const getSortableHeader = (label: string, column: string) => (
+  const getSortableHeader = (label: string, column: InterventionSortColumn) => (
     <th
       style={{ cursor: "pointer", userSelect: "none" }}
       onClick={() => handleSort(column)}
@@ -328,8 +349,10 @@ function Interventions() {
     </th>
   );
 
-  const sortInterventions = (list: Intervention[]) =>
-    sortInterventionsList(list, sortColumn, sortDirection);
+  const sortInterventions = useCallback(
+    (list: Intervention[]) => sortInterventionsList(list, sortColumn, sortDirection),
+    [sortColumn, sortDirection]
+  );
 
   const handleNavigate = (date: Date) => {
     setTransitionClass(getCalendarTransitionClass(calendarDate, date));
@@ -337,7 +360,7 @@ function Interventions() {
     setCalendarKey((prev) => prev + 1);
   };
 
-  const handleViewChange = (view: string) => {
+  const handleViewChange = (view: View) => {
     setCalendarView(view);
     setTransitionClass("fade-in"); // View change: simple fade
     setCalendarKey((prev) => prev + 1);
@@ -358,7 +381,7 @@ function Interventions() {
     [interventions]
   );
 
-  const eventStyleGetter = (event: any) => {
+  const eventStyleGetter = (event: CalendarEvent) => {
     let backgroundColor = "#3174ad"; // Default blue
     const status = event.resource.statut;
 
@@ -387,7 +410,7 @@ function Interventions() {
 
   const sortedTodayInterventions = useMemo(
     () => sortInterventions(filteredInterventions),
-    [filteredInterventions, sortColumn, sortDirection]
+    [filteredInterventions, sortInterventions]
   );
 
   const allInterventions = useMemo(
@@ -397,7 +420,7 @@ function Interventions() {
 
   const sortedAllInterventions = useMemo(
     () => sortInterventions(allInterventions),
-    [allInterventions, sortColumn, sortDirection]
+    [allInterventions, sortInterventions]
   );
 
   const mobilePlanningInterventions = useMemo(
@@ -1021,7 +1044,7 @@ function Interventions() {
                     time: "Heure",
                     event: "Événement",
                   }}
-                  onSelectEvent={(event: any) =>
+                  onSelectEvent={(event: CalendarEvent) =>
                     navigate(`/interventions/${event.resource.id}`, {
                       state: { from: "calendar" },
                     })

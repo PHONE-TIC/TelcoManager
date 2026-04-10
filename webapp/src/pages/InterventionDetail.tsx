@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { AxiosError } from "axios";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
@@ -17,7 +18,17 @@ import {
 } from "./intervention-detail.utils";
 import { getInterventionDetailStatusBadgeConfig } from "./intervention-detail-status.utils";
 
-import type { Intervention } from "../types";
+import type { Client, Intervention, Photo, Technicien } from "../types";
+
+type InterventionLocationState = {
+  from?: string;
+};
+
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  lockedBy?: string;
+};
 
 const InterventionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +38,7 @@ const InterventionDetail: React.FC = () => {
 
   // Handle back navigation - return to original view if came from calendar or all
   const handleGoBack = () => {
-    const fromView = (location.state as any)?.from;
+    const fromView = (location.state as InterventionLocationState | null)?.from;
     const target = getInterventionBackState(fromView);
     navigate(target.path, target.state ? { state: target.state } : undefined);
   };
@@ -44,7 +55,7 @@ const InterventionDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [photos, setPhotos] = useState<any[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [loadedAttachments, setLoadedAttachments] = useState<
     Array<{ name: string; url: string; type: string }>
   >([]);
@@ -62,8 +73,65 @@ const InterventionDetail: React.FC = () => {
   });
 
   // Liste des clients et techniciens pour les sélecteurs
-  const [clients, setClients] = useState<any[]>([]);
-  const [techniciens, setTechniciens] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [techniciens, setTechniciens] = useState<Technicien[]>([]);
+
+  const loadIntervention = useCallback(async (silent = false) => {
+    try {
+      if (!silent) setLoading(true);
+      if (!id) return;
+      const data = await apiService.getInterventionById(id);
+      setIntervention(data);
+
+      try {
+        const artifacts = await apiService.getInterventionArtifacts(id);
+        const loadedPhotos = mapDetailArtifactPhotos(artifacts);
+        setPhotos(loadedPhotos);
+
+        const otherFiles = mapDetailArtifactAttachments(artifacts);
+        setLoadedAttachments(otherFiles);
+
+        const report = findDetailArtifactReport(artifacts);
+        setReportUrl(report?.url ?? null);
+      } catch (e) {
+        console.warn("Failed to load artifacts", e);
+      }
+
+      if (!isEditing) {
+        setFormData({
+          titre: data.titre,
+          description: data.description || "",
+          datePlanifiee: data.datePlanifiee
+            ? formatDateTimeLocal(data.datePlanifiee)
+            : "",
+          statut: data.statut,
+          notes: data.notes || "",
+          clientId: data.client.id,
+          technicienId: data.technicien?.id || "",
+        });
+      }
+    } catch (err: unknown) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      setError(
+        axiosError.response?.data?.message || "Erreur lors du chargement"
+      );
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [id, isEditing]);
+
+  const loadClientsAndTechniciens = useCallback(async () => {
+    try {
+      const [clientsData, techniciensData] = await Promise.all([
+        apiService.getClients({ limit: 1000 }),
+        apiService.getTechniciens({ limit: 1000 }),
+      ]);
+      setClients(clientsData.clients || clientsData);
+      setTechniciens(techniciensData.techniciens || techniciensData);
+    } catch (err) {
+      console.error("Erreur lors du chargement des listes:", err);
+    }
+  }, []);
 
   useEffect(() => {
     loadIntervention();
@@ -75,10 +143,11 @@ const InterventionDetail: React.FC = () => {
       try {
         await apiService.lockIntervention(id);
       } catch (e: unknown) {
-        if ((e as any).response?.status === 409) {
+        const axiosError = e as AxiosError<ApiErrorResponse>;
+        if (axiosError.response?.status === 409) {
           alert(
             `ATTENTION: Cette intervention est actuellement modifiée par ${
-              (e as any).response.data.lockedBy || "un autre utilisateur"
+              axiosError.response.data?.lockedBy || "un autre utilisateur"
             }.`
           );
         }
@@ -104,67 +173,7 @@ const InterventionDetail: React.FC = () => {
         }
       });
     };
-  }, [id]);
-
-  const loadIntervention = async (silent = false) => {
-    try {
-      if (!silent) setLoading(true);
-      const data = await apiService.getInterventionById(id!);
-      setIntervention(data);
-      setIntervention(data);
-
-      // Load artifacts (photos)
-      try {
-        const artifacts = await apiService.getInterventionArtifacts(id!);
-        const loadedPhotos = mapDetailArtifactPhotos(artifacts);
-        setPhotos(loadedPhotos);
-
-        const otherFiles = mapDetailArtifactAttachments(artifacts);
-        setLoadedAttachments(otherFiles);
-
-        const report = findDetailArtifactReport(artifacts);
-        if (report) {
-          setReportUrl(report.url);
-        }
-      } catch (e) {
-        console.warn("Failed to load artifacts", e);
-      }
-
-      if (!isEditing) {
-        // Don't overwrite if editing
-        setFormData({
-          titre: data.titre,
-          description: data.description || "",
-          datePlanifiee: data.datePlanifiee
-            ? formatDateTimeLocal(data.datePlanifiee)
-            : "",
-          statut: data.statut,
-          notes: data.notes || "",
-          clientId: data.client.id,
-          technicienId: data.technicien?.id || "",
-        });
-      }
-    } catch (err: unknown) {
-      setError(
-        (err as any).response?.data?.message || "Erreur lors du chargement"
-      );
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
-
-  const loadClientsAndTechniciens = async () => {
-    try {
-      const [clientsData, techniciensData] = await Promise.all([
-        apiService.getClients({ limit: 1000 }),
-        apiService.getTechniciens({ limit: 1000 }),
-      ]);
-      setClients(clientsData.clients || clientsData);
-      setTechniciens(techniciensData.techniciens || techniciensData);
-    } catch (err) {
-      console.error("Erreur lors du chargement des listes:", err);
-    }
-  };
+  }, [id, loadClientsAndTechniciens, loadIntervention]);
 
   const handleSave = async () => {
     try {
@@ -186,8 +195,9 @@ const InterventionDetail: React.FC = () => {
       setIsEditing(false);
       alert("Intervention mise à jour avec succès !");
     } catch (err: unknown) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
       setError(
-        (err as any).response?.data?.message || "Erreur lors de la sauvegarde"
+        axiosError.response?.data?.message || "Erreur lors de la sauvegarde"
       );
     } finally {
       setSaving(false);
@@ -223,9 +233,9 @@ const InterventionDetail: React.FC = () => {
       loadIntervention();
       alert("Intervention prise en charge !");
     } catch (err: unknown) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
       setError(
-        (err as any).response?.data?.error ||
-          "Erreur lors de la prise en charge"
+        axiosError.response?.data?.error || "Erreur lors de la prise en charge"
       );
     }
   };
@@ -237,8 +247,9 @@ const InterventionDetail: React.FC = () => {
       await apiService.updateInterventionStatus(id, { statut: newStatus });
       loadIntervention();
     } catch (err: unknown) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
       setError(
-        (err as any).response?.data?.error ||
+        axiosError.response?.data?.error ||
           "Erreur lors du changement de statut"
       );
     }
@@ -251,8 +262,9 @@ const InterventionDetail: React.FC = () => {
       await apiService.updateIntervention(id, { technicienId: techId || null });
       loadIntervention();
     } catch (err: unknown) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
       setError(
-        (err as any).response?.data?.error || "Erreur lors de la réassignation"
+        axiosError.response?.data?.error || "Erreur lors de la réassignation"
       );
     }
   };

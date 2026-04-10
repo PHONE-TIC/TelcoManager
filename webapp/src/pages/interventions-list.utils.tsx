@@ -44,8 +44,8 @@ export function sortInterventionsList(
   sortDirection: InterventionSortDirection
 ): Intervention[] {
   return [...list].sort((a, b) => {
-    const valueA = getInterventionSortValue(a, sortColumn);
-    const valueB = getInterventionSortValue(b, sortColumn);
+    const valueA = getInterventionSortValue(a, sortColumn) ?? "";
+    const valueB = getInterventionSortValue(b, sortColumn) ?? "";
 
     if (valueA < valueB) return sortDirection === "asc" ? -1 : 1;
     if (valueA > valueB) return sortDirection === "asc" ? 1 : -1;

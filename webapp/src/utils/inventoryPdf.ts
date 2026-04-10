@@ -22,6 +22,12 @@ interface InventorySessionPDF {
   items: InventoryItemPDF[];
 }
 
+type JsPdfWithInternal = jsPDF & {
+  internal: jsPDF["internal"] & {
+    getNumberOfPages: () => number;
+  };
+};
+
 export const generateInventoryPDF = (session: InventorySessionPDF) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
@@ -126,7 +132,7 @@ export const generateInventoryPDF = (session: InventorySessionPDF) => {
   });
 
   // --- Footer ---
-  const totalPages = (doc as any).internal.getNumberOfPages();
+  const totalPages = (doc as JsPdfWithInternal).internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFontSize(8);

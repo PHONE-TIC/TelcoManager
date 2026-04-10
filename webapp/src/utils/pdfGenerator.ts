@@ -22,6 +22,12 @@ async function loadLogo(): Promise<string | null> {
 // Update Interface to include new fields
 import type { Intervention, Photo } from "../types";
 
+type JsPdfWithAutoTable = jsPDF & {
+  lastAutoTable?: {
+    finalY: number;
+  };
+};
+
 // Extra data passed from Workflow
 interface ExtraData {
   billing?: {
@@ -54,7 +60,7 @@ const BLACK: [number, number, number] = [0, 0, 0];
 export const generateInterventionPDF = async (
   intervention: Intervention,
   returnBlob = false,
-  _photos: Photo[] = [],
+  photos: Photo[] = [],
   extraData: ExtraData = {}
 ): Promise<Blob | void> => {
   try {
@@ -193,7 +199,7 @@ export const generateInterventionPDF = async (
       },
     });
 
-    y = (doc as any).lastAutoTable.finalY;
+    y = (doc as JsPdfWithAutoTable).lastAutoTable?.finalY ?? y;
 
     // Time Calculation
     let timeString = "";
@@ -224,7 +230,7 @@ export const generateInterventionPDF = async (
       },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 5;
+    y = ((doc as JsPdfWithAutoTable).lastAutoTable?.finalY ?? y) + 5;
 
     // ==========================================
     // OBJET & MATERIEL (Side by side)
@@ -484,8 +490,6 @@ export const generateInterventionPDF = async (
       } catch (e) {
         console.warn("Could not add technician signature image:", e);
       }
-    } else {
-
     }
 
     // Signature header - Client
@@ -500,7 +504,7 @@ export const generateInterventionPDF = async (
     doc.rect(sigX, y + 42, signatureWidth, 14, "D");
 
     // Add client signature image if available
-    const clientSig = intervention.signatureClient || intervention.signature;
+    const clientSig = intervention.signature;
     if (clientSig) {
       try {
 
@@ -526,14 +530,20 @@ export const generateInterventionPDF = async (
     doc.text("générales de vente figurant au verso.", sigX + 2, y + 63);
 
     // ==========================================
-    // NO PHOTOS generated
-    // ==========================================
-
-
-    // ==========================================
     // FOOTER
     // ==========================================
     const footerY = pageHeight - 12;
+    if (photos.length > 0) {
+      const photoSummary = [
+        `${photos.filter((photo) => photo.type === "before").length} avant`,
+        `${photos.filter((photo) => photo.type === "after").length} après`,
+        `${photos.filter((photo) => photo.type === "other").length} autre`,
+      ].join(" • ");
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+      doc.text(`Photos jointes : ${photoSummary}`, margin, footerY - 3);
+    }
     doc.setFillColor(ORANGE[0], ORANGE[1], ORANGE[2]);
     doc.rect(0, footerY, pageWidth, 12, "F");
 
@@ -566,10 +576,8 @@ export const generateInterventionPDF = async (
       : `Bon-Intervention-${new Date().toISOString().slice(0, 10)}.pdf`;
 
     if (returnBlob) {
-
       return doc.output("blob");
     }
-
 
     doc.save(filename);
 
