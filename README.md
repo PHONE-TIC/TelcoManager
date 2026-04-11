@@ -117,13 +117,16 @@ Optimisations et simplifications importantes, sans modification fonctionnelle vo
 - amélioration du chargement initial du frontend
 - harmonisation responsive et transitions
 - extraction progressive de helpers, types, sections et utilitaires depuis les grosses pages frontend (`Dashboard`, `Interventions`, pages détail, imports, PDF)
+- optimisation finale du bundle avec allègement du dashboard, remplacement du graphe lourd par un composant natif léger et chargement différé du calendrier d’interventions
 - simplification backend par extraction de services métier, services de requête et helpers communs
+- dernier durcissement léger des services backend restants (`auth`, `stock-write`, `stock-movement-query`)
+- ajout d’une première base de tests automatisés ciblés sur les helpers extraits du frontend
 - centralisation de pagination, validation et accès Prisma
 - nettoyage de fichiers obsolètes et rationalisation de la documentation
 - suppression complète de l’application mobile et de l’application desktop pour recentrer le projet sur la webapp
 - mise à jour du README, des guides de déploiement, de test et du guide utilisateur pour refléter une architecture web-only
-- réduction progressive puis correction complète des erreurs lint frontend, avec passage final à 0 erreur
-- validation continue via lint frontend, builds backend/webapp, rebuilds Docker, push GitHub et publication DockerHub
+- réduction progressive puis correction complète des erreurs lint frontend, avec passage final à 0 erreur et seulement quelques warnings hooks résiduels de confort si non traités dans certains états intermédiaires
+- validation continue via tests frontend, lint frontend, builds backend/webapp, rebuilds Docker, push GitHub et publication DockerHub
 
 ### Décembre 2025
 
