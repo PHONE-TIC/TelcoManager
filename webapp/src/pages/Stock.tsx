@@ -274,7 +274,7 @@ function Stock() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>📦 Stock</h1>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Stock</h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Gestion du matériel et équipements
           </p>
@@ -295,7 +295,7 @@ function Stock() {
               gap: "6px",
             }}
           >
-            📥 Exporter CSV
+            Exporter CSV
           </button>
           {canManageStock && (
             <>
@@ -316,7 +316,7 @@ function Stock() {
                   boxShadow: "0 2px 8px rgba(139, 92, 246, 0.35)",
                 }}
               >
-                🚚 Transférer
+                Transférer
               </button>
               <button
                 onClick={() => navigate("/stock/new")}
@@ -406,21 +406,21 @@ function Stock() {
                       : undefined,
                 }}
               >
-                🌐 Vue Générale
+                Vue générale
               </button>
               <button
                 className={`btn ${filter === "courant" ? "btn-primary" : "btn-secondary"
                   }`}
                 onClick={() => setFilter("courant")}
               >
-                📦 Stock Courant
+                Stock courant
               </button>
               <button
                 className={`btn ${filter === "hs" ? "btn-danger" : "btn-secondary"
                   }`}
                 onClick={() => setFilter("hs")}
               >
-                ⚠️ Stock HS
+                Stock HS
               </button>
               <button
                 className={`btn ${filter === "retour_fournisseur"
@@ -452,7 +452,7 @@ function Stock() {
                     wordBreak: "break-word",
                   }}
                 >
-                  👷 Stock Technicien
+                  Stock technicien
                 </button>
               )}
             </div>
@@ -503,7 +503,7 @@ function Stock() {
                 minWidth: "160px",
               }}
             >
-              <option value="all">📁 Toutes catégories</option>
+              <option value="all">Toutes catégories</option>
               {categories.map((cat, i) => (
                 <option key={i} value={cat}>
                   {cat}

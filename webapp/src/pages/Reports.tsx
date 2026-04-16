@@ -210,7 +210,7 @@ function Reports() {
                 gap: '15px'
             }}>
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>📈 Rapports</h1>
+                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Rapports</h1>
                     <p style={{ color: 'var(--text-secondary)' }}>Statistiques et exports de données</p>
                 </div>
                 <div className="flex gap-2">
@@ -231,7 +231,7 @@ function Reports() {
                             gap: '6px'
                         }}
                     >
-                        📊 Export CSV
+                        Export CSV
                     </button>
                     <button
                         onClick={exportPDF}
@@ -247,7 +247,7 @@ function Reports() {
                             boxShadow: stats ? '0 2px 8px rgba(249, 115, 22, 0.35)' : 'none'
                         }}
                     >
-                        📄 Export PDF
+                        Export PDF
                     </button>
                 </div>
             </div>
@@ -259,7 +259,7 @@ function Reports() {
                 borderRadius: '12px',
                 border: '1px solid var(--border-color)'
             }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>🔍 Filtres</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>Filtres</h2>
                 <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                     <div>
                         <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 500, marginBottom: '6px', color: 'var(--text-secondary)' }}>Date début</label>
@@ -356,7 +356,7 @@ function Reports() {
                 padding: '20px'
             }}>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '16px' }}>
-                    📋 Interventions ({interventions.length})
+                    Interventions ({interventions.length})
                 </h2>
                 <div style={{ overflowX: 'auto' }}>
                     <table className="table" style={{ width: '100%' }}>
@@ -404,7 +404,7 @@ function Reports() {
                                 <tr>
                                     <td colSpan={6}>
                                         <div style={{ textAlign: 'center', padding: '48px' }}>
-                                            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>📋</div>
+                                            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>Aucune</div>
                                             <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '8px' }}>Aucune intervention trouvée</h3>
                                             <p style={{ color: 'var(--text-secondary)' }}>Modifiez les filtres pour afficher des résultats</p>
                                         </div>

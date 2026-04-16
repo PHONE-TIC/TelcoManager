@@ -256,8 +256,7 @@ function Inventaire() {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-                  📋 Inventaire du{" "}
-                  {moment(currentSession.date).format("DD/MM/YYYY")}
+                  Inventaire du {moment(currentSession.date).format("DD/MM/YYYY")}
                 </h1>
                 {isCompleted ? (
                   <span
@@ -271,7 +270,7 @@ function Inventaire() {
                       color: "white",
                     }}
                   >
-                    ✓ Finalisé
+                    Finalisé
                   </span>
                 ) : (
                   <span
@@ -285,7 +284,7 @@ function Inventaire() {
                       color: "white",
                     }}
                   >
-                    📝 Brouillon
+                    Brouillon
                   </span>
                 )}
               </div>
@@ -308,7 +307,7 @@ function Inventaire() {
                 boxShadow: "0 2px 8px rgba(99, 102, 241, 0.35)",
               }}
             >
-              🖨️ Export PDF
+              Export PDF
             </button>
             {!isCompleted && (
               <>
@@ -326,7 +325,7 @@ function Inventaire() {
                     boxShadow: "0 2px 8px rgba(59, 130, 246, 0.35)",
                   }}
                 >
-                  💾 Sauvegarder
+                  Sauvegarder
                 </button>
                 <button
                   onClick={handleFinalizeClick}
@@ -342,7 +341,7 @@ function Inventaire() {
                     boxShadow: "0 2px 8px rgba(16, 185, 129, 0.35)",
                   }}
                 >
-                  ✅ Finaliser
+                  Finaliser
                 </button>
               </>
             )}

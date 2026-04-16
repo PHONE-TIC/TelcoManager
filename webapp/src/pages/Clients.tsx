@@ -223,7 +223,7 @@ function Clients() {
         }}
       >
         <div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>👥 Clients</h1>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Clients</h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Gestion de la base client
           </p>
@@ -252,7 +252,7 @@ function Clients() {
               gap: "6px",
             }}
           >
-            📥 Exporter
+            Exporter
           </button>
           {user?.role === "admin" && (
             <button
@@ -275,7 +275,7 @@ function Clients() {
                 transition: "all 0.2s",
               }}
             >
-              {syncing ? "⏳ Sync..." : "🔄 UNYC"}
+              {syncing ? "Synchronisation..." : "Synchroniser UNYC"}
             </button>
           )}
           <label
@@ -293,7 +293,7 @@ function Clients() {
             }}
             title="Importer depuis CSV"
           >
-            📤 Importer
+            Importer
             <input
               type="file"
               accept=".csv"
@@ -337,7 +337,7 @@ function Clients() {
             {clients.length}
           </div>
           <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-            👥 Total clients
+            Total clients
           </div>
         </div>
         <div
@@ -353,7 +353,7 @@ function Clients() {
             {new Set(clients.map((c) => c.ville)).size}
           </div>
           <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-            🏙️ Villes
+            Villes
           </div>
         </div>
       </div>

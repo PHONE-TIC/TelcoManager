@@ -451,7 +451,7 @@ function Interventions() {
       >
         <div>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-            📅 Interventions
+            Interventions
           </h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Gestion des interventions et planning
@@ -488,7 +488,7 @@ function Interventions() {
           }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-xl">📴</span>
+            <span className="text-xl">Hors ligne</span>
             <div>
               <strong>Mode hors-ligne</strong>
               <span style={{ color: "var(--text-secondary)" }}>
@@ -567,7 +567,7 @@ function Interventions() {
               <div
                 style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}
               >
-                ⚠️ En retard
+                En retard
               </div>
             </div>
           )}
@@ -594,7 +594,7 @@ function Interventions() {
                   }`}
                 onClick={() => setViewMode("calendar")}
               >
-                📅 Calendrier
+                Calendrier
               </button>
               <button
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === "list"
@@ -603,7 +603,7 @@ function Interventions() {
                   }`}
                 onClick={() => setViewMode("list")}
               >
-                📋 Liste du jour
+                Liste du jour
               </button>
               {user?.role === "admin" && (
                 <button
@@ -613,7 +613,7 @@ function Interventions() {
                     }`}
                   onClick={() => setViewMode("all")}
                 >
-                  📑 Toutes les interventions
+                  Toutes les interventions
                 </button>
               )}
             </div>
