@@ -1,0 +1,238 @@
+.responsive-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.responsive-page__header,
+.responsive-page__section,
+.responsive-page__filters,
+.responsive-page__content,
+.responsive-page__empty {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.responsive-page__header {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.responsive-page__header-top {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.responsive-page__title-wrap {
+  min-width: 0;
+}
+
+.responsive-page__title {
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.responsive-page__subtitle {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.responsive-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.responsive-page__primary,
+.responsive-page__secondary,
+.responsive-page__ghost {
+  min-height: 42px;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.responsive-page__primary {
+  border: none;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+}
+
+.responsive-page__secondary {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.responsive-page__ghost {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.responsive-page__filters {
+  padding: 14px 16px;
+}
+
+.responsive-page__filters-toggle {
+  display: none;
+}
+
+.responsive-page__filters-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.responsive-page__section,
+.responsive-page__content,
+.responsive-page__empty {
+  padding: 16px;
+}
+
+.responsive-page__section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.responsive-page__stats {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.responsive-stat {
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  padding: 14px;
+}
+
+.responsive-stat__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.responsive-stat__label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.responsive-mobile-cards {
+  display: grid;
+  gap: 12px;
+}
+
+.responsive-mobile-card {
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-primary);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.responsive-mobile-card__header,
+.responsive-mobile-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.responsive-mobile-card__title {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.responsive-mobile-card__meta,
+.responsive-mobile-card__details {
+  display: grid;
+  gap: 6px;
+}
+
+.responsive-mobile-card__detail {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.responsive-mobile-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.responsive-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px;
+  }
+
+  .responsive-page__header {
+    padding: 16px;
+  }
+
+  .responsive-page__actions {
+    flex-direction: column;
+  }
+
+  .responsive-page__actions > * {
+    width: 100%;
+  }
+
+  .responsive-page__filters-toggle {
+    display: inline-flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    min-height: 42px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .responsive-page__filters-body {
+    display: none;
+    flex-direction: column;
+  }
+
+  .responsive-page__filters-body.is-open {
+    display: flex;
+  }
+
+  .responsive-page__filters-body > * {
+    width: 100%;
+  }
+}
+
+@media (min-width: 769px) {
+  .responsive-page__header-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}

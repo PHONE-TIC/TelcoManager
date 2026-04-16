@@ -120,6 +120,11 @@ function UserForm() {
         color: 'var(--text-secondary)'
     };
 
+    const inputStyle = {
+        backgroundColor: 'var(--card-bg)',
+        borderColor: 'var(--border-color)'
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -129,7 +134,7 @@ function UserForm() {
     }
 
     return (
-        <div className="page-container" style={{ maxWidth: '700px', margin: '0 auto' }}>
+        <div className="page-container mobile-form-shell">
             {/* Header */}
             <div className="bg-white p-6 rounded-lg shadow-sm" style={{ marginBottom: '24px', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
                 <button onClick={() => navigate('/techniciens')} className="btn btn-back" style={{ marginBottom: '12px' }}>
@@ -154,12 +159,13 @@ function UserForm() {
 
                     <div style={{ display: 'grid', gap: '20px' }}>
                         {/* Prénom et Nom */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="mobile-form-grid-2" style={{ gap: '12px' }}>
                             <div>
                                 <label style={labelStyle}>Prénom *</label>
                                 <input
                                     type="text"
                                     className="form-input-premium"
+                                    style={inputStyle}
                                     value={formData.prenom}
                                     onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
                                     placeholder="Ex: Jean"
@@ -171,6 +177,7 @@ function UserForm() {
                                 <input
                                     type="text"
                                     className="form-input-premium"
+                                    style={inputStyle}
                                     value={formData.nomFamille}
                                     onChange={(e) => setFormData({ ...formData, nomFamille: e.target.value })}
                                     placeholder="Ex: Dupont"
@@ -180,12 +187,13 @@ function UserForm() {
                         </div>
 
                         {/* Identifiant et Rôle */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="mobile-form-grid-2" style={{ gap: '12px' }}>
                             <div>
                                 <label style={labelStyle}>Identifiant (généré ou personnalisé) *</label>
                                 <input
                                     type="text"
                                     className="form-input-premium"
+                                    style={inputStyle}
                                     value={formData.username}
                                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                     placeholder="jdupont"
@@ -197,6 +205,7 @@ function UserForm() {
                                 <label style={labelStyle}>Rôle *</label>
                                 <select
                                     className="form-input-premium"
+                                    style={inputStyle}
                                     value={formData.role}
                                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                 >
@@ -222,7 +231,7 @@ function UserForm() {
                                         placeholder={isEditing ? "••••••••" : "Mot de passe sécurisé"}
                                         required={!isEditing && !formData.password}
                                         minLength={6}
-                                        style={{ paddingRight: '40px' }}
+                                        style={{ ...inputStyle, paddingRight: '40px' }}
                                     />
                                     <button
                                         type="button"
@@ -272,7 +281,7 @@ function UserForm() {
                         )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '32px', justifyContent: 'flex-end' }}>
+                    <div className="mobile-form-actions">
                         <button
                             type="button"
                             className="btn btn-secondary"

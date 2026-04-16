@@ -5,6 +5,7 @@ import { generateInventoryPDF } from "../utils/inventoryPdf";
 import InventoryDiscrepancyModal from "./InventoryDiscrepancyModal";
 import type { FilterType, InventorySession } from "./inventory.types";
 import { getFilteredInventoryItems } from "./inventory.utils";
+import "./mobile-refactor.css";
 
 function Inventaire() {
   const [sessions, setSessions] = useState<InventorySession[]>([]);
@@ -220,22 +221,13 @@ function Inventaire() {
       stats.total > 0 ? Math.round((stats.counted / stats.total) * 100) : 0;
 
     return (
-      <div className="space-y-6" style={{ color: "var(--text-primary)" }}>
+      <div
+        className="space-y-6 screen-shell"
+        style={{ color: "var(--text-primary)" }}
+      >
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            backgroundColor: "var(--bg-primary)",
-            padding: "24px",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-            flexWrap: "wrap",
-            gap: "15px",
-          }}
-        >
-          <div className="flex items-center gap-4">
+        <div className="screen-header">
+          <div className="flex items-center gap-4 screen-header-main">
             <button
               onClick={() => setCurrentSession(null)}
               style={{
@@ -293,7 +285,7 @@ function Inventaire() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="screen-header-actions">
             <button
               onClick={() => generateInventoryPDF(currentSession)}
               style={{
@@ -349,14 +341,7 @@ function Inventaire() {
         </div>
 
         {/* Progress Bar + Stats */}
-        <div
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-            padding: "20px",
-          }}
-        >
+        <div className="screen-panel">
           <div
             style={{
               display: "flex",
@@ -444,14 +429,7 @@ function Inventaire() {
         </div>
 
         {/* Filters + Search */}
-        <div
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-            padding: "20px",
-          }}
-        >
+        <div className="screen-panel">
           {/* Scan Input */}
           <form
             onSubmit={handleScan}
@@ -583,15 +561,8 @@ function Inventaire() {
         </div>
 
         {/* Table */}
-        <div
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-            padding: "20px",
-          }}
-        >
-          <div className="responsive-scroll">
+        <div className="screen-panel">
+          <div className="responsive-scroll desktop-table-only">
           <table className="table" style={{ width: "100%" }}>
             <thead>
               <tr>
@@ -779,6 +750,104 @@ function Inventaire() {
             </tbody>
           </table>
           </div>
+          <div className="mobile-list">
+            {filteredItems.map((item) => {
+              const counted = item.countedQuantity;
+              const expected = item.expectedQuantity;
+              const diff = counted !== null ? counted - expected : 0;
+              const hasDiff = counted !== null && diff !== 0;
+
+              return (
+                <div
+                  key={item.id}
+                  className="mobile-list-card"
+                  style={{
+                    backgroundColor: hasDiff
+                      ? "rgba(239, 68, 68, 0.08)"
+                      : undefined,
+                  }}
+                >
+                  <div className="mobile-list-header">
+                    <div>
+                      <div className="mobile-list-title">{item.stock.nomMateriel}</div>
+                      <div className="mobile-list-subtitle">
+                        Réf. {item.stock.reference} • Série {item.stock.numeroSerie || "-"}
+                      </div>
+                    </div>
+                    <div className="mobile-list-badges">
+                      <span
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: "12px",
+                          fontSize: "0.8rem",
+                          fontWeight: 600,
+                          background: hasDiff
+                            ? "rgba(239, 68, 68, 0.15)"
+                            : counted === null
+                              ? "var(--bg-secondary)"
+                              : "rgba(16, 185, 129, 0.15)",
+                          color: hasDiff
+                            ? "#ef4444"
+                            : counted === null
+                              ? "var(--text-secondary)"
+                              : "#10b981",
+                        }}
+                      >
+                        {counted === null ? "Non compté" : `Écart ${diff > 0 ? `+${diff}` : diff}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mobile-list-metrics">
+                    <span className="mobile-list-value">Théorique: <strong>{expected}</strong></span>
+                    <span className="mobile-list-value">Compté: <strong>{counted ?? "-"}</strong></span>
+                  </div>
+
+                  {!isCompleted ? (
+                    <div className="mobile-inline-inputs" style={{ marginTop: "12px" }}>
+                      <input
+                        type="number"
+                        value={counted !== null ? counted : ""}
+                        onChange={(e) => handleUpdateQuantity(item.id, e.target.value)}
+                        placeholder="Qté"
+                        min="0"
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          border: "1px solid var(--border-color)",
+                          borderRadius: "8px",
+                          textAlign: "center",
+                          backgroundColor: "var(--bg-secondary)",
+                          color: "var(--text-primary)",
+                          outline: "none",
+                        }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Notes..."
+                        value={item.notes || ""}
+                        onChange={(e) => handleUpdateItemNotes(item.id, e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "10px 12px",
+                          border: "1px solid var(--border-color)",
+                          borderRadius: "8px",
+                          backgroundColor: "var(--bg-secondary)",
+                          color: "var(--text-primary)",
+                          outline: "none",
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: "12px" }}>
+                      <span className="mobile-list-label">Notes</span>
+                      <span className="mobile-list-value">{item.notes || "-"}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
           {filteredItems.length === 0 && (
             <div
               style={{
@@ -806,22 +875,13 @@ function Inventaire() {
 
   // --- VIEW: LIST SESSIONS (START) ---
   return (
-    <div className="space-y-6" style={{ color: "var(--text-primary)" }}>
+    <div
+      className="space-y-6 screen-shell"
+      style={{ color: "var(--text-primary)" }}
+    >
       {/* Header & Start Action */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start", // changed to align top
-          backgroundColor: "var(--bg-primary)",
-          padding: "24px",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-          flexWrap: "wrap",
-          gap: "20px",
-        }}
-      >
-        <div style={{ flex: 1, minWidth: "300px" }}>
+      <div className="screen-header" style={{ alignItems: "flex-start" }}>
+        <div className="screen-header-main" style={{ minWidth: "300px" }}>
           <h1
             style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "8px" }}
           >
@@ -835,13 +895,11 @@ function Inventaire() {
 
         {/* Start Inventory Card */}
         <div
+          className="screen-panel"
           style={{
             backgroundColor: "var(--bg-secondary)",
-            padding: "20px",
-            borderRadius: "12px",
             width: "100%",
             maxWidth: "450px",
-            border: "1px solid var(--border-color)",
           }}
         >
           <h3
@@ -921,6 +979,8 @@ function Inventaire() {
               justifyContent: "space-between",
               alignItems: "center",
               padding: "20px",
+              flexWrap: "wrap",
+              gap: "12px",
             }}
           >
             <div className="flex items-center gap-4">

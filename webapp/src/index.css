@@ -963,6 +963,71 @@ textarea {
   animation: fadeOut 0.3s ease-in-out;
 }
 
+.mobile-detail-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.mobile-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.mobile-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.mobile-form-shell {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.mobile-form-grid-2,
+.mobile-form-grid-3 {
+  display: grid;
+  gap: 16px;
+}
+
+.mobile-form-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mobile-form-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mobile-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.mobile-stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-inline-pairs,
+.mobile-history-item,
+.mobile-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.mobile-scroll-tabs {
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+}
+
 /* ========================================
    RESPONSIVE DESIGN - MEDIA QUERIES
    ======================================== */
@@ -1157,6 +1222,61 @@ textarea {
   .info-grid {
     grid-template-columns: 1fr;
     gap: 15px;
+  }
+
+  .mobile-card-grid,
+  .mobile-form-grid-2,
+  .mobile-form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-inline-pairs,
+  .mobile-history-item,
+  .mobile-list-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mobile-inline-pairs > *:last-child,
+  .mobile-history-item > *:last-child,
+  .mobile-list-row > *:last-child {
+    align-self: flex-start;
+  }
+
+  .mobile-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .mobile-form-actions .btn,
+  .mobile-form-actions button {
+    width: 100%;
+  }
+
+  .mobile-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mobile-scroll-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .mobile-scroll-tabs .tab {
+    flex: 0 0 auto;
+  }
+
+  .vehicle-stock-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stock-item-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   /* Form grids - force single column */

@@ -10,6 +10,7 @@ import {
   type StockWithRelations,
 } from "./stock.utils";
 import { buildStockCsvRows, getFilteredStockItems } from "./stock-list.utils";
+import "./mobile-refactor.css";
 
 function Stock() {
   const navigate = useNavigate();
@@ -258,28 +259,19 @@ function Stock() {
   }
 
   return (
-    <div className="space-y-6" style={{ color: "var(--text-primary)" }}>
+    <div
+      className="space-y-6 screen-shell"
+      style={{ color: "var(--text-primary)" }}
+    >
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          backgroundColor: "var(--bg-primary)",
-          padding: "24px",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-          flexWrap: "wrap",
-          gap: "12px",
-        }}
-      >
-        <div>
+      <div className="screen-header">
+        <div className="screen-header-main">
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Stock</h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Gestion du matériel et équipements
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="screen-header-actions">
           <button
             onClick={exportToCSV}
             style={{
@@ -340,10 +332,7 @@ function Stock() {
       </div>
 
       {/* Stats Cards */}
-      <div
-        className="grid gap-4"
-        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}
-      >
+      <div className="screen-stat-grid">
         {[
           {
             value: totalItems,
@@ -382,17 +371,10 @@ function Stock() {
       </div>
 
       {/* Filters and Search */}
-      <div
-        style={{
-          backgroundColor: "var(--bg-primary)",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-          padding: "20px",
-        }}
-      >
-        <div className="flex flex-col gap-4 mb-6">
+      <div className="screen-panel">
+        <div className="screen-filters" style={{ marginBottom: "24px" }}>
           {/* Top Row: Buttons and Search */}
-          <div className="flex flex-wrap justify-between items-center gap-4">
+          <div className="screen-filter-row">
             {/* Status buttons */}
             <div className="responsive-stack" style={{ width: "100%" }}>
               <button
@@ -459,7 +441,7 @@ function Stock() {
           </div>
 
           {/* Bottom Row: Dropdowns */}
-          <div className="responsive-stack">
+          <div className="screen-filter-group">
             {/* Technician Select (Visible only when filter is technician) */}
             {filter === "technician" && (
               <select
@@ -514,7 +496,7 @@ function Stock() {
         </div>
 
         {/* Stock Table */}
-        <div className="responsive-scroll">
+        <div className="responsive-scroll desktop-table-only">
           <table className="table">
             <thead>
               <tr>
@@ -875,6 +857,128 @@ function Stock() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="mobile-list">
+          {filteredStock.length > 0 ? (
+            filteredStock.map((item) => {
+              const totalQty =
+                (item as unknown as { _totalQuantityForReference?: number })
+                  ._totalQuantityForReference || item.quantite;
+              const location = filter === "all" ? getStockLocation(item) : null;
+
+              return (
+                <div key={item.id} className="mobile-list-card">
+                  <div className="mobile-list-header">
+                    <div>
+                      <div className="mobile-list-title">{item.nomMateriel}</div>
+                      <div className="mobile-list-subtitle">
+                        Réf. {item.reference}
+                        {item.codeBarre ? ` • Code-barres ${item.codeBarre}` : ""}
+                      </div>
+                    </div>
+                    <div className="mobile-list-badges">
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "4px 10px",
+                          borderRadius: "12px",
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          backgroundColor: totalQty <= 0 ? "#fee2e2" : "#d1fae5",
+                          color: totalQty <= 0 ? "#991b1b" : "#065f46",
+                        }}
+                      >
+                        {totalQty} unité{totalQty > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mobile-list-grid">
+                    <div className="mobile-list-field">
+                      <span className="mobile-list-label">Catégorie</span>
+                      <span className="mobile-list-value">{item.categorie}</span>
+                    </div>
+                    <div className="mobile-list-field">
+                      <span className="mobile-list-label">Fournisseur</span>
+                      <span className="mobile-list-value">{item.fournisseur || "-"}</span>
+                    </div>
+                    <div className="mobile-list-field">
+                      <span className="mobile-list-label">N° série</span>
+                      <span className="mobile-list-value">{item.numeroSerie || "-"}</span>
+                    </div>
+                    {location && (
+                      <div className="mobile-list-field">
+                        <span className="mobile-list-label">Localisation</span>
+                        <span className="mobile-list-value">{location.label}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mobile-list-actions">
+                    <button
+                      className="mobile-action-button"
+                      style={{
+                        border: "1px solid rgba(255,255,255,0.25)",
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                        color: "var(--text-primary)",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => navigate(`/stock/${item.id}`)}
+                    >
+                      👁️ Voir
+                    </button>
+                    {canManageStock && (
+                      <button
+                        className="mobile-action-button"
+                        style={{ border: "none", backgroundColor: "#3b82f6", color: "white", cursor: "pointer" }}
+                        onClick={() => navigate(`/stock/${item.id}/edit`)}
+                      >
+                        ✏️ Modifier
+                      </button>
+                    )}
+                    {canManageStock && filter === "courant" && (
+                      <button
+                        className="mobile-action-button"
+                        style={{ border: "none", backgroundColor: "#ef4444", color: "white", cursor: "pointer" }}
+                        onClick={() => handleMoveToHS(item.id, item.nomMateriel)}
+                      >
+                        ⚠️ Mettre HS
+                      </button>
+                    )}
+                    {canManageStock && (filter === "courant" || filter === "hs") && (
+                      <button
+                        className="mobile-action-button"
+                        style={{ border: "none", backgroundColor: "#d97706", color: "white", cursor: "pointer" }}
+                        onClick={() => handleMoveToSupplier(item.id, item.nomMateriel)}
+                      >
+                        ↩️ Retour fournisseur
+                      </button>
+                    )}
+                    {canDeleteStock && (
+                      <button
+                        className="mobile-action-button"
+                        style={{ border: "none", backgroundColor: "#dc2626", color: "white", cursor: "pointer" }}
+                        onClick={() => handleDelete(item.id, item.nomMateriel)}
+                      >
+                        🗑️ Supprimer
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="mobile-list-card" style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "2rem", marginBottom: "8px" }}>📦</div>
+              <h3 style={{ fontSize: "1rem", fontWeight: 600 }}>Aucun article trouvé</h3>
+              <p style={{ color: "var(--text-secondary)", marginTop: "8px" }}>
+                {filter === "technician"
+                  ? "Le stock du technicien est vide"
+                  : `Le stock ${filter} est vide`}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

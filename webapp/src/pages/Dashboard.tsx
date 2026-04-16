@@ -14,6 +14,7 @@ import {
   DashboardStatsCards,
   DashboardStockCategories,
 } from "./dashboard.sections";
+import "./Dashboard.css";
 
 const DashboardInterventionChart = lazy(() => import("./DashboardInterventionChart"));
 
@@ -62,21 +63,15 @@ function Dashboard() {
   }
 
   return (
-    <div
-      className="dashboard-container space-y-4"
-      style={{ color: "var(--text-primary)" }}
-    >
+    <div className="dashboard-container dashboard-shell" style={{ color: "var(--text-primary)" }}>
       <DashboardHeader />
       <DashboardStatsCards stats={stats} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-fade-in-3">
+      <div className="dashboard-main-grid animate-fade-in-3">
         <DashboardChartSection>
           <Suspense
             fallback={
-              <div
-                className="flex items-center justify-center"
-                style={{ height: "250px", color: "var(--text-secondary)" }}
-              >
+              <div className="dashboard-chart-fallback">
                 Chargement du graphique...
               </div>
             }
@@ -87,7 +82,7 @@ function Dashboard() {
         <DashboardRecentInterventions recentInterventions={recentInterventions} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-in-4">
+      <div className="dashboard-secondary-grid animate-fade-in-4">
         <DashboardStockCategories categories={stats?.stock?.parCategorie ?? []} />
         <DashboardLowStockAlerts items={stats?.stock?.stockFaible ?? []} />
       </div>

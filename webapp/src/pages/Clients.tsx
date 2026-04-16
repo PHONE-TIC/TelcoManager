@@ -5,6 +5,7 @@ import { apiService } from "../services/api.service";
 import TableResponsive from "../components/TableResponsive";
 import { useAuth } from "../contexts/useAuth";
 import type { Client, ClientsListResponse } from "../types";
+import "./mobile-refactor.css";
 
 interface ApiErrorResponse {
   error?: string;
@@ -208,34 +209,18 @@ function Clients() {
   }
 
   return (
-    <div className="space-y-6" style={{ color: "var(--text-primary)" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          backgroundColor: "var(--bg-primary)",
-          padding: "24px",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
-        <div>
+    <div
+      className="space-y-6 screen-shell"
+      style={{ color: "var(--text-primary)" }}
+    >
+      <div className="screen-header">
+        <div className="screen-header-main">
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Clients</h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Gestion de la base client
           </p>
         </div>
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
+        <div className="screen-header-actions">
           <button
             onClick={exportCSV}
             title="Exporter en CSV"
@@ -320,10 +305,7 @@ function Clients() {
       </div>
 
       {/* Mini Dashboard Stats */}
-      <div
-        className="grid gap-4"
-        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}
-      >
+      <div className="screen-stat-grid">
         <div
           style={{
             backgroundColor: "var(--bg-primary)",
@@ -358,17 +340,10 @@ function Clients() {
         </div>
       </div>
 
-      <div
-        style={{
-          backgroundColor: "var(--bg-primary)",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-          padding: "20px",
-        }}
-      >
+      <div className="screen-panel">
         {/* Filters Row */}
-        <div className="flex items-center gap-4 mb-4 flex-wrap">
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="screen-filter-row" style={{ marginBottom: "16px" }}>
+          <div className="screen-filter-group">
             <span
               style={{
                 fontSize: "13px",
@@ -398,7 +373,7 @@ function Clients() {
               ))}
             </select>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div className="screen-filter-group">
             <span
               style={{
                 fontSize: "13px",

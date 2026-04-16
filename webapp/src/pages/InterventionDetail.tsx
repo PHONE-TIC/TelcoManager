@@ -311,7 +311,7 @@ const InterventionDetail: React.FC = () => {
             {!isEditing && getStatusBadge(intervention.statut)}
           </div>
         </div>
-        <div className="header-actions">
+        <div className="header-actions responsive-stack" style={{ justifyContent: "flex-end" }}>
           {!isEditing ? (
             <>
               {/* PDF uniquement pour interventions terminées */}
@@ -342,9 +342,7 @@ const InterventionDetail: React.FC = () => {
               {/* Quick status actions for admins */}
               {user?.role === "admin" &&
                 !isClosedIntervention(intervention.statut) && (
-                  <div
-                    style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
-                  >
+                  <div className="responsive-stack" style={{ justifyContent: "flex-end" }}>
                     {intervention.statut === "planifiee" && (
                       <button
                         onClick={() => handleQuickStatusChange("en_cours")}
@@ -682,11 +680,9 @@ const InterventionDetail: React.FC = () => {
           style={{ borderLeft: "4px solid var(--primary-color, #3b82f6)" }}
         >
           <h3>📜 Historique</h3>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-          >
+          <div className="mobile-stack-list">
             {/* Création */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div className="mobile-history-item">
               <div
                 style={{
                   width: "10px",
@@ -714,7 +710,7 @@ const InterventionDetail: React.FC = () => {
             </div>
 
             {/* Planification (date prévue du RDV) */}
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div className="mobile-history-item">
               <div
                 style={{
                   width: "10px",
@@ -741,9 +737,7 @@ const InterventionDetail: React.FC = () => {
 
             {/* Arrivée sur site */}
             {intervention.heureArrivee && (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
-              >
+              <div className="mobile-history-item">
                 <div
                   style={{
                     width: "10px",
@@ -773,9 +767,7 @@ const InterventionDetail: React.FC = () => {
 
             {/* Départ du site */}
             {intervention.heureDepart && (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
-              >
+              <div className="mobile-history-item">
                 <div
                   style={{
                     width: "10px",
@@ -803,9 +795,7 @@ const InterventionDetail: React.FC = () => {
 
             {/* Réalisation */}
             {intervention.dateRealisee && (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
-              >
+              <div className="mobile-history-item">
                 <div
                   style={{
                     width: "10px",
@@ -835,9 +825,7 @@ const InterventionDetail: React.FC = () => {
 
             {/* Statut actuel */}
             {intervention.statut === "annulee" && (
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
-              >
+              <div className="mobile-history-item">
                 <div
                   style={{
                     width: "10px",
@@ -873,15 +861,7 @@ const InterventionDetail: React.FC = () => {
       )}
 
       {/* Photos et Fichiers joints - côte à côte */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "15px",
-          marginTop: "15px",
-          alignItems: "stretch",
-        }}
-      >
+      <div className="mobile-card-grid" style={{ marginTop: "15px", alignItems: "stretch" }}>
         {/* Photos d'intervention */}
         <div
           style={{
@@ -910,18 +890,7 @@ const InterventionDetail: React.FC = () => {
             </h3>
             <div>
               {loadedAttachments.map((file, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 15px",
-                    backgroundColor: "var(--bg-secondary)",
-                    borderRadius: "8px",
-                    marginBottom: "8px",
-                  }}
-                >
+                <div key={index} className="mobile-list-row" style={{ padding: "10px 15px", backgroundColor: "var(--bg-secondary)", borderRadius: "8px", marginBottom: "8px" }}>
                   <div
                     style={{
                       display: "flex",

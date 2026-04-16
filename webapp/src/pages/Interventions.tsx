@@ -7,6 +7,7 @@ import MobilePlanning from "../components/MobilePlanning";
 import ConfirmConflictModal from "../components/ConfirmConflictModal";
 import { useOffline } from "../hooks/useOffline";
 import { useReminders } from "../hooks/useReminders";
+import { useResponsive } from "../hooks/useResponsive";
 import {
   buildCalendarEventTitle,
   getCalendarTransitionClass,
@@ -33,6 +34,7 @@ import {
 
 import type { Client, Intervention, Technicien } from "../types";
 import type { CalendarEvent } from "./InterventionsCalendar";
+import "./Interventions.css";
 
 const InterventionsCalendar = lazy(() => import("./InterventionsCalendar"));
 
@@ -51,6 +53,7 @@ function Interventions() {
     pendingSyncCount,
   } = useOffline();
   const { scheduleForInterventions } = useReminders();
+  const { isMobile } = useResponsive();
 
   // Restore viewMode from navigation state if present
   const initialViewMode =
@@ -272,6 +275,79 @@ function Interventions() {
     );
   };
 
+  const formatInterventionDate = (dateValue: string) =>
+    new Date(dateValue).toLocaleDateString("fr-FR", {
+      weekday: isMobile ? undefined : "short",
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  const renderMobileInterventionCard = (
+    intervention: Intervention,
+    detailState?: { from?: "all" | "calendar" }
+  ) => (
+    <article
+      key={intervention.id}
+      className="interventions-mobile-card"
+      onClick={() => navigate(`/interventions/${intervention.id}`, detailState ? { state: detailState } : undefined)}
+    >
+      <div className="interventions-mobile-card-top">
+        <div>
+          <div className="interventions-mobile-number">
+            {getInterventionPriorityIndicator(
+              intervention.datePlanifiee,
+              intervention.statut
+            )}
+            <span>{intervention.numero}</span>
+          </div>
+          <h3 className="interventions-mobile-title">{intervention.titre}</h3>
+        </div>
+        <div>{getStatusBadge(intervention.statut)}</div>
+      </div>
+
+      <div className="interventions-mobile-meta">
+        <div className="interventions-mobile-meta-row">
+          <span className="interventions-mobile-label">Quand</span>
+          <span className="interventions-mobile-value">
+            {formatInterventionDate(intervention.datePlanifiee)}
+          </span>
+        </div>
+        <div className="interventions-mobile-meta-row">
+          <span className="interventions-mobile-label">Client</span>
+          <span className="interventions-mobile-value">
+            {intervention.client?.nom || "Non renseigné"}
+          </span>
+        </div>
+        {user?.role === "admin" && (
+          <div className="interventions-mobile-meta-row">
+            <span className="interventions-mobile-label">Technicien</span>
+            <span className="interventions-mobile-value">
+              {intervention.technicien?.nom || "Non assigné"}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="interventions-mobile-footer">
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-semibold ${intervention.type === "Installation"
+            ? "bg-blue-100 text-blue-800"
+            : intervention.type === "SAV"
+              ? "bg-orange-100 text-orange-800"
+              : "bg-gray-100 text-gray-800"
+            }`}
+        >
+          {intervention.type || "SAV"}
+        </span>
+        <div className="interventions-mobile-status">
+          {getInterventionProgressLine(intervention.statut)}
+        </div>
+      </div>
+    </article>
+  );
+
   const filteredClients = useMemo(
     () => filterClientsForSelection(clients, clientSearch),
     [clients, clientSearch]
@@ -434,22 +510,10 @@ function Interventions() {
   }
 
   return (
-    <div className="space-y-6" style={{ color: "var(--text-primary)" }}>
+    <div className="space-y-6 interventions-page">
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          backgroundColor: "var(--bg-primary)",
-          padding: "24px",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-          flexWrap: "wrap",
-          gap: "15px",
-        }}
-      >
-        <div>
+      <div className="interventions-header">
+        <div className="interventions-header-copy">
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
             Interventions
           </h1>
@@ -460,16 +524,7 @@ function Interventions() {
         {user?.role === "admin" && !showForm && (
           <button
             onClick={() => setShowForm(true)}
-            style={{
-              padding: "10px 16px",
-              borderRadius: "8px",
-              border: "none",
-              background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(249, 115, 22, 0.35)",
-            }}
+            className="interventions-primary-action"
           >
             + Nouvelle Intervention
           </button>
@@ -519,19 +574,13 @@ function Interventions() {
       {/* Stats Cards (show only when not in form) */}
       {!showForm && (
         <div
-          className="grid gap-4"
-          style={{
-            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-          }}
+          className="interventions-stats-grid"
         >
           {interventionStats.map((stat, idx) => (
             <div
               key={idx}
+              className="interventions-stat-card"
               style={{
-                backgroundColor: "var(--bg-primary)",
-                padding: "16px",
-                borderRadius: "12px",
-                border: "1px solid var(--border-color)",
                 borderLeft: `4px solid ${stat.color}`,
               }}
             >
@@ -547,11 +596,8 @@ function Interventions() {
           ))}
           {overdueCount > 0 && (
             <div
+              className="interventions-stat-card"
               style={{
-                backgroundColor: "var(--bg-primary)",
-                padding: "16px",
-                borderRadius: "12px",
-                border: "1px solid var(--border-color)",
                 borderLeft: "4px solid #ef4444",
               }}
             >
@@ -575,60 +621,69 @@ function Interventions() {
       )}
 
       {/* Main Content Card */}
-      <div
-        style={{
-          backgroundColor: "var(--bg-primary)",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-          padding: "20px",
-        }}
-      >
+      <div className="interventions-surface">
         {/* Tabs with Search */}
         {!showForm && (
-          <div className="responsive-stack mb-6 border-b pb-4" style={{ justifyContent: "space-between" }}>
-            <div className="responsive-stack">
+          <div className="interventions-toolbar">
+            <div className="interventions-view-switcher">
               <button
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === "calendar"
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                className={`interventions-tab ${viewMode === "calendar" ? "active" : ""}`}
                 onClick={() => setViewMode("calendar")}
               >
-                Calendrier
+                <span className="interventions-tab-meta">
+                  <span>Calendrier</span>
+                  <span className="interventions-tab-count">{interventions.length}</span>
+                </span>
               </button>
               <button
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === "list"
-                  ? "bg-primary text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
+                className={`interventions-tab ${viewMode === "list" ? "active" : ""}`}
                 onClick={() => setViewMode("list")}
               >
-                Liste du jour
+                <span className="interventions-tab-meta">
+                  <span>Liste du jour</span>
+                  <span className="interventions-tab-count">{sortedTodayInterventions.length}</span>
+                </span>
               </button>
               {user?.role === "admin" && (
                 <button
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${viewMode === "all"
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                  className={`interventions-tab ${viewMode === "all" ? "active" : ""}`}
                   onClick={() => setViewMode("all")}
                 >
-                  Toutes les interventions
+                  <span className="interventions-tab-meta">
+                    <span>Toutes</span>
+                    <span className="interventions-tab-count">{sortedAllInterventions.length}</span>
+                  </span>
                 </button>
               )}
             </div>
             {user?.role === "admin" && (
-              <div
-                className="relative"
-                style={{ minWidth: "min(300px, 100%)", maxWidth: "400px", width: "100%" }}
-              ></div>
+              <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", alignSelf: "center" }}>
+                {isMobile ? "Appuyez sur une carte pour ouvrir le détail." : "Cliquez sur une ligne pour ouvrir le détail."}
+              </div>
             )}
           </div>
         )}
 
         {viewMode === "list" && !showForm && (
           <div className="fade-in">
-            <div className="responsive-scroll">
+            <div className="mobile-only interventions-mobile-list">
+              <div className="interventions-mobile-summary">
+                <span>Aujourd'hui</span>
+                <strong>{sortedTodayInterventions.length} intervention{sortedTodayInterventions.length > 1 ? "s" : ""}</strong>
+              </div>
+              {sortedTodayInterventions.length > 0 ? (
+                sortedTodayInterventions.map((intervention) =>
+                  renderMobileInterventionCard(intervention)
+                )
+              ) : (
+                <div className="interventions-mobile-empty">
+                  <div className="text-4xl mb-4">📅</div>
+                  <div className="font-medium">Aucune intervention aujourd'hui</div>
+                  <div className="mt-2">Utilisez le calendrier pour voir toutes les interventions.</div>
+                </div>
+              )}
+            </div>
+            <div className="responsive-scroll desktop-only">
               <table className="table">
                 <thead>
                   <tr>
@@ -746,7 +801,7 @@ function Interventions() {
         {/* All Interventions View (Admin only) */}
         {viewMode === "all" && !showForm && user?.role === "admin" && (
           <div className="fade-in">
-            <div className="responsive-stack mb-4" style={{ justifyContent: "space-between" }}>
+            <div className="mb-4" style={{ display: "grid", gap: 14 }}>
               <div className="flex flex-col gap-2" style={{ minWidth: 0 }}>
                 <span
                   style={{
@@ -758,102 +813,34 @@ function Interventions() {
                 >
                   Filtrer par statut
                 </span>
-                <div className="responsive-stack">
+                <div className="interventions-filter-row">
                   <button
                     onClick={() => setStatusFilter("all")}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      border: "1px solid var(--border-color)",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      backgroundColor:
-                        statusFilter === "all"
-                          ? "var(--text-primary)"
-                          : "var(--bg-secondary)",
-                      color:
-                        statusFilter === "all"
-                          ? "var(--bg-primary)"
-                          : "var(--text-secondary)",
-                    }}
+                    className={`interventions-filter-chip filter-all ${statusFilter === "all" ? "active" : ""}`}
                   >
                     Tous
                   </button>
                   <button
                     onClick={() => setStatusFilter("planifiee")}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      border: "none",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      backgroundColor:
-                        statusFilter === "planifiee"
-                          ? "#3b82f6"
-                          : "rgba(59, 130, 246, 0.15)",
-                      color: statusFilter === "planifiee" ? "white" : "#3b82f6",
-                    }}
+                    className={`interventions-filter-chip filter-planifiee ${statusFilter === "planifiee" ? "active" : ""}`}
                   >
                     📅 Planifiées
                   </button>
                   <button
                     onClick={() => setStatusFilter("en_cours")}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      border: "none",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      backgroundColor:
-                        statusFilter === "en_cours"
-                          ? "#f59e0b"
-                          : "rgba(245, 158, 11, 0.15)",
-                      color: statusFilter === "en_cours" ? "white" : "#f59e0b",
-                    }}
+                    className={`interventions-filter-chip filter-en_cours ${statusFilter === "en_cours" ? "active" : ""}`}
                   >
                     ⏳ En cours
                   </button>
                   <button
                     onClick={() => setStatusFilter("terminee")}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      border: "none",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      backgroundColor:
-                        statusFilter === "terminee"
-                          ? "#10b981"
-                          : "rgba(16, 185, 129, 0.15)",
-                      color: statusFilter === "terminee" ? "white" : "#10b981",
-                    }}
+                    className={`interventions-filter-chip filter-terminee ${statusFilter === "terminee" ? "active" : ""}`}
                   >
                     ✓ Terminées
                   </button>
                   <button
                     onClick={() => setStatusFilter("annulee")}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      border: "none",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      backgroundColor:
-                        statusFilter === "annulee"
-                          ? "#ef4444"
-                          : "rgba(239, 68, 68, 0.15)",
-                      color: statusFilter === "annulee" ? "white" : "#ef4444",
-                    }}
+                    className={`interventions-filter-chip filter-annulee ${statusFilter === "annulee" ? "active" : ""}`}
                   >
                     ✕ Annulées
                   </button>
@@ -866,7 +853,24 @@ function Interventions() {
                 {allInterventions.length !== 1 ? "s" : ""}
               </span>
             </div>
-            <div className="responsive-scroll">
+            <div className="mobile-only interventions-mobile-list">
+              <div className="interventions-mobile-summary">
+                <span>Vue filtrée</span>
+                <strong>{sortedAllInterventions.length} intervention{sortedAllInterventions.length > 1 ? "s" : ""}</strong>
+              </div>
+              {sortedAllInterventions.length > 0 ? (
+                sortedAllInterventions.map((intervention) =>
+                  renderMobileInterventionCard(intervention, { from: "all" })
+                )
+              ) : (
+                <div className="interventions-mobile-empty">
+                  <div className="text-4xl mb-4">📋</div>
+                  <div className="font-medium">Aucune intervention</div>
+                  <div className="mt-2">Aucune intervention enregistrée pour ce filtre.</div>
+                </div>
+              )}
+            </div>
+            <div className="responsive-scroll desktop-only">
               <table className="table">
                 <thead>
                   <tr>

@@ -128,10 +128,10 @@ function ClientForm() {
   const inputStyle = {
     width: "100%",
     padding: "12px 16px",
-    border: "1.5px solid rgba(255, 255, 255, 0.3)",
+    border: "1.5px solid var(--border-color)",
     borderRadius: "8px",
     fontSize: "1rem",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "var(--card-bg)",
     color: "var(--text-primary)",
     transition: "all 0.2s",
     outline: "none",
@@ -182,10 +182,7 @@ function ClientForm() {
   }
 
   return (
-    <div
-      className="page-container"
-      style={{ maxWidth: "700px", margin: "0 auto" }}
-    >
+    <div className="page-container mobile-form-shell">
       {/* Header */}
       <div
         className="bg-white p-6 rounded-lg shadow-sm"
@@ -277,13 +274,7 @@ function ClientForm() {
             </div>
 
             {/* Code postal + Ville */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 2fr",
-                gap: "12px",
-              }}
-            >
+            <div className="mobile-form-grid-2" style={{ gridTemplateColumns: "1fr 2fr" }}>
               <div>
                 <label style={getLabelStyle("codePostal")}>Code postal *</label>
                 <input
@@ -372,14 +363,7 @@ function ClientForm() {
           </div>
 
           {/* Buttons */}
-          <div
-            style={{
-              display: "flex",
-              gap: "12px",
-              marginTop: "32px",
-              justifyContent: "flex-end",
-            }}
-          >
+          <div className="mobile-form-actions">
             <button
               type="button"
               onClick={() => navigate("/clients")}

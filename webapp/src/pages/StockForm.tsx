@@ -273,10 +273,10 @@ function StockForm() {
   const inputStyle = {
     width: "100%",
     padding: "12px 16px",
-    border: "1.5px solid rgba(255, 255, 255, 0.3)",
+    border: "1.5px solid var(--border-color)",
     borderRadius: "8px",
     fontSize: "1rem",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "var(--card-bg)",
     color: "var(--text-primary)",
     transition: "all 0.2s",
     outline: "none",
@@ -327,7 +327,7 @@ function StockForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mobile-form-shell">
       {/* Header */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <button
@@ -378,13 +378,7 @@ function StockForm() {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: "24px",
-            }}
-          >
+          <div className="mobile-form-grid-2" style={{ gap: "24px" }}>
             {/* Replace standard input with AutocompleteInput for Marque */}
             <AutocompleteInput
               label="Marque"
@@ -418,13 +412,7 @@ function StockForm() {
             )}
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "20px",
-            }}
-          >
+          <div className="mobile-form-grid-2" style={{ gap: "20px" }}>
             {/* Référence (générée automatiquement) */}
             <div>
               <label style={labelStyle}>
@@ -655,7 +643,7 @@ function StockForm() {
             </div>
 
             {/* Notes */}
-            <div style={{ gridColumn: "span 2" }}>
+            <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>Notes</label>
               <textarea
                 value={formData.notes}
@@ -668,16 +656,7 @@ function StockForm() {
           </div>
 
           {/* Buttons */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "12px",
-              marginTop: "32px",
-              paddingTop: "24px",
-              borderTop: "1px solid var(--border-color)",
-            }}
-          >
+          <div className="mobile-form-actions" style={{ paddingTop: "24px", borderTop: "1px solid var(--border-color)" }}>
             <button
               type="button"
               onClick={() => navigate("/stock")}

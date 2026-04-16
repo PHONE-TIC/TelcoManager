@@ -116,7 +116,7 @@ function StockDetail() {
         >
           ← Retour au stock
         </button>
-        <div className="flex justify-between items-start flex-wrap gap-4">
+        <div className="mobile-inline-pairs">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3 flex-wrap">
               📦 {item.nomMateriel}
@@ -145,7 +145,7 @@ function StockDetail() {
             </h1>
             <p className="text-gray-500 mt-1">Référence: {item.reference}</p>
           </div>
-          <div className="flex gap-2 flex-wrap items-center">
+          <div className="responsive-stack" style={{ justifyContent: "flex-end" }}>
             <button
               onClick={() => navigate(`/stock/${id}/edit`)}
               className="btn btn-primary"
@@ -214,10 +214,7 @@ function StockDetail() {
       </div>
 
       {/* Info Cards */}
-      <div
-        className="grid gap-6"
-        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}
-      >
+      <div className="mobile-card-grid">
         {/* Main Info */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
@@ -266,15 +263,7 @@ function StockDetail() {
           </h2>
           <div className="space-y-4">
             {/* Catégorie */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "8px 0",
-                borderBottom: "1px solid var(--border-color)",
-              }}
-            >
+            <div className="mobile-list-row" style={{ padding: "8px 0", borderBottom: "1px solid var(--border-color)" }}>
               <label className="text-sm text-gray-500 uppercase font-medium">
                 Catégorie
               </label>
@@ -299,15 +288,7 @@ function StockDetail() {
             </div>
 
             {/* Fournisseur */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "8px 0",
-                borderBottom: "1px solid var(--border-color)",
-              }}
-            >
+            <div className="mobile-list-row" style={{ padding: "8px 0", borderBottom: "1px solid var(--border-color)" }}>
               <label className="text-sm text-gray-500 uppercase font-medium">
                 Fournisseur
               </label>
@@ -317,15 +298,7 @@ function StockDetail() {
             </div>
 
             {/* Quantité */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "8px 0",
-                borderBottom: "1px solid var(--border-color)",
-              }}
-            >
+            <div className="mobile-list-row" style={{ padding: "8px 0", borderBottom: "1px solid var(--border-color)" }}>
               <label className="text-sm text-gray-500 uppercase font-medium">
                 Quantité
               </label>
@@ -354,15 +327,7 @@ function StockDetail() {
             </div>
 
             {/* Statut */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "8px 0",
-                borderBottom: "1px solid var(--border-color)",
-              }}
-            >
+            <div className="mobile-list-row" style={{ padding: "8px 0", borderBottom: "1px solid var(--border-color)" }}>
               <label className="text-sm text-gray-500 uppercase font-medium">
                 Statut
               </label>
@@ -391,14 +356,7 @@ function StockDetail() {
             </div>
 
             {/* Localisation */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "8px 0",
-              }}
-            >
+            <div className="mobile-list-row" style={{ padding: "8px 0" }}>
               <label className="text-sm text-gray-500 uppercase font-medium">
                 Localisation
               </label>
@@ -406,7 +364,7 @@ function StockDetail() {
                 const location = resolveStockDetailLocation(item);
 
                 return (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div className="responsive-stack" style={{ justifyContent: "flex-end" }}>
                     <span
                       style={{
                         display: "inline-flex",
@@ -515,9 +473,8 @@ function StockDetail() {
             {movements.map((movement) => (
               <div
                 key={movement.id}
+                className="mobile-history-item"
                 style={{
-                  display: "flex",
-                  gap: "16px",
                   padding: "12px",
                   borderRadius: "12px",
                   backgroundColor: "var(--bg-secondary)",
@@ -543,14 +500,7 @@ function StockDetail() {
 
                 {/* Content */}
                 <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      marginBottom: "4px",
-                    }}
-                  >
+                  <div className="mobile-list-row" style={{ marginBottom: "4px" }}>
                     <span
                       style={{
                         fontWeight: 600,

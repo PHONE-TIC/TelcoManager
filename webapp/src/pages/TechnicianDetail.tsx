@@ -127,9 +127,8 @@ function TechnicianDetail() {
             ← Retour à la liste
           </button>
           <div
+            className="mobile-list-row"
             style={{
-              display: "flex",
-              alignItems: "center",
               gap: "16px",
               marginTop: "24px",
             }}
@@ -138,9 +137,8 @@ function TechnicianDetail() {
             <div>
               <h1 style={{ margin: 0 }}>{technician.nom}</h1>
               <div
+                className="responsive-stack"
                 style={{
-                  display: "flex",
-                  alignItems: "center",
                   gap: "8px",
                   marginTop: "6px",
                 }}
@@ -162,7 +160,7 @@ function TechnicianDetail() {
       </div>
 
       {/* Onglets */}
-      <div className="tabs">
+      <div className="tabs mobile-scroll-tabs">
         <button
           className={`tab ${activeTab === "info" ? "active" : ""}`}
           onClick={() => setActiveTab("info")}
@@ -283,14 +281,7 @@ function TechnicianDetail() {
                             ` | Code-barre: ${item.stock.codeBarre}`}
                         </small>
                       </div>
-                      <div
-                        className="stock-item-actions"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                        }}
-                      >
+                      <div className="stock-item-actions responsive-stack" style={{ justifyContent: "flex-end" }}>
                         <button
                           style={{
                             padding: "6px 12px",
@@ -414,7 +405,27 @@ function TechnicianDetail() {
               </span>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="mobile-only mobile-stack-list">
+              {activityLogs.length > 0 ? (
+                activityLogs.map((log) => (
+                  <div key={log.id} className="info-card" style={{ marginBottom: 0, padding: "16px" }}>
+                    <div className="mobile-list-row" style={{ marginBottom: "8px" }}>
+                      <strong style={{ color: "var(--text-primary)" }}>
+                        {log.action === "LOGIN" ? "Connexion" : log.action}
+                      </strong>
+                      <span className="text-sm text-gray-500">
+                        {new Date(log.createdAt).toLocaleString("fr-FR")}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-500">{log.details || "Aucun détail"}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-8">Aucune activité enregistrée</div>
+              )}
+            </div>
+
+            <div className="overflow-x-auto desktop-only">
               <table className="min-w-full text-sm text-left">
                 <thead className="text-gray-500 bg-gray-50 uppercase text-xs">
                   <tr>

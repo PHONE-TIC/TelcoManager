@@ -79,6 +79,8 @@ function ClientDetail() {
         annulees: interventions.filter(i => i.statut === 'annulee').length,
     };
 
+    const detailLabelStyle = { fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -99,10 +101,10 @@ function ClientDetail() {
     }
 
     return (
-        <div className="page-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="page-container mobile-detail-shell">
             {/* Header */}
             <div className="bg-white p-6 rounded-lg shadow-sm">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                <div className="mobile-inline-pairs">
                     <div>
                         <button onClick={() => navigate('/clients')} className="btn btn-back" style={{ marginBottom: '12px' }}>
                             ← Retour aux clients
@@ -120,38 +122,38 @@ function ClientDetail() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
-                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4" style={{ borderLeftColor: 'var(--primary-color)' }}>
+            <div className="mobile-stat-grid">
+                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 mobile-stat-card" style={{ borderLeftColor: 'var(--primary-color)' }}>
                     <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
                     <div className="text-sm text-gray-500">Total</div>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4" style={{ borderLeftColor: '#3b82f6' }}>
+                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 mobile-stat-card" style={{ borderLeftColor: '#3b82f6' }}>
                     <div className="text-2xl font-bold text-gray-800">{stats.planifiees}</div>
                     <div className="text-sm text-gray-500">Planifiées</div>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4" style={{ borderLeftColor: '#f59e0b' }}>
+                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 mobile-stat-card" style={{ borderLeftColor: '#f59e0b' }}>
                     <div className="text-2xl font-bold text-gray-800">{stats.enCours}</div>
                     <div className="text-sm text-gray-500">En cours</div>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4" style={{ borderLeftColor: '#10b981' }}>
+                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 mobile-stat-card" style={{ borderLeftColor: '#10b981' }}>
                     <div className="text-2xl font-bold text-gray-800">{stats.terminees}</div>
                     <div className="text-sm text-gray-500">Terminées</div>
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+            <div className="mobile-card-grid" style={{ gridTemplateColumns: 'minmax(280px, 1fr) minmax(0, 2fr)' }}>
                 {/* Client Info Card */}
                 <div className="bg-white p-6 rounded-lg shadow-sm">
                     <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
                         📋 Informations
                     </h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div className="mobile-stack-list">
                         <div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Contact</div>
+                            <div style={detailLabelStyle}>Contact</div>
                             <div style={{ fontWeight: 500 }}>{client.contact}</div>
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Téléphone</div>
+                            <div style={detailLabelStyle}>Téléphone</div>
                             <div style={{ fontWeight: 500 }}>
                                 <a href={`tel:${client.telephone}`} style={{ color: 'var(--primary-color)' }}>
                                     📞 {client.telephone}
@@ -160,7 +162,7 @@ function ClientDetail() {
                         </div>
                         {client.email && (
                             <div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Email</div>
+                                <div style={detailLabelStyle}>Email</div>
                                 <div style={{ fontWeight: 500 }}>
                                     <a href={`mailto:${client.email}`} style={{ color: 'var(--primary-color)' }}>
                                         ✉️ {client.email}
@@ -169,7 +171,7 @@ function ClientDetail() {
                             </div>
                         )}
                         <div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Adresse</div>
+                            <div style={detailLabelStyle}>Adresse</div>
                             <div style={{ fontWeight: 500 }}>
                                 {client.rue}<br />
                                 {client.codePostal} {client.ville}
@@ -177,7 +179,7 @@ function ClientDetail() {
                         </div>
                         {client.notes && (
                             <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>📝 Notes</div>
+                                <div style={detailLabelStyle}>📝 Notes</div>
                                 <div style={{ fontWeight: 400, fontSize: '0.875rem', whiteSpace: 'pre-wrap', color: 'var(--text-secondary)' }}>
                                     {client.notes}
                                 </div>
@@ -192,20 +194,19 @@ function ClientDetail() {
                         📅 Historique des interventions ({interventions.length})
                     </h2>
                     {interventions.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto' }}>
+                        <div className="mobile-stack-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                             {interventions.map((intervention) => (
                                 <div
                                     key={intervention.id}
                                     onClick={() => navigate(`/interventions/${intervention.id}`)}
+                                    className="mobile-history-item"
                                     style={{
                                         padding: '12px 16px',
                                         borderRadius: '8px',
                                         border: '1px solid var(--border-color)',
                                         cursor: 'pointer',
                                         transition: 'all 0.2s',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center'
+                                        backgroundColor: 'var(--card-bg)'
                                     }}
                                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'; }}
                                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
