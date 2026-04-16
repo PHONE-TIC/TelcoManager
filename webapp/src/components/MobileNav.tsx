@@ -40,14 +40,14 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
     };
 
     const navLinks = [
-        { path: '/', icon: '📊', label: 'Tableau de bord', roles: ['admin', 'gestionnaire'] },
-        { path: '/interventions', icon: '📅', label: 'Interventions', roles: ['admin', 'gestionnaire', 'technicien'] },
-        { path: '/clients', icon: '👥', label: 'Clients', roles: ['admin', 'gestionnaire'] },
-        { path: '/techniciens', icon: '🛡️', label: 'Utilisateurs', roles: ['admin'] },
-        { path: '/stock', icon: '📦', label: 'Stock', roles: ['admin', 'gestionnaire'] },
-        { path: '/inventaire', icon: '🔍', label: 'Inventaire', roles: ['admin', 'gestionnaire'] },
-        { path: '/rapports', icon: '📈', label: 'Rapports', roles: ['admin'] },
-        { path: '/mon-stock', icon: '🚗', label: 'Mon Stock', roles: ['technicien'] },
+        { path: '/', label: 'Tableau de bord', roles: ['admin', 'gestionnaire'] },
+        { path: '/interventions', label: 'Interventions', roles: ['admin', 'gestionnaire', 'technicien'] },
+        { path: '/clients', label: 'Clients', roles: ['admin', 'gestionnaire'] },
+        { path: '/techniciens', label: 'Utilisateurs', roles: ['admin'] },
+        { path: '/stock', label: 'Stock', roles: ['admin', 'gestionnaire'] },
+        { path: '/inventaire', label: 'Inventaire', roles: ['admin', 'gestionnaire'] },
+        { path: '/rapports', label: 'Rapports', roles: ['admin'] },
+        { path: '/mon-stock', label: 'Mon Stock', roles: ['technicien'] },
     ];
 
     // Filter links based on user role
@@ -88,7 +88,7 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
                                 onClick={closeMenu}
                                 aria-label="Fermer le menu"
                             >
-                                ✕
+                                Fermer
                             </button>
                         </div>
 
@@ -100,7 +100,6 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
                                         className={location.pathname === link.path ? 'active' : ''}
                                         onClick={handleLinkClick}
                                     >
-                                        <span className="link-icon">{link.icon}</span>
                                         <span className="link-label">{link.label}</span>
                                     </Link>
                                 </li>
@@ -109,7 +108,6 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
 
                         <div className="drawer-footer">
                             <div className="drawer-user-info">
-                                <span className="user-icon">👤</span>
                                 <div className="user-details">
                                     <span className="user-name">{user?.nom}</span>
                                     <span className="user-role">({user?.role})</span>
@@ -127,7 +125,6 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
                                     }}
                                     aria-label="Notifications"
                                 >
-                                    <span className="notification-icon">{isEnabled ? '🔔' : '🔕'}</span>
                                     <span className="notification-label">
                                         {isEnabled ? 'Notifications activées' : 'Activer les notifications'}
                                     </span>
@@ -139,9 +136,8 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
                                 onClick={toggleTheme}
                                 aria-label="Changer le thème"
                             >
-                                <span className="theme-icon">{theme === 'light' ? '🌙' : '☀️'}</span>
                                 <span className="theme-label">
-                                    {theme === 'light' ? 'Mode Sombre' : 'Mode Clair'}
+                                    {theme === 'light' ? 'Mode sombre' : 'Mode clair'}
                                 </span>
                             </button>
 
@@ -153,7 +149,6 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
                                 }}
                                 aria-label="Se déconnecter"
                             >
-                                <span className="logout-icon">🚪</span>
                                 <span className="logout-label">Déconnexion</span>
                             </button>
                         </div>

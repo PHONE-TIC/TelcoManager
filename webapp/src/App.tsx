@@ -69,44 +69,37 @@ function Navigation() {
   const navItems = [
     {
       path: "/",
-      icon: "📊",
       label: "Tableau de bord",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/interventions",
-      icon: "📅",
       label: "Interventions",
       roles: ["admin", "gestionnaire", "technicien"],
     },
     {
       path: "/clients",
-      icon: "👥",
       label: "Clients",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/techniciens",
-      icon: "🛡️",
       label: "Utilisateurs",
       roles: ["admin"],
     },
     {
       path: "/stock",
-      icon: "📦",
       label: "Stock",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/inventaire",
-      icon: "🔍",
       label: "Inventaire",
       roles: ["admin", "gestionnaire"],
     },
-    { path: "/rapports", icon: "📈", label: "Rapports", roles: ["admin"] }, // Rapports only for Admin
+    { path: "/rapports", label: "Rapports", roles: ["admin"] },
     {
       path: "/mon-stock",
-      icon: "🚗",
       label: "Mon Stock",
       roles: ["technicien"],
     },
@@ -173,7 +166,7 @@ function Navigation() {
           paddingLeft: "16px",
         }}
       >
-        👤 {user.nom} ({user.role})
+        {user.nom} ({user.role})
       </div>
       <nav>
         <ul className="nav-menu">
@@ -183,7 +176,7 @@ function Navigation() {
                 to={item.path}
                 className={`nav-link ${isActive(item.path)}`}
               >
-                {item.icon} {item.label}
+                {item.label}
               </Link>
             </li>
           ))}
@@ -208,8 +201,8 @@ function Navigation() {
             style={{ width: "100%", marginBottom: "10px" }}
           >
             {isEnabled
-              ? "🔔 Notifications activées"
-              : "🔕 Activer les notifications"}
+              ? "Notifications activées"
+              : "Activer les notifications"}
           </button>
         )}
         <button
@@ -217,14 +210,14 @@ function Navigation() {
           className="btn btn-secondary"
           style={{ width: "100%", marginBottom: "10px" }}
         >
-          {theme === "dark" ? "☀️ Mode Clair" : "🌙 Mode Sombre"}
+          {theme === "dark" ? "Mode clair" : "Mode sombre"}
         </button>
         <button
           onClick={logout}
           className="btn btn-secondary"
           style={{ width: "100%" }}
         >
-          🚪 Déconnexion
+          Déconnexion
         </button>
       </div>
     </div>
