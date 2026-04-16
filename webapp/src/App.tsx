@@ -69,37 +69,44 @@ function Navigation() {
   const navItems = [
     {
       path: "/",
+      icon: "📊",
       label: "Tableau de bord",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/interventions",
+      icon: "📅",
       label: "Interventions",
       roles: ["admin", "gestionnaire", "technicien"],
     },
     {
       path: "/clients",
+      icon: "👥",
       label: "Clients",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/techniciens",
+      icon: "🛡️",
       label: "Utilisateurs",
       roles: ["admin"],
     },
     {
       path: "/stock",
+      icon: "📦",
       label: "Stock",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/inventaire",
+      icon: "🔍",
       label: "Inventaire",
       roles: ["admin", "gestionnaire"],
     },
-    { path: "/rapports", label: "Rapports", roles: ["admin"] },
+    { path: "/rapports", icon: "📈", label: "Rapports", roles: ["admin"] },
     {
       path: "/mon-stock",
+      icon: "🚗",
       label: "Mon Stock",
       roles: ["technicien"],
     },
@@ -176,7 +183,7 @@ function Navigation() {
                 to={item.path}
                 className={`nav-link ${isActive(item.path)}`}
               >
-                {item.label}
+                {item.icon} {item.label}
               </Link>
             </li>
           ))}

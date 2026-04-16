@@ -40,14 +40,14 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
     };
 
     const navLinks = [
-        { path: '/', label: 'Tableau de bord', roles: ['admin', 'gestionnaire'] },
-        { path: '/interventions', label: 'Interventions', roles: ['admin', 'gestionnaire', 'technicien'] },
-        { path: '/clients', label: 'Clients', roles: ['admin', 'gestionnaire'] },
-        { path: '/techniciens', label: 'Utilisateurs', roles: ['admin'] },
-        { path: '/stock', label: 'Stock', roles: ['admin', 'gestionnaire'] },
-        { path: '/inventaire', label: 'Inventaire', roles: ['admin', 'gestionnaire'] },
-        { path: '/rapports', label: 'Rapports', roles: ['admin'] },
-        { path: '/mon-stock', label: 'Mon Stock', roles: ['technicien'] },
+        { path: '/', icon: '📊', label: 'Tableau de bord', roles: ['admin', 'gestionnaire'] },
+        { path: '/interventions', icon: '📅', label: 'Interventions', roles: ['admin', 'gestionnaire', 'technicien'] },
+        { path: '/clients', icon: '👥', label: 'Clients', roles: ['admin', 'gestionnaire'] },
+        { path: '/techniciens', icon: '🛡️', label: 'Utilisateurs', roles: ['admin'] },
+        { path: '/stock', icon: '📦', label: 'Stock', roles: ['admin', 'gestionnaire'] },
+        { path: '/inventaire', icon: '🔍', label: 'Inventaire', roles: ['admin', 'gestionnaire'] },
+        { path: '/rapports', icon: '📈', label: 'Rapports', roles: ['admin'] },
+        { path: '/mon-stock', icon: '🚗', label: 'Mon Stock', roles: ['technicien'] },
     ];
 
     // Filter links based on user role
@@ -100,6 +100,7 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
                                         className={location.pathname === link.path ? 'active' : ''}
                                         onClick={handleLinkClick}
                                     >
+                                        <span className="link-icon">{link.icon}</span>
                                         <span className="link-label">{link.label}</span>
                                     </Link>
                                 </li>
