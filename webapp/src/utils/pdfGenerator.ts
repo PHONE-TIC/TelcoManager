@@ -28,6 +28,217 @@ type JsPdfWithAutoTable = jsPDF & {
   };
 };
 
+type EquipmentRow = {
+  text: string;
+  quantity?: string;
+  bold?: boolean;
+  italic?: boolean;
+};
+
+const FOOTER_HEIGHT = 12;
+const BOTTOM_RESERVED = 18;
+
+function drawFooter(
+  doc: jsPDF,
+  pageWidth: number,
+  pageHeight: number,
+  margin: number,
+  photos: Photo[]
+) {
+  const footerY = pageHeight - FOOTER_HEIGHT;
+
+  if (photos.length > 0) {
+    const photoSummary = [
+      `${photos.filter((photo) => photo.type === "before").length} avant`,
+      `${photos.filter((photo) => photo.type === "after").length} après`,
+      `${photos.filter((photo) => photo.type === "other").length} autre`,
+    ].join(" • ");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+    doc.text(`Photos jointes : ${photoSummary}`, margin, footerY - 3);
+  }
+
+  doc.setFillColor(ORANGE[0], ORANGE[1], ORANGE[2]);
+  doc.rect(0, footerY, pageWidth, FOOTER_HEIGHT, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.text("14 - 16 rue des Caraques 76700 Harfleur", margin, footerY + 4);
+  doc.text("SIRET : 88225893200012", margin, footerY + 8);
+  doc.text("TVA : FR82862250932", margin + 40, footerY + 8);
+  doc.text(
+    "SARL PHONE & TIC au capital de 10 000 €",
+    pageWidth / 2 + 10,
+    footerY + 4
+  );
+  doc.text(
+    "02 32 92 12 92 - contact@phone-tic.fr",
+    pageWidth / 2 + 10,
+    footerY + 8
+  );
+  doc.text("www.phone-tic.fr", pageWidth - margin, footerY + 6, {
+    align: "right",
+  });
+}
+
+function buildEquipmentRows(intervention: Intervention): EquipmentRow[] {
+  const rows: EquipmentRow[] = [];
+
+  if (!intervention.equipements || intervention.equipements.length === 0) {
+    return rows;
+  }
+
+  const installed = intervention.equipements.filter(
+    (eq) => eq.action === "install" || eq.action === "installe"
+  );
+  const retrieved = intervention.equipements.filter(
+    (eq) => eq.action === "retrait" || eq.action === "retire"
+  );
+
+  const pushEquipment = (title: string, items: typeof intervention.equipements) => {
+    if (!items.length) return;
+    rows.push({ text: title, bold: true });
+    items.forEach((eq) => {
+      const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
+      const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
+      const etat = eq.etat ? ` (${eq.etat.toUpperCase()})` : "";
+      rows.push({
+        text: `${name}${etat}`,
+        quantity: String(eq.quantite || 1),
+      });
+      if (serialNumber) {
+        rows.push({ text: `S/N: ${serialNumber}`, italic: true });
+      }
+      rows.push({ text: "" });
+    });
+  };
+
+  pushEquipment("Installé :", installed);
+  pushEquipment("Repris :", retrieved);
+
+  while (rows.length > 0 && rows[rows.length - 1].text === "") {
+    rows.pop();
+  }
+
+  return rows;
+}
+
+function drawPairedContentPages(
+  doc: jsPDF,
+  options: {
+    startY: number;
+    pageWidth: number;
+    pageHeight: number;
+    margin: number;
+    leftTitle: string;
+    rightTitle: string;
+    leftLines: string[];
+    rightRows: EquipmentRow[];
+    photos: Photo[];
+  }
+): number {
+  const {
+    startY,
+    pageWidth,
+    pageHeight,
+    margin,
+    leftTitle,
+    rightTitle,
+    leftLines,
+    rightRows,
+    photos,
+  } = options;
+
+  const leftWidth = 115;
+  const rightWidth = pageWidth - margin * 2 - leftWidth - 2;
+  const rightX = margin + leftWidth + 2;
+  const lineHeight = 5;
+  const innerTop = 5;
+  const headerHeight = 6;
+  const maxBottomY = pageHeight - FOOTER_HEIGHT - BOTTOM_RESERVED;
+
+  let y = startY;
+  let leftIndex = 0;
+  let rightIndex = 0;
+  let firstPage = true;
+
+  while (firstPage || leftIndex < leftLines.length || rightIndex < rightRows.length) {
+    firstPage = false;
+    const availableHeight = maxBottomY - y - headerHeight;
+    const rowsPerPage = Math.max(1, Math.floor((availableHeight - innerTop) / lineHeight));
+    const boxHeight = innerTop + rowsPerPage * lineHeight;
+
+    doc.setFillColor(LIGHT_ORANGE[0], LIGHT_ORANGE[1], LIGHT_ORANGE[2]);
+    doc.setDrawColor(ORANGE[0], ORANGE[1], ORANGE[2]);
+    doc.setLineWidth(0.3);
+    doc.rect(margin, y, leftWidth, headerHeight, "FD");
+    doc.rect(rightX, y, rightWidth, headerHeight, "FD");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+    doc.text(leftTitle, margin + 2, y + 4);
+    doc.text(rightTitle, rightX + 2, y + 4);
+
+    const contentY = y + headerHeight;
+    doc.setFillColor(255, 255, 255);
+    doc.rect(margin, contentY, leftWidth, boxHeight, "D");
+    doc.rect(rightX, contentY, rightWidth, boxHeight, "D");
+    doc.setFontSize(7);
+    doc.text("Quantité", rightX + rightWidth - 18, contentY + 4);
+    doc.line(
+      rightX + rightWidth - 22,
+      contentY,
+      rightX + rightWidth - 22,
+      contentY + boxHeight
+    );
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+
+    for (let i = 0; i < rowsPerPage; i += 1) {
+      const currentLineY = contentY + innerTop + i * lineHeight;
+      if (leftIndex < leftLines.length) {
+        doc.text(leftLines[leftIndex], margin + 2, currentLineY);
+        leftIndex += 1;
+      }
+      doc.setLineDashPattern([0.5, 1], 0);
+      doc.line(margin + 2, currentLineY + 1, margin + leftWidth - 6, currentLineY + 1);
+      doc.setLineDashPattern([], 0);
+    }
+
+    let currentRightY = contentY + innerTop;
+    const quantityX = rightX + rightWidth - 12;
+    while (rightIndex < rightRows.length && currentRightY <= contentY + boxHeight - 1) {
+      const row = rightRows[rightIndex];
+      if (row.bold) {
+        doc.setFont("helvetica", "bold");
+      } else if (row.italic) {
+        doc.setFont("helvetica", "italic");
+      } else {
+        doc.setFont("helvetica", "normal");
+      }
+      doc.text(row.text, rightX + 4, currentRightY);
+      if (row.quantity) {
+        doc.setFont("helvetica", "normal");
+        doc.text(row.quantity, quantityX, currentRightY);
+      }
+      rightIndex += 1;
+      currentRightY += lineHeight;
+    }
+
+    y = contentY + boxHeight + 5;
+    if (leftIndex < leftLines.length || rightIndex < rightRows.length) {
+      drawFooter(doc, pageWidth, pageHeight, margin, photos);
+      doc.addPage();
+      y = 10;
+    }
+  }
+
+  return y;
+}
+
 // Extra data passed from Workflow
 interface ExtraData {
   billing?: {
@@ -233,179 +444,31 @@ export const generateInterventionPDF = async (
     y = ((doc as JsPdfWithAutoTable).lastAutoTable?.finalY ?? y) + 5;
 
     // ==========================================
-    // OBJET & MATERIEL (Side by side)
+    // OBJET & MATERIEL (Side by side with pagination)
     // ==========================================
-    const objetWidth = 115;
-    const fournituresWidth = pageWidth - margin * 2 - objetWidth - 2;
-    const contentHeight = 100;
-
-    // Draw both headers backgrounds first to avoid color state issues
-    doc.setFillColor(LIGHT_ORANGE[0], LIGHT_ORANGE[1], LIGHT_ORANGE[2]);
-    doc.setDrawColor(ORANGE[0], ORANGE[1], ORANGE[2]);
-    doc.setLineWidth(0.3);
-
-    // Objet Header Background
-    doc.rect(margin, y, objetWidth, 6, "FD");
-
-    // Matériel Header Background
-    const fourX = margin + objetWidth + 2;
-    doc.rect(fourX, y, fournituresWidth, 6, "FD");
-
-    // Then add text
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
-
-    doc.text("Objet :", margin + 2, y + 4);
-    doc.text("Matériel et numéro de série", fourX + 2, y + 4);
-
-    y += 6;
-
-    // Objet content box
-    doc.setFillColor(255, 255, 255);
-    doc.rect(margin, y, objetWidth, contentHeight, "D");
-
-    // Matériel content box with Quantité column
-    doc.rect(fourX, y, fournituresWidth, contentHeight, "D");
-
-    // Quantité sub-header
-    doc.setFontSize(7);
-    doc.text("Quantité", fourX + fournituresWidth - 18, y + 4);
-    doc.line(
-      fourX + fournituresWidth - 22,
-      y,
-      fourX + fournituresWidth - 22,
-      y + contentHeight
+    const objetLines = doc.splitTextToSize(
+      intervention.commentaireTechnicien || "",
+      109
     );
+    const equipmentRows = buildEquipmentRows(intervention);
 
-    // Fill Objet with dotted lines and text
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-
-    // Content: ONLY Commentaire Technicien as requested
-    const objetContent = intervention.commentaireTechnicien || "";
-
-    const objetLines = doc.splitTextToSize(objetContent, objetWidth - 6);
-
-    // Draw lines for structure - limit to 19 lines to stay within contentHeight
-    for (let i = 0; i < 19; i++) {
-      const currentLineY = y + 5 + i * 5;
-      if (i < objetLines.length) {
-        doc.text(objetLines[i], margin + 2, currentLineY);
-      }
-      // Dotted line - stop well before the right edge
-      doc.setLineDashPattern([0.5, 1], 0);
-      doc.line(
-        margin + 2,
-        currentLineY + 1,
-        margin + objetWidth - 6,
-        currentLineY + 1
-      );
-      doc.setLineDashPattern([], 0);
-    }
-
-    // Fill Matériel - Split into Installed and Retrieved sections
-    if (intervention.equipements && intervention.equipements.length > 0) {
-      const installed = intervention.equipements.filter(
-        (eq) => eq.action === "install" || eq.action === "installe"
-      );
-      const retrieved = intervention.equipements.filter(
-        (eq) => eq.action === "retrait" || eq.action === "retire"
-      );
-
-      let fourY = y + 5;
-      const maxWidth = fournituresWidth - 26; // Leave space for quantity column
-
-      // Installed equipment section
-      if (installed.length > 0) {
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.text("[+] Installé:", fourX + 2, fourY);
-        fourY += 4;
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7);
-
-        installed.forEach((eq) => {
-          const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
-          const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
-
-          // Split name if too long
-          const nameLines = doc.splitTextToSize(name, maxWidth);
-          nameLines.forEach((line: string) => {
-            doc.text(line, fourX + 4, fourY);
-            fourY += 3.5;
-          });
-
-          // Serial number on new line if exists
-          if (serialNumber) {
-            doc.setFont("helvetica", "italic");
-            doc.text(`S/N: ${serialNumber}`, fourX + 4, fourY);
-            doc.setFont("helvetica", "normal");
-            fourY += 3.5;
-          }
-
-          // Quantity
-          doc.text(
-            String(eq.quantite || 1),
-            fourX + fournituresWidth - 12,
-            fourY - (serialNumber ? 3.5 : 0) - (nameLines.length - 1) * 3.5
-          );
-
-          fourY += 2; // Space between items
-        });
-      }
-
-      // Retrieved equipment section
-      if (retrieved.length > 0) {
-        fourY += 2; // Extra space between sections
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.text("[-] Repris:", fourX + 2, fourY);
-        fourY += 4;
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7);
-
-        retrieved.forEach((eq) => {
-          const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
-          const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
-          const etat = eq.etat ? ` (${eq.etat.toUpperCase()})` : "";
-
-          // Split name if too long
-          const nameLines = doc.splitTextToSize(name + etat, maxWidth);
-          nameLines.forEach((line: string) => {
-            doc.text(line, fourX + 4, fourY);
-            fourY += 3.5;
-          });
-
-          // Serial number on new line if exists
-          if (serialNumber) {
-            doc.setFont("helvetica", "italic");
-            doc.text(`S/N: ${serialNumber}`, fourX + 4, fourY);
-            doc.setFont("helvetica", "normal");
-            fourY += 3.5;
-          }
-
-          // Quantity
-          doc.text(
-            String(eq.quantite || 1),
-            fourX + fournituresWidth - 12,
-            fourY - (serialNumber ? 3.5 : 0) - (nameLines.length - 1) * 3.5
-          );
-
-          fourY += 2; // Space between items
-        });
-      }
-    }
-
-    y += contentHeight + 5;
+    y = drawPairedContentPages(doc, {
+      startY: y,
+      pageWidth,
+      pageHeight,
+      margin,
+      leftTitle: "Objet :",
+      rightTitle: "Matériel et numéro de série",
+      leftLines: objetLines,
+      rightRows: equipmentRows,
+      photos,
+    });
 
     // ==========================================
     // REMARQUES & SIGNATURE (Side by side)
     // ==========================================
-    const remarquesWidth = objetWidth;
-    const signatureWidth = fournituresWidth;
+    const remarquesWidth = 115;
+    const signatureWidth = pageWidth - margin * 2 - remarquesWidth - 2;
     const bottomHeight = 40;
 
     // Remarques section
@@ -532,41 +595,7 @@ export const generateInterventionPDF = async (
     // ==========================================
     // FOOTER
     // ==========================================
-    const footerY = pageHeight - 12;
-    if (photos.length > 0) {
-      const photoSummary = [
-        `${photos.filter((photo) => photo.type === "before").length} avant`,
-        `${photos.filter((photo) => photo.type === "after").length} après`,
-        `${photos.filter((photo) => photo.type === "other").length} autre`,
-      ].join(" • ");
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "italic");
-      doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
-      doc.text(`Photos jointes : ${photoSummary}`, margin, footerY - 3);
-    }
-    doc.setFillColor(ORANGE[0], ORANGE[1], ORANGE[2]);
-    doc.rect(0, footerY, pageWidth, 12, "F");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-    doc.text("14 - 16 rue des Caraques 76700 Harfleur", margin, footerY + 4);
-    doc.text("SIRET : 88225893200012", margin, footerY + 8);
-    doc.text("TVA : FR82862250932", margin + 40, footerY + 8);
-
-    doc.text(
-      "SARL PHONE & TIC au capital de 10 000 €",
-      pageWidth / 2 + 10,
-      footerY + 4
-    );
-    doc.text(
-      "02 32 92 12 92 - contact@phone-tic.fr",
-      pageWidth / 2 + 10,
-      footerY + 8
-    );
-    doc.text("www.phone-tic.fr", pageWidth - margin, footerY + 6, {
-      align: "right",
-    });
+    drawFooter(doc, pageWidth, pageHeight, margin, photos);
 
     // ==========================================
     // SAVE
