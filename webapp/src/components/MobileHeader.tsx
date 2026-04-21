@@ -1,5 +1,6 @@
 import './MobileHeader.css';
 import logo from '../assets/logo.png';
+import { NotificationCenter } from './NotificationCenter';
 
 interface MobileHeaderProps {
     onSearchClick?: () => void;
@@ -23,6 +24,7 @@ export default function MobileHeader({ onSearchClick }: MobileHeaderProps) {
                         🔍
                     </button>
                 )}
+                <NotificationCenter />
             </div>
         </header>
     );

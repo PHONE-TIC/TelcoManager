@@ -47,7 +47,10 @@ import { useAuth } from "./contexts/useAuth";
 import { useTheme } from "./contexts/useTheme";
 import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
+import { NotificationCenter } from "./components/NotificationCenter";
+import { NotificationToastOverlay } from "./components/NotificationToastOverlay";
 import { useNotifications } from "./hooks/useNotifications";
+import { NotificationCenterProvider } from "./contexts/NotificationCenterContext";
 
 import logo from "./assets/logo.png";
 
@@ -197,6 +200,9 @@ function Navigation() {
         </ul>
       </nav>
       <div style={{ marginTop: "auto", paddingTop: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
+          <NotificationCenter />
+        </div>
         {/* PWA Install button for desktop */}
         <Suspense fallback={null}>
           <div style={{ marginBottom: "10px" }}>
@@ -306,6 +312,7 @@ function AppContent() {
           <MobileNav />
           <MobileHeader />
           <Navigation />
+          <NotificationToastOverlay />
         </>
       )}
       <div className="main-content">
@@ -495,11 +502,13 @@ function App() {
     <Router>
       <ThemeProvider>
         <AuthProvider>
-          <AppContent />
-          <Suspense fallback={null}>
-            <ReloadPrompt />
-            <PwaInstallPopup />
-          </Suspense>
+          <NotificationCenterProvider>
+            <AppContent />
+            <Suspense fallback={null}>
+              <ReloadPrompt />
+              <PwaInstallPopup />
+            </Suspense>
+          </NotificationCenterProvider>
         </AuthProvider>
       </ThemeProvider>
     </Router>

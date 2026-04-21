@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiService } from "../services/api.service";
 import type { IpLink, IpLinksSnapshot } from "../types";
 import { ResponsivePage } from "../components/ResponsivePage";
+import { useNotificationCenter } from "../contexts/NotificationCenterContext";
+import { useNotifications } from "../hooks/useNotifications";
+import { showIpLinkDisconnectedNotification } from "../services/notification.service";
 import "./screen-harmonization.css";
 import "./IpLinksSupervision.css";
 
@@ -64,6 +67,8 @@ export default function IpLinksSupervision() {
   const [syncing, setSyncing] = useState(false);
   const [search, setSearch] = useState("");
   const [healthFilter, setHealthFilter] = useState<HealthFilter>("all");
+  const { isEnabled } = useNotifications();
+  const { addNotification } = useNotificationCenter();
 
   const loadData = useCallback(async (silent = false) => {
     try {
@@ -95,6 +100,55 @@ export default function IpLinksSupervision() {
       setSyncing(false);
     }
   };
+
+  useEffect(() => {
+    if (!isEnabled || snapshot.items.length === 0) return;
+
+    const storageKey = "ip-links-disconnected-alerted";
+    const raw = localStorage.getItem(storageKey);
+    const alertedIds = new Set<number>(raw ? JSON.parse(raw) : []);
+
+    const disconnectedLinks = snapshot.items.filter(
+      (link) => link.healthStatus === "disconnected" && !alertedIds.has(link.id)
+    );
+
+    disconnectedLinks.forEach((link) => {
+      const title = "🔴 Lien IP déconnecté";
+      const message = `${link.reference} • ${link.clientName}`;
+
+      showIpLinkDisconnectedNotification({
+        type: "ip_link_disconnected",
+        linkId: link.id,
+        reference: link.reference,
+        clientName: link.clientName,
+        title,
+        message,
+      });
+
+      addNotification({
+        type: "ip_link_disconnected",
+        title,
+        message,
+        link: "/supervision-liens-ip",
+        metadata: {
+          linkId: link.id,
+          reference: link.reference,
+          clientName: link.clientName,
+        },
+      });
+
+      alertedIds.add(link.id);
+    });
+
+    const currentlyDisconnectedIds = new Set(
+      snapshot.items
+        .filter((link) => link.healthStatus === "disconnected")
+        .map((link) => link.id)
+    );
+
+    const nextAlertedIds = Array.from(alertedIds).filter((id) => currentlyDisconnectedIds.has(id));
+    localStorage.setItem(storageKey, JSON.stringify(nextAlertedIds));
+  }, [isEnabled, snapshot.items]);
 
   const filteredItems = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();

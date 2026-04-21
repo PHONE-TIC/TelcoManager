@@ -70,6 +70,15 @@ export interface InterventionNotification {
     message: string;
 }
 
+export interface IpLinkNotification {
+    type: 'ip_link_disconnected';
+    linkId: number;
+    reference: string;
+    clientName: string;
+    title: string;
+    message: string;
+}
+
 // Show intervention-specific notification
 export const showInterventionNotification = (notification: InterventionNotification): void => {
     showNotification(notification.title, {
@@ -79,6 +88,23 @@ export const showInterventionNotification = (notification: InterventionNotificat
             type: notification.type,
             interventionId: notification.interventionId,
             url: `/interventions/${notification.interventionId}`,
+        },
+        requireInteraction: true,
+        actions: [
+            { action: 'view', title: 'Voir' },
+            { action: 'dismiss', title: 'Ignorer' },
+        ],
+    } as NotificationOptions);
+};
+
+export const showIpLinkDisconnectedNotification = (notification: IpLinkNotification): void => {
+    showNotification(notification.title, {
+        body: notification.message,
+        tag: `ip-link-disconnected-${notification.linkId}`,
+        data: {
+            type: notification.type,
+            linkId: notification.linkId,
+            url: '/supervision-liens-ip',
         },
         requireInteraction: true,
         actions: [
