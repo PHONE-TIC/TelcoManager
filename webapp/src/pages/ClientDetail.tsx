@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
+import './detail-form-harmonization.css';
 
 interface Client {
     id: string;
@@ -101,9 +102,9 @@ function ClientDetail() {
     }
 
     return (
-        <div className="page-container mobile-detail-shell">
+        <div className="page-container mobile-detail-shell harmonized-shell">
             {/* Header */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="harmonized-detail-header">
                 <div className="mobile-inline-pairs">
                     <div>
                         <button onClick={() => navigate('/clients')} className="btn btn-back" style={{ marginBottom: '12px' }}>
@@ -141,9 +142,9 @@ function ClientDetail() {
                 </div>
             </div>
 
-            <div className="mobile-card-grid" style={{ gridTemplateColumns: 'minmax(280px, 1fr) minmax(0, 2fr)' }}>
+            <div className="harmonized-card-grid" style={{ gridTemplateColumns: 'minmax(280px, 1fr) minmax(0, 2fr)' }}>
                 {/* Client Info Card */}
-                <div className="bg-white p-6 rounded-lg shadow-sm">
+                <div className="harmonized-card">
                     <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
                         📋 Informations
                     </h2>
@@ -189,7 +190,7 @@ function ClientDetail() {
                 </div>
 
                 {/* Interventions List */}
-                <div className="bg-white p-6 rounded-lg shadow-sm">
+                <div className="harmonized-card">
                     <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
                         📅 Historique des interventions ({interventions.length})
                     </h2>

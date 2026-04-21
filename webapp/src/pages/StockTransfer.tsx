@@ -3,6 +3,8 @@ import type { AxiosError } from "axios";
 import { apiService } from "../services/api.service";
 import { useNavigate } from "react-router-dom";
 import type { Stock, TechnicianStock, Technicien, TechniciensListResponse } from "../types";
+import "./screen-harmonization.css";
+import "./detail-form-harmonization.css";
 
 interface ApiErrorResponse {
   error?: string;
@@ -267,16 +269,9 @@ const StockTransfer = () => {
   });
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px" }}>
+    <div className="harmonized-shell" style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px" }}>
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "32px",
-        }}
-      >
+      <div className="harmonized-header">
         <div>
           <h1
             style={{
@@ -297,7 +292,7 @@ const StockTransfer = () => {
         </div>
         <button
           onClick={() => navigate("/stock")}
-          className="btn btn-secondary"
+          className="harmonized-secondary-action"
         >
           ← Retour au Stock
         </button>

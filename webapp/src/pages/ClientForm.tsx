@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
+import "./detail-form-harmonization.css";
+import "./screen-harmonization.css";
 
 function ClientForm() {
   const { id } = useParams<{ id: string }>();
@@ -182,12 +184,9 @@ function ClientForm() {
   }
 
   return (
-    <div className="page-container mobile-form-shell">
+    <div className="page-container mobile-form-shell harmonized-shell">
       {/* Header */}
-      <div
-        className="bg-white p-6 rounded-lg shadow-sm"
-        style={{ marginBottom: "24px" }}
-      >
+      <div className="harmonized-detail-header">
         <button
           onClick={() => navigate("/clients")}
           className="btn btn-back"
@@ -212,25 +211,15 @@ function ClientForm() {
       </div>
 
       {/* Form */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="harmonized-card">
         {error && (
-          <div
-            style={{
-              padding: "16px",
-              marginBottom: "20px",
-              borderRadius: "8px",
-              backgroundColor: "var(--error-bg)",
-              color: "var(--error-color)",
-              border: "1px solid var(--error-color)",
-              fontWeight: 500,
-            }}
-          >
+          <div className="harmonized-error-box" style={{ marginBottom: "20px" }}>
             ⚠️ {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ display: "grid", gap: "20px" }}>
+          <div className="harmonized-form-grid">
             {/* Nom */}
             <div>
               <label style={getLabelStyle("nom")}>Nom / Entreprise *</label>
@@ -363,7 +352,7 @@ function ClientForm() {
           </div>
 
           {/* Buttons */}
-          <div className="mobile-form-actions">
+          <div className="mobile-form-actions harmonized-form-actions">
             <button
               type="button"
               onClick={() => navigate("/clients")}

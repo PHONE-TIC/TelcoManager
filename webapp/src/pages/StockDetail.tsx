@@ -11,6 +11,8 @@ import {
 } from "./stock-detail.utils";
 
 import type { Stock, StockMovement } from "../types";
+import "./detail-form-harmonization.css";
+import "./screen-harmonization.css";
 
 function StockDetail() {
   const { id } = useParams<{ id: string }>();
@@ -75,8 +77,8 @@ function StockDetail() {
 
   if (error || !item) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="space-y-6 harmonized-shell">
+        <div className="harmonized-card">
           <button
             onClick={() => navigate("/stock")}
             className="btn btn-secondary mb-4"
@@ -97,7 +99,7 @@ function StockDetail() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="harmonized-detail-header">
         <button
           onClick={() => navigate("/stock")}
           style={{
@@ -216,7 +218,7 @@ function StockDetail() {
       {/* Info Cards */}
       <div className="mobile-card-grid">
         {/* Main Info */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="harmonized-card">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
             📋 Informations
           </h2>
@@ -257,7 +259,7 @@ function StockDetail() {
         </div>
 
         {/* Category & Quantity */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="harmonized-card">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
             📊 Stock
           </h2>
@@ -406,7 +408,7 @@ function StockDetail() {
       </div>
 
       {/* Notes & History */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="harmonized-card">
         <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
           📝 Notes & Historique
         </h2>
@@ -455,7 +457,7 @@ function StockDetail() {
       </div>
 
       {/* Movement History Timeline */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="harmonized-card">
         <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
           📊 Historique des Mouvements
         </h2>

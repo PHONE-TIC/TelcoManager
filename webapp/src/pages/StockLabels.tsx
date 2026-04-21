@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiService } from '../services/api.service';
 import type { Stock } from '../types';
+import './detail-form-harmonization.css';
+import './screen-harmonization.css';
 
 function StockLabels() {
     const navigate = useNavigate();
@@ -137,7 +139,7 @@ function StockLabels() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8" style={{ color: 'var(--text-primary)' }}>
+        <div className="max-w-7xl mx-auto px-4 py-8 harmonized-shell">
             {/* Header */}
             <div className="flex justify-between items-start flex-wrap gap-4 mb-6">
                 <div>

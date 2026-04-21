@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
+import './detail-form-harmonization.css';
 
 function UserForm() {
     const { id } = useParams<{ id: string }>();
@@ -134,9 +135,9 @@ function UserForm() {
     }
 
     return (
-        <div className="page-container mobile-form-shell">
+        <div className="page-container mobile-form-shell harmonized-shell">
             {/* Header */}
-            <div className="bg-white p-6 rounded-lg shadow-sm" style={{ marginBottom: '24px', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="harmonized-detail-header">
                 <button onClick={() => navigate('/techniciens')} className="btn btn-back" style={{ marginBottom: '12px' }}>
                     ← Retour à la liste
                 </button>
@@ -149,7 +150,7 @@ function UserForm() {
             </div>
 
             {/* Form */}
-            <div className="bg-white p-6 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="harmonized-card">
                 <form onSubmit={handleSubmit}>
                     {error && (
                         <div className="error-message">

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/useAuth";
 import { apiService } from "../services/api.service";
 import "./TechnicianStock.css";
+import "./screen-harmonization.css";
+import "./detail-form-harmonization.css";
 
 interface Client {
   id: string;
@@ -58,13 +60,13 @@ export default function TechnicianStock() {
   }
 
   return (
-    <div className="technician-stock-page">
-      <div className="page-header">
+    <div className="technician-stock-page harmonized-shell">
+      <div className="harmonized-header">
         <h1 className="page-title">🚗 Mon Stock Véhicule</h1>
         <p className="page-subtitle">Gérez les articles dans votre véhicule</p>
       </div>
 
-      <div className="card">
+      <div className="harmonized-card">
         {filteredStock.length > 0 ? (
           <div className="stock-list">
             {filteredStock.map((item) => (

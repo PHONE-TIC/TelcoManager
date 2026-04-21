@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import AutocompleteInput from "../components/AutocompleteInput";
 import type { Stock, StockListResponse } from "../types";
+import "./detail-form-harmonization.css";
 
 interface StockModelOption {
   brand: string;
@@ -327,9 +328,9 @@ function StockForm() {
   }
 
   return (
-    <div className="space-y-6 mobile-form-shell">
+    <div className="space-y-6 mobile-form-shell harmonized-shell">
       {/* Header */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="harmonized-detail-header">
         <button
           onClick={() => navigate("/stock")}
           style={{
@@ -359,7 +360,7 @@ function StockForm() {
       </div>
 
       {/* Form */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="harmonized-card">
         {error && (
           <div
             style={{
@@ -656,7 +657,7 @@ function StockForm() {
           </div>
 
           {/* Buttons */}
-          <div className="mobile-form-actions" style={{ paddingTop: "24px", borderTop: "1px solid var(--border-color)" }}>
+          <div className="mobile-form-actions harmonized-form-actions">
             <button
               type="button"
               onClick={() => navigate("/stock")}
