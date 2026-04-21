@@ -8,8 +8,6 @@
   align-items: center;
   background-color: var(--bg-primary);
   padding: 24px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
   flex-wrap: wrap;
   gap: 15px;
 }
@@ -31,7 +29,7 @@
 
 .interventions-stats-grid {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
@@ -40,6 +38,7 @@
   padding: 16px;
   border-radius: 12px;
   border: 1px solid var(--border-color);
+  min-height: 92px;
 }
 
 .interventions-surface {

@@ -258,6 +258,16 @@ function Reports() {
           disabled: !stats,
         },
       ]}
+      headerStats={stats ? (
+        <ResponsiveStats>
+          <ResponsiveStat value={stats.total} label="Interventions totales" />
+          <ResponsiveStat value={stats.completed} label="Terminées" />
+          <ResponsiveStat value={stats.pending} label="Planifiées" />
+          <ResponsiveStat value={stats.inProgress} label="En cours" />
+          <ResponsiveStat value={`${stats.completionRate}%`} label="Taux de complétion" />
+          <ResponsiveStat value={`${stats.avgDuration} min`} label="Durée moyenne" />
+        </ResponsiveStats>
+      ) : null}
       filters={
         <div className="reports-filters-grid">
           <div className="reports-filter-field">
@@ -306,17 +316,6 @@ function Reports() {
         </div>
       ) : (
         <>
-          {stats ? (
-            <ResponsiveStats>
-              <ResponsiveStat value={stats.total} label="Interventions totales" />
-              <ResponsiveStat value={stats.completed} label="Terminées" />
-              <ResponsiveStat value={stats.pending} label="Planifiées" />
-              <ResponsiveStat value={stats.inProgress} label="En cours" />
-              <ResponsiveStat value={`${stats.completionRate}%`} label="Taux de complétion" />
-              <ResponsiveStat value={`${stats.avgDuration} min`} label="Durée moyenne" />
-            </ResponsiveStats>
-          ) : null}
-
           <div className="reports-overview-grid">
             <ResponsiveSection title="Synthèse de la période">
               <div className="reports-overview-list">

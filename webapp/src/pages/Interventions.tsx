@@ -510,26 +510,27 @@ function Interventions() {
   }
 
   return (
-    <div className="space-y-6 interventions-page">
+    <div className="space-y-6 interventions-page harmonized-page">
       {/* Header */}
-      <div className="interventions-header">
-        <div className="interventions-header-copy">
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-            Interventions
-          </h1>
-          <p style={{ color: "var(--text-secondary)" }}>
-            Gestion des interventions et planning
-          </p>
+      <div className="harmonized-header-with-stats">
+        <div className="interventions-header harmonized-header">
+          <div className="interventions-header-copy harmonized-header-copy">
+            <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
+              Interventions
+            </h1>
+            <p style={{ color: "var(--text-secondary)" }}>
+              Gestion des interventions et planning
+            </p>
+          </div>
+          {user?.role === "admin" && !showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="interventions-primary-action harmonized-primary-action"
+            >
+              + Nouvelle Intervention
+            </button>
+          )}
         </div>
-        {user?.role === "admin" && !showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="interventions-primary-action"
-          >
-            + Nouvelle Intervention
-          </button>
-        )}
-      </div>
 
       {/* Offline indicator */}
       {!isOnline && (
@@ -574,7 +575,8 @@ function Interventions() {
       {/* Stats Cards (show only when not in form) */}
       {!showForm && (
         <div
-          className="interventions-stats-grid"
+          className="interventions-stats-grid harmonized-stats-grid"
+          style={{ padding: "0 24px 24px" }}
         >
           {interventionStats.map((stat, idx) => (
             <div
@@ -619,6 +621,7 @@ function Interventions() {
           )}
         </div>
       )}
+      </div>
 
       {/* Main Content Card */}
       <div className="interventions-surface">

@@ -20,7 +20,7 @@ const SECTION_TITLE_STYLE: CSSProperties = {
   marginBottom: "16px",
 };
 
-export function DashboardHeader() {
+export function DashboardHeader({ stats }: { stats: DashboardStats | null }) {
   return (
     <section style={DASHBOARD_PANEL_STYLE} className="dashboard-panel dashboard-header-card animate-fade-in-1">
       <div className="dashboard-header-top">
@@ -40,6 +40,7 @@ export function DashboardHeader() {
           ))}
         </div>
       </div>
+      <DashboardStatsCards stats={stats} />
     </section>
   );
 }

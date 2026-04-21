@@ -262,7 +262,8 @@ function Stock() {
   return (
     <div className="space-y-6 screen-shell harmonized-page">
       {/* Header */}
-      <div className="harmonized-header">
+      <div className="harmonized-header-with-stats">
+        <div className="harmonized-header">
         <div className="harmonized-header-copy">
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Stock</h1>
           <p style={{ color: "var(--text-secondary)" }}>
@@ -300,7 +301,7 @@ function Stock() {
       </div>
 
       {/* Stats Cards */}
-      <div className="harmonized-stats-grid">
+      <div className="harmonized-stats-grid" style={{ padding: "0 24px 24px" }}>
         {[
           {
             value: totalItems,
@@ -334,6 +335,8 @@ function Stock() {
       </div>
 
       {/* Filters and Search */}
+      </div>
+
       <div className="harmonized-surface">
         <div className="screen-filters" style={{ marginBottom: "24px" }}>
           {/* Top Row: Buttons and Search */}

@@ -226,7 +226,8 @@ function Inventaire() {
         className="space-y-6 screen-shell harmonized-page"
       >
         {/* Header */}
-        <div className="harmonized-header">
+        <div className="harmonized-header-with-stats">
+          <div className="harmonized-header">
           <div className="flex items-center gap-4 harmonized-header-copy">
             <button
               onClick={() => setCurrentSession(null)}
@@ -324,6 +325,8 @@ function Inventaire() {
         </div>
 
         {/* Progress Bar + Stats */}
+        </div>
+
         <div className="harmonized-surface">
           <div
             style={{

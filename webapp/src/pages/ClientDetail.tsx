@@ -117,10 +117,8 @@ function ClientDetail() {
                         )}
                     </div>
                 </div>
-            </div>
 
-            {/* Stats Cards */}
-            <div className="mobile-stat-grid">
+                <div className="mobile-stat-grid" style={{ marginTop: '16px' }}>
                 <div className="harmonized-card mobile-stat-card" style={{ borderLeft: '4px solid var(--primary-color)', padding: '16px' }}>
                     <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
                     <div className="text-sm text-gray-500">Total</div>
@@ -137,6 +135,7 @@ function ClientDetail() {
                     <div className="text-2xl font-bold text-gray-800">{stats.terminees}</div>
                     <div className="text-sm text-gray-500">Terminées</div>
                 </div>
+            </div>
             </div>
 
             <div className="harmonized-card-grid" style={{ gridTemplateColumns: 'minmax(280px, 1fr) minmax(0, 2fr)' }}>

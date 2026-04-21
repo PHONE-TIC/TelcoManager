@@ -11,7 +11,6 @@ import {
   DashboardHeader,
   DashboardLowStockAlerts,
   DashboardRecentInterventions,
-  DashboardStatsCards,
   DashboardStockCategories,
 } from "./dashboard.sections";
 import "./Dashboard.css";
@@ -64,8 +63,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard-container dashboard-shell" style={{ color: "var(--text-primary)" }}>
-      <DashboardHeader />
-      <DashboardStatsCards stats={stats} />
+      <DashboardHeader stats={stats} />
 
       <div className="dashboard-main-grid animate-fade-in-3">
         <DashboardChartSection>

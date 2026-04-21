@@ -72,7 +72,8 @@ function Techniciens() {
 
   return (
     <div className="space-y-6 harmonized-page">
-      <div className="harmonized-header">
+      <div className="harmonized-header-with-stats">
+        <div className="harmonized-header">
         <div className="harmonized-header-copy">
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
             Utilisateurs
@@ -87,6 +88,8 @@ function Techniciens() {
         >
           + Nouvel utilisateur
         </button>
+      </div>
+
       </div>
 
       <div className="harmonized-surface">

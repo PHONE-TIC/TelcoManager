@@ -684,41 +684,42 @@ const TechnicianInterventionView: React.FC = () => {
 
     return (
       <div className="page-container technician-view harmonized-shell">
-        <div className="tech-header harmonized-header">
-          <button
-            onClick={() => navigate("/interventions")}
-            className="btn btn-back"
-          >
-            ← Retour
-          </button>
-          <div className="title-row">
-            <h1>
-              <span className="intervention-number">{intervention.numero}</span>
-              {intervention.titre}
-            </h1>
-            {getStatusBadge(intervention.statut)}
+        <div className="report-summary harmonized-card" style={{ padding: 0, overflow: "hidden" }}>
+          <div className="tech-header harmonized-header" style={{ border: "none", borderRadius: 0, margin: 0 }}>
+            <button
+              onClick={() => navigate("/interventions")}
+              className="btn btn-back"
+            >
+              ← Retour
+            </button>
+            <div className="title-row">
+              <h1>
+                <span className="intervention-number">{intervention.numero}</span>
+                {intervention.titre}
+              </h1>
+              {getStatusBadge(intervention.statut)}
+            </div>
+            <button
+              onClick={() => {
+                if (reportUrl) {
+                  window.open(reportUrl, "_blank");
+                } else {
+                  void generateInterventionPDF(intervention, false, [], {
+                    billing,
+                    systemType,
+                    clientRemarks,
+                    clientSigner,
+                  });
+                }
+              }}
+              className="btn btn-primary"
+            >
+              📄 {reportUrl ? "Voir le rapport" : "Télécharger PDF"}
+            </button>
           </div>
-          <button
-            onClick={() => {
-              if (reportUrl) {
-                window.open(reportUrl, "_blank");
-              } else {
-                void generateInterventionPDF(intervention, false, [], {
-                  billing,
-                  systemType,
-                  clientRemarks,
-                  clientSigner,
-                });
-              }
-            }}
-            className="btn btn-primary"
-          >
-            📄 {reportUrl ? "Voir le rapport" : "Télécharger PDF"}
-          </button>
-        </div>
 
         {/* Compte-rendu complet */}
-        <div className="report-summary">
+        <div className="report-summary" style={{ padding: "0 20px 20px" }}>
           <h2
             style={{
               marginBottom: "20px",
@@ -1042,6 +1043,7 @@ const TechnicianInterventionView: React.FC = () => {
               <p style={{ whiteSpace: "pre-wrap" }}>{intervention.notes}</p>
             </div>
           )}
+        </div>
         </div>
 
         {/* Photo Modal with Zoom - for closed interventions view */}

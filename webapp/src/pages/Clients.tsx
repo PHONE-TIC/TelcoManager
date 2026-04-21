@@ -213,7 +213,8 @@ function Clients() {
     <div
       className="space-y-6 screen-shell harmonized-page"
     >
-      <div className="harmonized-header">
+      <div className="harmonized-header-with-stats">
+        <div className="harmonized-header">
         <div className="harmonized-header-copy">
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Clients</h1>
           <p style={{ color: "var(--text-secondary)" }}>
@@ -268,7 +269,7 @@ function Clients() {
       </div>
 
       {/* Mini Dashboard Stats */}
-      <div className="harmonized-stats-grid">
+      <div className="harmonized-stats-grid" style={{ padding: "0 24px 24px" }}>
         <div
           className="harmonized-stat-card"
           style={{ borderLeft: "4px solid #f97316" }}
@@ -291,6 +292,8 @@ function Clients() {
             Villes
           </div>
         </div>
+      </div>
+
       </div>
 
       <div className="harmonized-surface">
