@@ -29,16 +29,31 @@
 
 .interventions-stats-grid {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
 }
 
 .interventions-stat-card {
   background-color: var(--bg-primary);
-  padding: 16px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
-  min-height: 92px;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.interventions-stat-card > :first-child {
+  font-size: 1.35rem !important;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.interventions-stat-card > :last-child {
+  font-size: 0.78rem !important;
+  line-height: 1.15;
 }
 
 .interventions-surface {

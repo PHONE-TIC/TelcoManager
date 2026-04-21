@@ -60,8 +60,8 @@
 
 .harmonized-stats-grid {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
 }
 
 .harmonized-header-with-stats {
@@ -82,15 +82,30 @@
 }
 
 .harmonized-header-with-stats .harmonized-stats-grid {
-  padding: 0 24px 24px;
+  padding: 0 24px 20px;
 }
 
 .harmonized-stat-card {
   background-color: var(--bg-primary);
-  padding: 16px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
-  min-height: 92px;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.harmonized-stat-card > :first-child {
+  font-size: 1.35rem !important;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.harmonized-stat-card > :last-child {
+  font-size: 0.78rem !important;
+  line-height: 1.15;
 }
 
 .harmonized-surface {
@@ -180,11 +195,20 @@
 
   .harmonized-stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
   }
 
   .harmonized-stat-card {
-    padding: 14px;
+    padding: 10px;
+    min-height: 58px;
+  }
+
+  .harmonized-stat-card > :first-child {
+    font-size: 1.15rem !important;
+  }
+
+  .harmonized-stat-card > :last-child {
+    font-size: 0.72rem !important;
   }
 
   .harmonized-surface {

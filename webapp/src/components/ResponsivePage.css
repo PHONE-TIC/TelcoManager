@@ -112,26 +112,33 @@
 .responsive-page__stats,
 .responsive-page__header-stats {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
 }
 
 .responsive-stat {
-  border-radius: 14px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--bg-primary);
-  padding: 14px;
+  padding: 10px 12px;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
 }
 
 .responsive-stat__value {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
+  line-height: 1;
 }
 
 .responsive-stat__label {
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin-top: 4px;
+  font-size: 0.76rem;
+  margin-top: 0;
+  line-height: 1.15;
 }
 
 .responsive-mobile-cards {
@@ -202,6 +209,7 @@
   .responsive-page__header-stats,
   .responsive-page__stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .responsive-page__actions {

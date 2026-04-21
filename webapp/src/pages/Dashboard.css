@@ -64,8 +64,8 @@
 
 .dashboard-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  gap: 8px;
 }
 
 .dashboard-header-card .dashboard-stat-card {
@@ -75,12 +75,13 @@
 .dashboard-stat-card {
   position: relative;
   display: flex;
-  gap: 14px;
+  gap: 10px;
   align-items: stretch;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-height: 64px;
   box-shadow: var(--shadow);
 }
 
@@ -95,15 +96,16 @@
 }
 
 .dashboard-stat-value {
-  font-size: 1.9rem;
+  font-size: 1.35rem;
   font-weight: 700;
   line-height: 1;
 }
 
 .dashboard-stat-label {
-  margin-top: 6px;
+  margin-top: 2px;
   color: var(--text-secondary);
-  font-size: 0.88rem;
+  font-size: 0.76rem;
+  line-height: 1.15;
 }
 
 .dashboard-main-grid {
