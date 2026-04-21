@@ -1908,28 +1908,47 @@ textarea {
   border-color: var(--primary-color);
 }
 
+.theme-toggle-login,
+.app-theme-toggle {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14) 0%, rgba(99, 102, 241, 0.16) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #1d4ed8;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .theme-toggle-login {
   position: absolute;
   top: 20px;
   right: 20px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: var(--shadow);
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
-.theme-toggle-login:hover {
-  background-color: var(--hover-bg);
-  border-color: var(--primary-color);
+.theme-toggle-login:hover,
+.app-theme-toggle:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(99, 102, 241, 0.24) 100%);
+  border-color: rgba(59, 130, 246, 0.55);
+  color: #1e40af;
   transform: translateY(-2px);
+}
+
+[data-theme="dark"] .theme-toggle-login,
+[data-theme="dark"] .app-theme-toggle {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.16) 0%, rgba(129, 140, 248, 0.22) 100%);
+  border-color: rgba(96, 165, 250, 0.45);
+  color: #dbeafe;
+}
+
+[data-theme="dark"] .theme-toggle-login:hover,
+[data-theme="dark"] .app-theme-toggle:hover {
+  color: white;
 }
 
 /* ========================================

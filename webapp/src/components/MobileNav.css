@@ -313,23 +313,32 @@
     gap: 12px;
     width: 100%;
     padding: 12px 16px;
-    background: none;
-    border: none;
-    border-radius: 8px;
-    color: var(--text-secondary);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.14) 0%, rgba(99, 102, 241, 0.16) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: 10px;
+    color: #1d4ed8;
     font-size: 1rem;
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
 }
 
 .theme-toggle-drawer:hover {
-    background-color: #fff7ed;
-    color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(99, 102, 241, 0.24) 100%);
+    color: #1e40af;
+    border-color: rgba(59, 130, 246, 0.55);
+}
+
+[data-theme="dark"] .theme-toggle-drawer {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.16) 0%, rgba(129, 140, 248, 0.2) 100%);
+    border-color: rgba(96, 165, 250, 0.4);
+    color: #bfdbfe;
 }
 
 [data-theme="dark"] .theme-toggle-drawer:hover {
-    background-color: rgba(249, 115, 22, 0.15);
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.24) 0%, rgba(129, 140, 248, 0.28) 100%);
+    color: white;
 }
 
 .theme-icon {
@@ -347,24 +356,31 @@
     gap: 12px;
     width: 100%;
     padding: 12px 16px;
-    background: none;
-    border: none;
-    border-radius: 8px;
-    color: var(--text-secondary);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.16) 100%);
+    border: 1px solid rgba(220, 38, 38, 0.28);
+    border-radius: 10px;
+    color: #dc2626;
     font-size: 1rem;
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .logout-btn-drawer:hover {
-    background-color: #fee2e2;
-    color: #dc2626;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(220, 38, 38, 0.24) 100%);
+    color: #b91c1c;
+    border-color: rgba(220, 38, 38, 0.45);
+}
+
+[data-theme="dark"] .logout-btn-drawer {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(185, 28, 28, 0.24) 100%);
+    border-color: rgba(248, 113, 113, 0.3);
+    color: #fecaca;
 }
 
 [data-theme="dark"] .logout-btn-drawer:hover {
-    background-color: rgba(220, 38, 38, 0.15);
-    color: #ef4444;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.28) 0%, rgba(185, 28, 28, 0.32) 100%);
+    color: #fee2e2;
 }
 
 .logout-icon {

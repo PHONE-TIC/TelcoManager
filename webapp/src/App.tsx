@@ -214,14 +214,14 @@ function Navigation() {
         )}
         <button
           onClick={toggleTheme}
-          className="btn btn-secondary"
+          className="btn app-theme-toggle"
           style={{ width: "100%", marginBottom: "10px" }}
         >
-          {theme === "dark" ? "Mode clair" : "Mode sombre"}
+          {theme === "dark" ? "☀️ Mode clair" : "🌙 Mode sombre"}
         </button>
         <button
           onClick={logout}
-          className="btn btn-secondary"
+          className="btn btn-danger"
           style={{ width: "100%" }}
         >
           Déconnexion
