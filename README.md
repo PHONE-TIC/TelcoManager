@@ -127,6 +127,12 @@ Optimisations et simplifications importantes, sans modification fonctionnelle vo
 - mise à jour du README, des guides de déploiement, de test et du guide utilisateur pour refléter une architecture web-only
 - réduction progressive puis correction complète des erreurs lint frontend, avec passage final à 0 erreur et seulement quelques warnings hooks résiduels de confort si non traités dans certains états intermédiaires
 - validation continue via tests frontend, lint frontend, builds backend/webapp, rebuilds Docker, push GitHub et publication DockerHub
+- harmonisation visuelle globale de l’application en prenant l’écran `Interventions` comme référence de mise en page
+- factorisation des styles d’écrans et d’écrans détail via des feuilles CSS communes pour éviter la duplication
+- fusion des zones header + résumé/statistiques sur les écrans principaux pour gagner de la place et améliorer la lisibilité
+- compactage global des compteurs et KPI pour tenir sur une seule ligne autant que possible
+- amélioration de la lisibilité des actions d’interface, notamment le bouton de déconnexion en rouge et un sélecteur clair/sombre plus visible
+- simplification de la vue `Interventions` pour les techniciens, limitée aux interventions du jour avec compteur dédié dans le titre
 
 ### Décembre 2025
 
