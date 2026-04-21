@@ -154,18 +154,27 @@
 }
 
 .close-btn {
-    background: none;
-    border: none;
-    font-size: 1.75rem;
-    color: var(--text-secondary);
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 1.1rem;
+    color: var(--text-primary);
     cursor: pointer;
-    padding: 5px;
+    padding: 0;
     line-height: 1;
-    transition: color 0.2s;
+    transition: all 0.2s;
+    flex-shrink: 0;
 }
 
 .close-btn:hover {
     color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: var(--hover-bg);
 }
 
 .drawer-links {
@@ -348,6 +357,14 @@
 .theme-label {
     flex: 1;
     text-align: left;
+}
+
+.theme-toggle-drawer .theme-icon,
+.logout-btn-drawer .logout-icon {
+    width: 20px;
+    display: inline-flex;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .logout-btn-drawer {
