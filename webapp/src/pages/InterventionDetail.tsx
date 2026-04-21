@@ -17,6 +17,8 @@ import {
   mapDetailArtifactPhotos,
 } from "./intervention-detail.utils";
 import { getInterventionDetailStatusBadgeConfig } from "./intervention-detail-status.utils";
+import "./detail-form-harmonization.css";
+import "./screen-harmonization.css";
 
 import type { Client, Intervention, Photo, Technicien } from "../types";
 
@@ -294,9 +296,9 @@ const InterventionDetail: React.FC = () => {
   }
 
   return (
-    <div className="page-container intervention-detail">
+    <div className="page-container intervention-detail harmonized-shell">
       {/* En-tête */}
-      <div className="detail-header">
+      <div className="harmonized-header detail-header">
         <div className="header-info">
           <button onClick={handleGoBack} className="btn btn-back">
             ← Retour
@@ -426,7 +428,7 @@ const InterventionDetail: React.FC = () => {
         </div>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="harmonized-error-box">{error}</div>}
 
       {/* === WORKFLOW TECHNICIEN (en haut pour mobile) === */}
       {user?.role === "technicien" &&
@@ -440,7 +442,7 @@ const InterventionDetail: React.FC = () => {
         )}
 
       {/* Carte Informations Générales */}
-      <div className="info-card">
+      <div className="info-card harmonized-card">
         <h3>📋 Informations générales</h3>
         <div className="info-grid">
           <div className="info-item">
@@ -613,7 +615,7 @@ const InterventionDetail: React.FC = () => {
       )}
 
       {/* Carte Description */}
-      <div className="info-card">
+      <div className="info-card harmonized-card">
         <h3>📝 Description</h3>
         {!isEditing ? (
           <div className="description-content">
@@ -635,7 +637,7 @@ const InterventionDetail: React.FC = () => {
       </div>
 
       {/* Carte Commentaires */}
-      <div className="info-card comment-section">
+      <div className="info-card comment-section harmonized-card">
         <h3>💬 Commentaires / Notes</h3>
         {!isEditing ? (
           <div className="description-content">
@@ -884,7 +886,7 @@ const InterventionDetail: React.FC = () => {
 
         {/* Fichiers joints */}
         {loadedAttachments.length > 0 && (
-          <div className="info-card" style={{ height: "100%", margin: 0 }}>
+          <div className="info-card harmonized-card" style={{ height: "100%", margin: 0 }}>
             <h3 style={{ marginBottom: "10px", color: "var(--primary-color)" }}>
               📎 Fichiers joints ({loadedAttachments.length})
             </h3>

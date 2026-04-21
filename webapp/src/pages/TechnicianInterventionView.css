@@ -12,8 +12,6 @@
   flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid var(--border-color);
 }
 
 .tech-header .title-row {
@@ -106,12 +104,13 @@
 
 .step-tab.active {
   border-color: var(--primary-color);
-  background: var(--card-bg, var(--bg-color));
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  background: var(--primary-color);
+  color: white;
+  box-shadow: 0 8px 16px rgba(249, 115, 22, 0.18);
 }
 
 .step-tab.active .step-label {
-  color: var(--primary-color);
+  color: white;
   font-weight: 600;
 }
 
@@ -163,7 +162,7 @@
 
 /* Info Cards */
 .technician-view .info-card {
-  background: var(--card-bg, var(--bg-color));
+  background: var(--bg-primary);
   border-radius: 12px;
   padding: 16px;
   border: 1px solid var(--border-color);

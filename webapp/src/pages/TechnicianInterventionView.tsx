@@ -12,6 +12,8 @@ import BarcodeScanner from "../components/BarcodeScanner";
 import { useAuth } from "../contexts/useAuth";
 import PhotoZoomModal from "./PhotoZoomModal";
 import "./TechnicianInterventionView.css";
+import "./detail-form-harmonization.css";
+import "./screen-harmonization.css";
 import type { Intervention, InterventionEquipment, Photo } from "../types";
 import {
   extractInterventionTime,
@@ -681,8 +683,8 @@ const TechnicianInterventionView: React.FC = () => {
       : "Non renseignée";
 
     return (
-      <div className="page-container technician-view">
-        <div className="tech-header">
+      <div className="page-container technician-view harmonized-shell">
+        <div className="tech-header harmonized-header">
           <button
             onClick={() => navigate("/interventions")}
             className="btn btn-back"
@@ -1057,9 +1059,9 @@ const TechnicianInterventionView: React.FC = () => {
   }
 
   return (
-    <div className="page-container technician-view">
+    <div className="page-container technician-view harmonized-shell">
       {/* Header */}
-      <div className="tech-header">
+      <div className="tech-header harmonized-header">
         <button
           onClick={() => navigate("/interventions")}
           className="btn btn-back"
