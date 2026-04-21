@@ -1951,8 +1951,7 @@ textarea {
   color: white;
 }
 
-.app-theme-toggle .theme-icon,
-.app-logout-button .logout-icon {
+.app-theme-toggle .theme-icon {
   width: 20px;
   display: inline-flex;
   justify-content: center;
@@ -1961,6 +1960,11 @@ textarea {
 
 .app-logout-button {
   justify-content: flex-start;
+}
+
+.app-action-label {
+  flex: 1;
+  text-align: left;
 }
 
 /* ========================================

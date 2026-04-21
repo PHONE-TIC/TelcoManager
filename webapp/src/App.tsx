@@ -218,15 +218,14 @@ function Navigation() {
           style={{ width: "100%", marginBottom: "10px" }}
         >
           <span className="theme-icon" aria-hidden="true">{theme === "dark" ? "☀️" : "🌙"}</span>
-          <span style={{ flex: 1, textAlign: "left" }}>{theme === "dark" ? "Mode clair" : "Mode sombre"}</span>
+          <span className="app-action-label">{theme === "dark" ? "Mode clair" : "Mode sombre"}</span>
         </button>
         <button
           onClick={logout}
           className="btn btn-danger app-logout-button"
           style={{ width: "100%" }}
         >
-          <span className="logout-icon" aria-hidden="true">⎋</span>
-          <span style={{ flex: 1, textAlign: "left" }}>Déconnexion</span>
+          <span className="app-action-label">Déconnexion</span>
         </button>
       </div>
     </div>
