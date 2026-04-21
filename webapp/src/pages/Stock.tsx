@@ -11,6 +11,7 @@ import {
 } from "./stock.utils";
 import { buildStockCsvRows, getFilteredStockItems } from "./stock-list.utils";
 import "./mobile-refactor.css";
+import "./screen-harmonization.css";
 
 function Stock() {
   const navigate = useNavigate();
@@ -259,13 +260,10 @@ function Stock() {
   }
 
   return (
-    <div
-      className="space-y-6 screen-shell"
-      style={{ color: "var(--text-primary)" }}
-    >
+    <div className="space-y-6 screen-shell harmonized-page">
       {/* Header */}
-      <div className="screen-header">
-        <div className="screen-header-main">
+      <div className="harmonized-header">
+        <div className="harmonized-header-copy">
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Stock</h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Gestion du matériel et équipements
@@ -274,18 +272,7 @@ function Stock() {
         <div className="screen-header-actions">
           <button
             onClick={exportToCSV}
-            style={{
-              padding: "10px 16px",
-              borderRadius: "8px",
-              border: "1px solid var(--border-color)",
-              backgroundColor: "var(--bg-secondary)",
-              color: "var(--text-primary)",
-              fontWeight: 500,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
+            className="harmonized-secondary-action"
           >
             Exporter CSV
           </button>
@@ -293,18 +280,9 @@ function Stock() {
             <>
               <button
                 onClick={() => navigate("/stock/transfer")}
+                className="harmonized-accent-action"
                 style={{
-                  padding: "10px 16px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background:
-                    "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
+                  background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
                   boxShadow: "0 2px 8px rgba(139, 92, 246, 0.35)",
                 }}
               >
@@ -312,17 +290,7 @@ function Stock() {
               </button>
               <button
                 onClick={() => navigate("/stock/new")}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background:
-                    "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(249, 115, 22, 0.35)",
-                }}
+                className="harmonized-primary-action"
               >
                 + Nouveau Matériel
               </button>
@@ -332,7 +300,7 @@ function Stock() {
       </div>
 
       {/* Stats Cards */}
-      <div className="screen-stat-grid">
+      <div className="harmonized-stats-grid">
         {[
           {
             value: totalItems,
@@ -352,13 +320,8 @@ function Stock() {
         ].map((stat, idx) => (
           <div
             key={idx}
-            style={{
-              backgroundColor: "var(--bg-primary)",
-              padding: "16px",
-              borderRadius: "12px",
-              border: "1px solid var(--border-color)",
-              borderLeft: `4px solid ${stat.color}`,
-            }}
+            className="harmonized-stat-card"
+            style={{ borderLeft: `4px solid ${stat.color}` }}
           >
             <div style={{ fontSize: "1.75rem", fontWeight: 700 }}>
               {stat.value}
@@ -371,15 +334,14 @@ function Stock() {
       </div>
 
       {/* Filters and Search */}
-      <div className="screen-panel">
+      <div className="harmonized-surface">
         <div className="screen-filters" style={{ marginBottom: "24px" }}>
           {/* Top Row: Buttons and Search */}
-          <div className="screen-filter-row">
+          <div className="harmonized-toolbar">
             {/* Status buttons */}
             <div className="responsive-stack" style={{ width: "100%" }}>
               <button
-                className={`btn ${filter === "all" ? "btn-primary" : "btn-secondary"
-                  }`}
+                className={`harmonized-chip ${filter === "all" ? "active" : ""}`}
                 onClick={() => setFilter("all")}
                 style={{
                   background:
@@ -391,24 +353,20 @@ function Stock() {
                 Vue générale
               </button>
               <button
-                className={`btn ${filter === "courant" ? "btn-primary" : "btn-secondary"
-                  }`}
+                className={`harmonized-chip ${filter === "courant" ? "active" : ""}`}
                 onClick={() => setFilter("courant")}
               >
                 Stock courant
               </button>
               <button
-                className={`btn ${filter === "hs" ? "btn-danger" : "btn-secondary"
-                  }`}
+                className={`harmonized-chip ${filter === "hs" ? "active" : ""}`}
+                style={filter === "hs" ? { background: "#ef4444", color: "white", borderColor: "#ef4444" } : undefined}
                 onClick={() => setFilter("hs")}
               >
                 Stock HS
               </button>
               <button
-                className={`btn ${filter === "retour_fournisseur"
-                  ? "btn-warning"
-                  : "btn-secondary"
-                  }`}
+                className={`harmonized-chip ${filter === "retour_fournisseur" ? "active" : ""}`}
                 onClick={() => setFilter("retour_fournisseur")}
                 style={{
                   backgroundColor:
@@ -421,8 +379,7 @@ function Stock() {
               {/* Button visible for admin AND gestionnaire */}
               {canManageStock && (
                 <button
-                  className={`btn ${filter === "technician" ? "btn-primary" : "btn-secondary"
-                    }`}
+                  className={`harmonized-chip ${filter === "technician" ? "active" : ""}`}
                   onClick={() => setFilter("technician")}
                   style={{
                     background:
@@ -441,20 +398,15 @@ function Stock() {
           </div>
 
           {/* Bottom Row: Dropdowns */}
-          <div className="screen-filter-group">
+          <div className="harmonized-filter-group">
             {/* Technician Select (Visible only when filter is technician) */}
             {filter === "technician" && (
               <select
                 value={selectedTechnicianId}
                 onChange={(e) => setSelectedTechnicianId(e.target.value)}
+                className="harmonized-select"
                 style={{
-                  padding: "10px 14px",
-                  backgroundColor: "var(--bg-secondary, #f5f5f5)",
                   border: "2px solid #7c3aed",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  color: "var(--text-primary)",
-                  outline: "none",
                   cursor: "pointer",
                   minWidth: "200px",
                   fontWeight: 600,
@@ -473,17 +425,8 @@ function Stock() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              style={{
-                padding: "10px 14px",
-                backgroundColor: "var(--bg-secondary, #f5f5f5)",
-                border: "1px solid var(--border-color, #e5e5e5)",
-                borderRadius: "8px",
-                fontSize: "14px",
-                color: "var(--text-primary)",
-                outline: "none",
-                cursor: "pointer",
-                minWidth: "160px",
-              }}
+              className="harmonized-select"
+              style={{ cursor: "pointer", minWidth: "160px" }}
             >
               <option value="all">Toutes catégories</option>
               {categories.map((cat, i) => (

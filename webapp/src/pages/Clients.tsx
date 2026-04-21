@@ -6,6 +6,7 @@ import TableResponsive from "../components/TableResponsive";
 import { useAuth } from "../contexts/useAuth";
 import type { Client, ClientsListResponse } from "../types";
 import "./mobile-refactor.css";
+import "./screen-harmonization.css";
 
 interface ApiErrorResponse {
   error?: string;
@@ -210,11 +211,10 @@ function Clients() {
 
   return (
     <div
-      className="space-y-6 screen-shell"
-      style={{ color: "var(--text-primary)" }}
+      className="space-y-6 screen-shell harmonized-page"
     >
-      <div className="screen-header">
-        <div className="screen-header-main">
+      <div className="harmonized-header">
+        <div className="harmonized-header-copy">
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Clients</h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Gestion de la base client
@@ -224,18 +224,7 @@ function Clients() {
           <button
             onClick={exportCSV}
             title="Exporter en CSV"
-            style={{
-              padding: "10px 16px",
-              borderRadius: "8px",
-              border: "1px solid var(--border-color)",
-              backgroundColor: "var(--bg-secondary)",
-              color: "var(--text-primary)",
-              fontWeight: 500,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
+            className="harmonized-secondary-action"
           >
             Exporter
           </button>
@@ -244,38 +233,21 @@ function Clients() {
               onClick={handleUnycSync}
               disabled={syncing}
               title="Synchroniser les clients depuis UNYC Atlas"
+              className="harmonized-secondary-action"
               style={{
-                padding: "10px 16px",
-                borderRadius: "8px",
-                border: "1px solid #6366f1",
+                borderColor: "#6366f1",
+                color: "#6366f1",
                 backgroundColor: syncing
                   ? "rgba(99, 102, 241, 0.3)"
                   : "rgba(99, 102, 241, 0.1)",
-                color: "#6366f1",
-                fontWeight: 500,
                 cursor: syncing ? "wait" : "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                transition: "all 0.2s",
               }}
             >
               {syncing ? "Synchronisation..." : "Synchroniser UNYC"}
             </button>
           )}
           <label
-            style={{
-              padding: "10px 16px",
-              borderRadius: "8px",
-              border: "1px solid var(--border-color)",
-              backgroundColor: "var(--bg-secondary)",
-              color: "var(--text-primary)",
-              fontWeight: 500,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
+            className="harmonized-secondary-action"
             title="Importer depuis CSV"
           >
             Importer
@@ -288,16 +260,7 @@ function Clients() {
           </label>
           <button
             onClick={() => navigate("/clients/new")}
-            style={{
-              padding: "10px 16px",
-              borderRadius: "8px",
-              border: "none",
-              background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-              boxShadow: "0 2px 8px rgba(249, 115, 22, 0.35)",
-            }}
+            className="harmonized-primary-action"
           >
             + Nouveau Client
           </button>
@@ -305,15 +268,10 @@ function Clients() {
       </div>
 
       {/* Mini Dashboard Stats */}
-      <div className="screen-stat-grid">
+      <div className="harmonized-stats-grid">
         <div
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            padding: "16px",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-            borderLeft: "4px solid #f97316",
-          }}
+          className="harmonized-stat-card"
+          style={{ borderLeft: "4px solid #f97316" }}
         >
           <div style={{ fontSize: "1.75rem", fontWeight: 700 }}>
             {clients.length}
@@ -323,13 +281,8 @@ function Clients() {
           </div>
         </div>
         <div
-          style={{
-            backgroundColor: "var(--bg-primary)",
-            padding: "16px",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-            borderLeft: "4px solid #10b981",
-          }}
+          className="harmonized-stat-card"
+          style={{ borderLeft: "4px solid #10b981" }}
         >
           <div style={{ fontSize: "1.75rem", fontWeight: 700 }}>
             {new Set(clients.map((c) => c.ville)).size}
@@ -340,10 +293,10 @@ function Clients() {
         </div>
       </div>
 
-      <div className="screen-panel">
+      <div className="harmonized-surface">
         {/* Filters Row */}
-        <div className="screen-filter-row" style={{ marginBottom: "16px" }}>
-          <div className="screen-filter-group">
+        <div className="harmonized-toolbar">
+          <div className="harmonized-filter-group">
             <span
               style={{
                 fontSize: "13px",
@@ -356,14 +309,8 @@ function Clients() {
             <select
               value={cityFilter}
               onChange={(e) => setCityFilter(e.target.value)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                backgroundColor: "var(--bg-secondary)",
-                color: "var(--text-primary)",
-                cursor: "pointer",
-              }}
+              className="harmonized-select"
+              style={{ cursor: "pointer", padding: "6px 12px" }}
             >
               <option value="">Toutes</option>
               {uniqueCities.map((city) => (
@@ -373,7 +320,7 @@ function Clients() {
               ))}
             </select>
           </div>
-          <div className="screen-filter-group">
+          <div className="harmonized-filter-group">
             <span
               style={{
                 fontSize: "13px",
@@ -385,45 +332,21 @@ function Clients() {
             </span>
             <button
               onClick={() => handleSort("nom")}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                backgroundColor:
-                  sortField === "nom"
-                    ? "var(--primary-color)"
-                    : "var(--bg-secondary)",
-                color: sortField === "nom" ? "white" : "var(--text-primary)",
-                cursor: "pointer",
-                fontSize: "13px",
-              }}
+              className={`harmonized-filter-chip ${sortField === "nom" ? "active" : ""}`}
+              style={{ fontSize: "13px" }}
             >
               Nom {sortField === "nom" && (sortDir === "asc" ? "▲" : "▼")}
             </button>
             <button
               onClick={() => handleSort("ville")}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                backgroundColor:
-                  sortField === "ville"
-                    ? "var(--primary-color)"
-                    : "var(--bg-secondary)",
-                color: sortField === "ville" ? "white" : "var(--text-primary)",
-                cursor: "pointer",
-                fontSize: "13px",
-              }}
+              className={`harmonized-filter-chip ${sortField === "ville" ? "active" : ""}`}
+              style={{ fontSize: "13px" }}
             >
               Ville {sortField === "ville" && (sortDir === "asc" ? "▲" : "▼")}
             </button>
           </div>
           <span
-            style={{
-              fontSize: "13px",
-              color: "var(--text-secondary)",
-              marginLeft: "auto",
-            }}
+            className="harmonized-summary-text"
           >
             {sortedClients.length} client{sortedClients.length !== 1 ? "s" : ""}
           </span>

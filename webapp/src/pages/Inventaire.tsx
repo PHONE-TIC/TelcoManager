@@ -6,6 +6,7 @@ import InventoryDiscrepancyModal from "./InventoryDiscrepancyModal";
 import type { FilterType, InventorySession } from "./inventory.types";
 import { getFilteredInventoryItems } from "./inventory.utils";
 import "./mobile-refactor.css";
+import "./screen-harmonization.css";
 
 function Inventaire() {
   const [sessions, setSessions] = useState<InventorySession[]>([]);
@@ -222,12 +223,11 @@ function Inventaire() {
 
     return (
       <div
-        className="space-y-6 screen-shell"
-        style={{ color: "var(--text-primary)" }}
+        className="space-y-6 screen-shell harmonized-page"
       >
         {/* Header */}
-        <div className="screen-header">
-          <div className="flex items-center gap-4 screen-header-main">
+        <div className="harmonized-header">
+          <div className="flex items-center gap-4 harmonized-header-copy">
             <button
               onClick={() => setCurrentSession(null)}
               style={{
@@ -288,14 +288,9 @@ function Inventaire() {
           <div className="screen-header-actions">
             <button
               onClick={() => generateInventoryPDF(currentSession)}
+              className="harmonized-accent-action"
               style={{
-                padding: "10px 16px",
-                borderRadius: "8px",
-                border: "none",
                 background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-                color: "white",
-                fontWeight: 600,
-                cursor: "pointer",
                 boxShadow: "0 2px 8px rgba(99, 102, 241, 0.35)",
               }}
             >
@@ -305,15 +300,9 @@ function Inventaire() {
               <>
                 <button
                   onClick={handleSaveProgress}
+                  className="harmonized-accent-action"
                   style={{
-                    padding: "10px 16px",
-                    borderRadius: "8px",
-                    border: "none",
-                    background:
-                      "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-                    color: "white",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                    background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
                     boxShadow: "0 2px 8px rgba(59, 130, 246, 0.35)",
                   }}
                 >
@@ -321,15 +310,9 @@ function Inventaire() {
                 </button>
                 <button
                   onClick={handleFinalizeClick}
+                  className="harmonized-accent-action"
                   style={{
-                    padding: "10px 16px",
-                    borderRadius: "8px",
-                    border: "none",
-                    background:
-                      "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    color: "white",
-                    fontWeight: 600,
-                    cursor: "pointer",
+                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                     boxShadow: "0 2px 8px rgba(16, 185, 129, 0.35)",
                   }}
                 >
@@ -341,7 +324,7 @@ function Inventaire() {
         </div>
 
         {/* Progress Bar + Stats */}
-        <div className="screen-panel">
+        <div className="harmonized-surface">
           <div
             style={{
               display: "flex",
@@ -429,7 +412,7 @@ function Inventaire() {
         </div>
 
         {/* Filters + Search */}
-        <div className="screen-panel">
+        <div className="harmonized-surface">
           {/* Scan Input */}
           <form
             onSubmit={handleScan}
@@ -561,7 +544,7 @@ function Inventaire() {
         </div>
 
         {/* Table */}
-        <div className="screen-panel">
+        <div className="harmonized-surface">
           <div className="responsive-scroll desktop-table-only">
           <table className="table" style={{ width: "100%" }}>
             <thead>
@@ -875,13 +858,10 @@ function Inventaire() {
 
   // --- VIEW: LIST SESSIONS (START) ---
   return (
-    <div
-      className="space-y-6 screen-shell"
-      style={{ color: "var(--text-primary)" }}
-    >
+    <div className="space-y-6 screen-shell harmonized-page">
       {/* Header & Start Action */}
-      <div className="screen-header" style={{ alignItems: "flex-start" }}>
-        <div className="screen-header-main" style={{ minWidth: "300px" }}>
+      <div className="harmonized-header" style={{ alignItems: "flex-start" }}>
+        <div className="harmonized-header-copy" style={{ minWidth: "300px" }}>
           <h1
             style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "8px" }}
           >
@@ -895,7 +875,7 @@ function Inventaire() {
 
         {/* Start Inventory Card */}
         <div
-          className="screen-panel"
+          className="harmonized-surface"
           style={{
             backgroundColor: "var(--bg-secondary)",
             width: "100%",
@@ -930,15 +910,9 @@ function Inventaire() {
             />
             <button
               onClick={handleCreateSession}
+              className="harmonized-primary-action"
               style={{
                 width: "100%",
-                padding: "12px",
-                borderRadius: "8px",
-                border: "none",
-                background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-                color: "white",
-                fontWeight: 600,
-                cursor: "pointer",
                 boxShadow: "0 4px 12px rgba(249, 115, 22, 0.25)",
                 display: "flex",
                 justifyContent: "center",

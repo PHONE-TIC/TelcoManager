@@ -4,6 +4,7 @@ import { apiService } from "../services/api.service";
 import TableResponsive from "../components/TableResponsive";
 import UserAvatar from "../components/UserAvatar";
 import type { Technicien } from "../types";
+import "./screen-harmonization.css";
 
 interface TechnicienWithCounts extends Technicien {
   _count?: {
@@ -70,23 +71,11 @@ function Techniciens() {
   }
 
   return (
-    <div className="space-y-6" style={{ color: "var(--text-primary)" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          backgroundColor: "var(--bg-primary)",
-          padding: "24px",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
-        <div>
+    <div className="space-y-6 harmonized-page">
+      <div className="harmonized-header">
+        <div className="harmonized-header-copy">
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-            👤 Gestion des Utilisateurs
+            Utilisateurs
           </h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Administration des comptes (Admins & Techniciens)
@@ -94,49 +83,24 @@ function Techniciens() {
         </div>
         <button
           onClick={() => navigate("/techniciens/new")}
-          style={{
-            padding: "10px 16px",
-            borderRadius: "8px",
-            border: "none",
-            background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
-            color: "white",
-            fontWeight: 600,
-            cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(249, 115, 22, 0.35)",
-          }}
+          className="harmonized-primary-action"
         >
           + Nouvel utilisateur
         </button>
       </div>
 
-      <div
-        style={{
-          backgroundColor: "var(--bg-primary)",
-          borderRadius: "12px",
-          border: "1px solid var(--border-color)",
-          padding: "20px",
-        }}
-      >
-        <div className="mb-6 flex gap-4 flex-wrap">
+      <div className="harmonized-surface">
+        <div className="harmonized-toolbar">
           {/* Role filter dropdown */}
           <select
+            className="harmonized-select"
             value={roleFilter}
             onChange={(e) =>
               setRoleFilter(
                 e.target.value as "all" | "admin" | "gestionnaire" | "technicien"
               )
             }
-            style={{
-              padding: "10px 14px",
-              backgroundColor: "var(--bg-secondary, #f5f5f5)",
-              border: "1px solid var(--border-color, #e5e5e5)",
-              borderRadius: "8px",
-              fontSize: "14px",
-              color: "var(--text-primary)",
-              outline: "none",
-              cursor: "pointer",
-              minWidth: "160px",
-            }}
+            style={{ cursor: "pointer", minWidth: "160px" }}
           >
             <option value="all">🏷️ Tous les rôles</option>
             <option value="admin">👑 Administrateurs</option>
