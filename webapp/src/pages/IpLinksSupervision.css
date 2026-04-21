@@ -30,17 +30,14 @@
   background: #ef4444;
 }
 
+.ip-links-filters-surface {
+  padding: 20px;
+}
+
 .ip-links-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .ip-links-toolbar__group {
@@ -50,14 +47,13 @@
   align-items: center;
 }
 
+.ip-links-toolbar__group--grow {
+  flex: 1 1 420px;
+}
+
 .ip-links-search,
 .ip-links-select {
   min-height: 42px;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  padding: 0 14px;
 }
 
 .ip-links-search {
@@ -192,12 +188,16 @@
 }
 
 @media (max-width: 767px) {
-  .ip-links-toolbar {
+  .ip-links-filters-surface {
     padding: 14px;
   }
 
   .ip-links-toolbar__group {
     width: 100%;
+  }
+
+  .ip-links-toolbar__group--grow {
+    flex-basis: 100%;
   }
 
   .ip-links-search,

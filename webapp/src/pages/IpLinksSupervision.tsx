@@ -150,24 +150,29 @@ export default function IpLinksSupervision() {
       ]}
     >
       <div className="ip-links-page">
-      <div className="ip-links-toolbar">
-        <div className="ip-links-toolbar__group">
-          <input
-            type="search"
-            className="ip-links-search"
-            placeholder="Rechercher un lien, un client, une collecte..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <select
-            className="ip-links-select"
-            value={healthFilter}
-            onChange={(event) => setHealthFilter(event.target.value as HealthFilter)}
-          >
-            <option value="all">Tous les états</option>
-            <option value="connected">Connectés</option>
-            <option value="disconnected">Déconnectés</option>
-          </select>
+      <div className="harmonized-surface ip-links-filters-surface">
+        <div className="harmonized-toolbar ip-links-toolbar">
+          <div className="harmonized-filter-group ip-links-toolbar__group ip-links-toolbar__group--grow">
+            <input
+              type="search"
+              className="harmonized-input ip-links-search"
+              placeholder="Rechercher un lien, un client, une collecte..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <select
+              className="harmonized-select ip-links-select"
+              value={healthFilter}
+              onChange={(event) => setHealthFilter(event.target.value as HealthFilter)}
+            >
+              <option value="all">Tous les états</option>
+              <option value="connected">Connectés</option>
+              <option value="disconnected">Déconnectés</option>
+            </select>
+          </div>
+          <div className="harmonized-summary-text">
+            {filteredItems.length} lien(s) affiché(s)
+          </div>
         </div>
       </div>
 
