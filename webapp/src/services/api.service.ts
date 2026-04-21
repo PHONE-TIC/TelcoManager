@@ -468,6 +468,16 @@ class ApiService {
     const response = await this.api.post("/unyc/sync-customers");
     return response.data;
   }
+
+  async getIpLinks() {
+    const response = await this.api.get("/ip-links");
+    return response.data;
+  }
+
+  async syncIpLinks() {
+    const response = await this.api.post("/ip-links/sync");
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();

@@ -28,6 +28,7 @@ const StockLabels = lazy(() => import("./pages/StockLabels"));
 const Inventaire = lazy(() => import("./pages/Inventaire"));
 const TechnicianStock = lazy(() => import("./pages/TechnicianStock"));
 const Reports = lazy(() => import("./pages/Reports"));
+const IpLinksSupervision = lazy(() => import("./pages/IpLinksSupervision"));
 const GlobalSearch = lazy(() => import("./components/GlobalSearch"));
 const PwaInstallButton = lazy(() =>
   import("./components/PwaInstall").then((module) => ({
@@ -104,6 +105,12 @@ function Navigation() {
       roles: ["admin", "gestionnaire"],
     },
     { path: "/rapports", icon: "📈", label: "Rapports", roles: ["admin"] },
+    {
+      path: "/supervision-liens-ip",
+      icon: "🟢",
+      label: "Supervision de liens IP",
+      roles: ["admin", "gestionnaire"],
+    },
     {
       path: "/mon-stock",
       icon: "🚗",
@@ -456,6 +463,14 @@ function AppContent() {
                 <AdminRoute>
                   <Reports />
                 </AdminRoute>
+              }
+            />
+            <Route
+              path="/supervision-liens-ip"
+              element={
+                <ManagerRoute>
+                  <IpLinksSupervision />
+                </ManagerRoute>
               }
             />
             <Route

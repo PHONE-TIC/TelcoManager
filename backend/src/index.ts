@@ -15,12 +15,14 @@ import searchRoutes from "./routes/search.routes";
 import pushRoutes from "./routes/push.routes";
 import stockMovementsRoutes from "./routes/stockMovements.routes";
 import unycRoutes from "./routes/unyc.routes";
+import ipLinksRoutes from "./routes/ip-links.routes";
 
 // Charger les variables d'environnement
 dotenv.config();
 
 // Initialiser Prisma
 import { prisma } from "./db";
+import { startIpLinksSyncJob } from "./services/ip-links.service";
 export { prisma };
 
 // Créer l'application Express
@@ -59,6 +61,7 @@ app.use("/api/search", searchRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api", stockMovementsRoutes);
 app.use("/api/unyc", unycRoutes);
+app.use("/api/ip-links", ipLinksRoutes);
 
 // Servir les fichiers uploadés (photos, pdfs)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
@@ -89,6 +92,7 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
   console.log(`📍 API disponible sur http://localhost:${PORT}`);
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+  startIpLinksSyncJob();
 });
 
 // Gestion de l'arrêt gracieux

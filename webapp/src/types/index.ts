@@ -220,3 +220,31 @@ export interface InterventionsListResponse {
     totalPages: number;
   };
 }
+
+export interface IpLink {
+  id: number;
+  reference: string;
+  clientName: string;
+  type: string;
+  maxBandwidth: string;
+  gtr?: string | null;
+  backup4g: boolean;
+  firewall: boolean;
+  collecteOperator?: string | null;
+  stateLabel: string;
+  healthStatus: "connected" | "disconnected";
+  healthLabel: "OK" | "KO";
+}
+
+export interface IpLinksStats {
+  total: number;
+  connected: number;
+  disconnected: number;
+  ignored: number;
+  lastSyncedAt: string | null;
+}
+
+export interface IpLinksSnapshot {
+  items: IpLink[];
+  stats: IpLinksStats;
+}

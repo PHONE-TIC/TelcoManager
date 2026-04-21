@@ -35,6 +35,10 @@ services:
       UNYC_CLIENT_ID: ${UNYC_CLIENT_ID:-public-api}
       UNYC_USERNAME: ${UNYC_USERNAME}
       UNYC_PASSWORD: ${UNYC_PASSWORD}
+      ATLAS_IP_LINKS_URL: ${ATLAS_IP_LINKS_URL:-https://atlas.unyc.io/lien}
+      ATLAS_USERNAME: ${ATLAS_USERNAME:-np@phone-tic.fr}
+      ATLAS_PASSWORD: ${ATLAS_PASSWORD:-!QC5Rx#U@c@4wR}
+      ATLAS_TOTP_URI: ${ATLAS_TOTP_URI:-otpauth://totp/unyc:nplacide?secret=KBGTOU3LPBWVAY2KKJQVMMSWGEYU65TT&digits=6&algorithm=SHA1&issuer=unyc&period=30}
       # Optionnel: Reset DB au démarrage (true/false)
       # SEED_ON_START: "false"
     ports:
