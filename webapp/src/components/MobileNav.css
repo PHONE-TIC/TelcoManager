@@ -319,7 +319,8 @@
 .theme-toggle-drawer {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 8px;
     width: 100%;
     padding: 12px 16px;
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.14) 0%, rgba(99, 102, 241, 0.16) 100%);
@@ -331,6 +332,7 @@
     cursor: pointer;
     transition: all 0.2s;
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+    text-align: center;
 }
 
 .theme-toggle-drawer:hover {
@@ -340,13 +342,12 @@
 }
 
 [data-theme="dark"] .theme-toggle-drawer {
-    background: linear-gradient(135deg, rgba(96, 165, 250, 0.16) 0%, rgba(129, 140, 248, 0.2) 100%);
-    border-color: rgba(96, 165, 250, 0.4);
-    color: #bfdbfe;
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.16) 0%, rgba(129, 140, 248, 0.22) 100%);
+    border-color: rgba(96, 165, 250, 0.45);
+    color: #dbeafe;
 }
 
 [data-theme="dark"] .theme-toggle-drawer:hover {
-    background: linear-gradient(135deg, rgba(96, 165, 250, 0.24) 0%, rgba(129, 140, 248, 0.28) 100%);
     color: white;
 }
 
@@ -355,49 +356,42 @@
 }
 
 .theme-label {
-    flex: 1;
-    text-align: left;
+    flex: 0 1 auto;
+    text-align: center;
 }
 
-.theme-toggle-drawer .theme-icon,
-.logout-btn-drawer .logout-icon {
-    width: 20px;
-    display: inline-flex;
-    justify-content: center;
-    flex-shrink: 0;
-}
 
 .logout-btn-drawer {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 8px;
     width: 100%;
     padding: 12px 16px;
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.16) 100%);
-    border: 1px solid rgba(220, 38, 38, 0.28);
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: 1px solid transparent;
     border-radius: 10px;
-    color: #dc2626;
+    color: white;
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    text-align: center;
 }
 
 .logout-btn-drawer:hover {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(220, 38, 38, 0.24) 100%);
-    color: #b91c1c;
-    border-color: rgba(220, 38, 38, 0.45);
+    filter: brightness(1.02);
+    color: white;
+    border-color: transparent;
 }
 
 [data-theme="dark"] .logout-btn-drawer {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(185, 28, 28, 0.24) 100%);
-    border-color: rgba(248, 113, 113, 0.3);
-    color: #fecaca;
+    color: white;
 }
 
 [data-theme="dark"] .logout-btn-drawer:hover {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.28) 0%, rgba(185, 28, 28, 0.32) 100%);
-    color: #fee2e2;
+    color: white;
 }
 
 .logout-icon {
@@ -405,8 +399,8 @@
 }
 
 .logout-label {
-    flex: 1;
-    text-align: left;
+    flex: 0 1 auto;
+    text-align: center;
 }
 
 /* Show hamburger on mobile */

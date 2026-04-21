@@ -138,7 +138,6 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
                                 onClick={toggleTheme}
                                 aria-label="Changer le thème"
                             >
-                                <span className="theme-icon" aria-hidden="true">{theme === 'light' ? '🌙' : '☀️'}</span>
                                 <span className="theme-label">
                                     {theme === 'light' ? 'Mode sombre' : 'Mode clair'}
                                 </span>
@@ -152,7 +151,6 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
                                 }}
                                 aria-label="Se déconnecter"
                             >
-                                <span className="logout-icon" aria-hidden="true">⎋</span>
                                 <span className="logout-label">Déconnexion</span>
                             </button>
                         </div>
