@@ -278,7 +278,7 @@ const InterventionDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="page-container">
+      <div className="page-container harmonized-shell">
         <div className="loading">Chargement...</div>
       </div>
     );
@@ -660,7 +660,7 @@ const InterventionDetail: React.FC = () => {
 
       {/* Carte Rapport Technicien (Compte Rendu) */}
       <div
-        className="info-card"
+        className="info-card harmonized-card"
         style={{ borderLeft: "4px solid var(--success-color, #10b981)" }}
       >
         <h3>📄 Rapport d'Intervention (Technicien)</h3>
@@ -678,7 +678,7 @@ const InterventionDetail: React.FC = () => {
       {/* Timeline / Historique (Admin only) */}
       {user?.role === "admin" && (
         <div
-          className="info-card"
+          className="info-card harmonized-card"
           style={{ borderLeft: "4px solid var(--primary-color, #3b82f6)" }}
         >
           <h3>📜 Historique</h3>
@@ -850,7 +850,7 @@ const InterventionDetail: React.FC = () => {
 
       {/* Future: Carte Équipements */}
       {intervention.equipements && intervention.equipements.length > 0 && (
-        <div className="info-card">
+        <div className="info-card harmonized-card">
           <h3>🔧 Équipements utilisés</h3>
           <div className="equipments-list">
             {intervention.equipements.map((eq) => (

@@ -62,10 +62,7 @@ function ClientDetail() {
         };
         const badge = badges[statut] || { label: statut, color: '#374151', bg: '#f3f4f6' };
         return (
-            <span style={{
-                padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600,
-                backgroundColor: badge.bg, color: badge.color
-            }}>
+            <span className="badge" style={{ backgroundColor: badge.bg, color: badge.color }}>
                 {badge.label}
             </span>
         );
@@ -92,7 +89,7 @@ function ClientDetail() {
 
     if (!client) {
         return (
-            <div className="page-container">
+            <div className="page-container harmonized-shell">
                 <div className="error-message">Client non trouvé</div>
                 <button onClick={() => navigate('/clients')} className="btn btn-secondary">
                     ← Retour aux clients
@@ -124,19 +121,19 @@ function ClientDetail() {
 
             {/* Stats Cards */}
             <div className="mobile-stat-grid">
-                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 mobile-stat-card" style={{ borderLeftColor: 'var(--primary-color)' }}>
+                <div className="harmonized-card mobile-stat-card" style={{ borderLeft: '4px solid var(--primary-color)', padding: '16px' }}>
                     <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
                     <div className="text-sm text-gray-500">Total</div>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 mobile-stat-card" style={{ borderLeftColor: '#3b82f6' }}>
+                <div className="harmonized-card mobile-stat-card" style={{ borderLeft: '4px solid #3b82f6', padding: '16px' }}>
                     <div className="text-2xl font-bold text-gray-800">{stats.planifiees}</div>
                     <div className="text-sm text-gray-500">Planifiées</div>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 mobile-stat-card" style={{ borderLeftColor: '#f59e0b' }}>
+                <div className="harmonized-card mobile-stat-card" style={{ borderLeft: '4px solid #f59e0b', padding: '16px' }}>
                     <div className="text-2xl font-bold text-gray-800">{stats.enCours}</div>
                     <div className="text-sm text-gray-500">En cours</div>
                 </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 mobile-stat-card" style={{ borderLeftColor: '#10b981' }}>
+                <div className="harmonized-card mobile-stat-card" style={{ borderLeft: '4px solid #10b981', padding: '16px' }}>
                     <div className="text-2xl font-bold text-gray-800">{stats.terminees}</div>
                     <div className="text-sm text-gray-500">Terminées</div>
                 </div>

@@ -261,26 +261,37 @@ textarea {
 }
 
 .btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-primary {
-  background-color: var(--primary-color);
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-dark);
+  filter: brightness(1.02);
 }
 
 .btn-secondary {
-  background-color: var(--bg-subtle, #f5f3f0);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
 }
@@ -292,13 +303,15 @@ textarea {
 }
 
 .btn-success {
-  background-color: var(--secondary-color);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
 }
 
 .btn-danger {
-  background-color: var(--danger-color);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
 .table {
@@ -369,11 +382,14 @@ textarea {
 }
 
 .badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .badge-success {
@@ -450,10 +466,6 @@ textarea {
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 15px;
-  margin-top: 20px;
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid var(--border-color);
 }
 
 .detail-header > div:first-child {
@@ -498,23 +510,23 @@ textarea {
 }
 
 .btn-back {
-  background-color: var(--bg-color);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
-  padding: 12px 20px;
+  padding: 10px 16px;
   border: 1px solid var(--border-color);
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.2s;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  border-radius: 10px;
 }
 
 .btn-back:hover {
-  background-color: #1e40af;
-  color: white;
-  border-color: #1e40af;
-  transform: translateX(-2px);
+  background-color: var(--hover-primary);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .info-card {

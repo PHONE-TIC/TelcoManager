@@ -641,7 +641,7 @@ const TechnicianInterventionView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="page-container">
+      <div className="page-container harmonized-shell">
         <div className="loading">Chargement...</div>
       </div>
     );
@@ -730,7 +730,7 @@ const TechnicianInterventionView: React.FC = () => {
           </h2>
 
           {/* Informations client */}
-          <div className="info-card" style={{ marginBottom: "15px" }}>
+          <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
             <h3 style={{ marginBottom: "10px", color: "var(--primary-color)" }}>
               👤 Client
             </h3>
@@ -747,7 +747,7 @@ const TechnicianInterventionView: React.FC = () => {
           </div>
 
           {/* Informations intervention */}
-          <div className="info-card" style={{ marginBottom: "15px" }}>
+          <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
             <h3 style={{ marginBottom: "10px", color: "var(--primary-color)" }}>
               📅 Dates & Horaires
             </h3>
@@ -781,7 +781,7 @@ const TechnicianInterventionView: React.FC = () => {
 
           {/* Description */}
           {intervention.description && (
-            <div className="info-card" style={{ marginBottom: "15px" }}>
+            <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
@@ -795,7 +795,7 @@ const TechnicianInterventionView: React.FC = () => {
 
           {/* Équipements */}
           {intervention.equipements && intervention.equipements.length > 0 && (
-            <div className="info-card" style={{ marginBottom: "15px" }}>
+            <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
@@ -830,7 +830,7 @@ const TechnicianInterventionView: React.FC = () => {
 
           {/* Commentaire technicien */}
           {intervention.commentaireTechnicien && (
-            <div className="info-card" style={{ marginBottom: "15px" }}>
+            <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
@@ -851,7 +851,7 @@ const TechnicianInterventionView: React.FC = () => {
 
           {/* Photos de l'intervention */}
           {photos.length > 0 && (
-            <div className="info-card" style={{ marginBottom: "15px" }}>
+            <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
               <div
                 style={{
                   display: "flex",
@@ -977,7 +977,7 @@ const TechnicianInterventionView: React.FC = () => {
 
           {/* Fichiers joints */}
           {loadedAttachments.length > 0 && (
-            <div className="info-card" style={{ marginBottom: "15px" }}>
+            <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
@@ -1033,7 +1033,7 @@ const TechnicianInterventionView: React.FC = () => {
 
           {/* Notes */}
           {intervention.notes && (
-            <div className="info-card" style={{ marginBottom: "15px" }}>
+            <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
@@ -1161,7 +1161,7 @@ const TechnicianInterventionView: React.FC = () => {
         {/* === STEP 0: INFOS === */}
         {(currentStep === 0 || isPlanifiee) && (
           <div className="step-panel">
-            <div className="info-card">
+            <div className="info-card harmonized-card">
               <h3>📋 Informations générales</h3>
               <div className="info-grid">
                 <div className="info-item">
@@ -1198,7 +1198,7 @@ const TechnicianInterventionView: React.FC = () => {
               </div>
             </div>
 
-            <div className="info-card">
+            <div className="info-card harmonized-card">
               <h3>📍 Localisation client</h3>
               <div className="address-info">
                 <div className="address-line">
@@ -1302,13 +1302,13 @@ const TechnicianInterventionView: React.FC = () => {
               </button>
             </div>
 
-            <div className="info-card">
+            <div className="info-card harmonized-card">
               <h3>📄 Description</h3>
               <p>{intervention.description || "Aucune description"}</p>
             </div>
 
             {intervention.notes && (
-              <div className="info-card">
+              <div className="info-card harmonized-card">
                 <h3>📝 Notes</h3>
                 <p>{intervention.notes}</p>
               </div>
@@ -1316,7 +1316,7 @@ const TechnicianInterventionView: React.FC = () => {
 
             {/* Client History */}
             {clientHistory.length > 0 && (
-              <div className="info-card">
+              <div className="info-card harmonized-card">
                 <h3>
                   📜 Historique client ({clientHistory.length} précédente
                   {clientHistory.length > 1 ? "s" : ""})
@@ -1399,7 +1399,7 @@ const TechnicianInterventionView: React.FC = () => {
         {/* === STEP 1: HEURES === */}
         {currentStep === 1 && isEnCours && (
           <div className="step-panel">
-            <div className="info-card">
+            <div className="info-card harmonized-card">
               <h3>🕐 Heures d'intervention</h3>
               <div className="form-group">
                 <label>Heure d'arrivée</label>
@@ -1446,7 +1446,7 @@ const TechnicianInterventionView: React.FC = () => {
         {/* === STEP 2: MATERIEL === */}
         {currentStep === 2 && isEnCours && (
           <div className="step-panel">
-            <div className="info-card">
+            <div className="info-card harmonized-card">
               <h3>🔧 Matériel</h3>
               <p
                 style={{
@@ -1691,7 +1691,7 @@ const TechnicianInterventionView: React.FC = () => {
         {/* === STEP 3: RAPPORT === */}
         {currentStep === 3 && isEnCours && (
           <div className="step-panel">
-            <div className="info-card">
+            <div className="info-card harmonized-card">
               <h3>📝 Rapport technicien</h3>
 
               {/* Added Fields */}
@@ -1886,7 +1886,7 @@ const TechnicianInterventionView: React.FC = () => {
         {/* === STEP 4: SIGNATURE TECHNICIEN === */}
         {currentStep === 4 && isEnCours && (
           <div className="step-panel">
-            <div className="info-card">
+            <div className="info-card harmonized-card">
               <h3>✍️ Signature du technicien</h3>
               <p className="hint">
                 Signez pour confirmer les travaux effectués
@@ -1925,7 +1925,7 @@ const TechnicianInterventionView: React.FC = () => {
         {/* === STEP 5: SIGNATURE CLIENT === */}
         {currentStep === 5 && isEnCours && (
           <div className="step-panel">
-            <div className="info-card">
+            <div className="info-card harmonized-card">
               <h3>✍️ Signature du client</h3>
 
               <div className="form-group" style={{ marginBottom: "15px" }}>

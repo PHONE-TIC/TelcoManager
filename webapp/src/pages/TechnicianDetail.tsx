@@ -95,7 +95,7 @@ function TechnicianDetail() {
 
   if (loading) {
     return (
-      <div className="page-container">
+      <div className="page-container harmonized-shell">
         <div className="loading">Chargement...</div>
       </div>
     );
@@ -118,7 +118,7 @@ function TechnicianDetail() {
   return (
     <div className="page-container">
       {/* En-tête */}
-      <div className="detail-header">
+      <div className="detail-header harmonized-header">
         <div>
           <button
             onClick={() => navigate("/techniciens")}
@@ -186,7 +186,7 @@ function TechnicianDetail() {
       {/* Contenu Onglet Informations */}
       {activeTab === "info" && (
         <div className="tab-content">
-          <div className="info-card">
+          <div className="info-card harmonized-card">
             <h3>Informations du technicien</h3>
             <div className="info-grid">
               <div className="info-item">
@@ -245,7 +245,7 @@ function TechnicianDetail() {
         technician.role !== "admin" &&
         technician.role !== "gestionnaire" && (
           <div className="tab-content">
-            <div className="info-card">
+            <div className="info-card harmonized-card">
               <div className="vehicle-stock-header">
                 <h3>🚗 Stock embarqué dans le véhicule</h3>
 
@@ -392,7 +392,7 @@ function TechnicianDetail() {
       {/* Contenu Onglet Journal */}
       {activeTab === "journal" && (
         <div className="tab-content">
-          <div className="info-card">
+          <div className="info-card harmonized-card">
             <h3>Journal d'activité</h3>
             <div className="mb-4">
               <span className="text-gray-500 text-sm">
@@ -408,7 +408,7 @@ function TechnicianDetail() {
             <div className="mobile-only mobile-stack-list">
               {activityLogs.length > 0 ? (
                 activityLogs.map((log) => (
-                  <div key={log.id} className="info-card" style={{ marginBottom: 0, padding: "16px" }}>
+                  <div key={log.id} className="info-card harmonized-card" style={{ marginBottom: 0, padding: "16px" }}>
                     <div className="mobile-list-row" style={{ marginBottom: "8px" }}>
                       <strong style={{ color: "var(--text-primary)" }}>
                         {log.action === "LOGIN" ? "Connexion" : log.action}
