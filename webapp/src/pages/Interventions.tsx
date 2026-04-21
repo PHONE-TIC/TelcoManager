@@ -358,29 +358,43 @@ function Interventions() {
     [techniciens, technicianSearch]
   );
 
-  const interventionStats = useMemo(
-    () => [
-      { value: interventions.length, label: "Total", color: "#f97316" },
-      {
-        value: interventions.filter((intervention) => intervention.statut === "planifiee")
-          .length,
-        label: "Planifiées",
-        color: "#3b82f6",
-      },
-      {
-        value: interventions.filter((intervention) => intervention.statut === "en_cours")
-          .length,
-        label: "En cours",
-        color: "#f59e0b",
-      },
-      {
-        value: interventions.filter((intervention) => intervention.statut === "terminee")
-          .length,
-        label: "Terminées",
-        color: "#10b981",
-      },
-    ],
+  const todayInterventions = useMemo(
+    () => getTodayInterventions(interventions),
     [interventions]
+  );
+
+  const interventionStats = useMemo(
+    () =>
+      user?.role === "technicien"
+        ? [
+            {
+              value: todayInterventions.length,
+              label: "Aujourd'hui",
+              color: "#f97316",
+            },
+          ]
+        : [
+            { value: interventions.length, label: "Total", color: "#f97316" },
+            {
+              value: interventions.filter((intervention) => intervention.statut === "planifiee")
+                .length,
+              label: "Planifiées",
+              color: "#3b82f6",
+            },
+            {
+              value: interventions.filter((intervention) => intervention.statut === "en_cours")
+                .length,
+              label: "En cours",
+              color: "#f59e0b",
+            },
+            {
+              value: interventions.filter((intervention) => intervention.statut === "terminee")
+                .length,
+              label: "Terminées",
+              color: "#10b981",
+            },
+          ],
+    [interventions, todayInterventions.length, user?.role]
   );
 
   const overdueCount = useMemo(
@@ -469,14 +483,9 @@ function Interventions() {
     };
   };
 
-  const filteredInterventions = useMemo(
-    () => getTodayInterventions(interventions),
-    [interventions]
-  );
-
   const sortedTodayInterventions = useMemo(
-    () => sortInterventions(filteredInterventions),
-    [filteredInterventions, sortInterventions]
+    () => sortInterventions(todayInterventions),
+    [todayInterventions, sortInterventions]
   );
 
   const allInterventions = useMemo(
@@ -516,7 +525,7 @@ function Interventions() {
         <div className="interventions-header harmonized-header">
           <div className="interventions-header-copy harmonized-header-copy">
             <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-              Interventions
+              Interventions{user?.role === "technicien" ? ` (${sortedTodayInterventions.length})` : ""}
             </h1>
             <p style={{ color: "var(--text-secondary)" }}>
               Gestion des interventions et planning
@@ -629,15 +638,17 @@ function Interventions() {
         {!showForm && (
           <div className="interventions-toolbar">
             <div className="interventions-view-switcher">
-              <button
-                className={`interventions-tab ${viewMode === "calendar" ? "active" : ""}`}
-                onClick={() => setViewMode("calendar")}
-              >
-                <span className="interventions-tab-meta">
-                  <span>Calendrier</span>
-                  <span className="interventions-tab-count">{interventions.length}</span>
-                </span>
-              </button>
+              {user?.role !== "technicien" && (
+                <button
+                  className={`interventions-tab ${viewMode === "calendar" ? "active" : ""}`}
+                  onClick={() => setViewMode("calendar")}
+                >
+                  <span className="interventions-tab-meta">
+                    <span>Calendrier</span>
+                    <span className="interventions-tab-count">{interventions.length}</span>
+                  </span>
+                </button>
+              )}
               <button
                 className={`interventions-tab ${viewMode === "list" ? "active" : ""}`}
                 onClick={() => setViewMode("list")}
@@ -957,7 +968,7 @@ function Interventions() {
         )}
 
         {/* Mobile Planning View - Only show in calendar mode */}
-        {viewMode === "calendar" && !showForm && (
+        {user?.role !== "technicien" && viewMode === "calendar" && !showForm && (
           <div className="mobile-only">
             <MobilePlanning interventions={mobilePlanningInterventions} />
           </div>
@@ -965,7 +976,7 @@ function Interventions() {
 
         {/* Desktop Calendar View */}
         <div className="desktop-only">
-          {viewMode === "calendar" && !showForm && (
+          {user?.role !== "technicien" && viewMode === "calendar" && !showForm && (
             <div className="fade-in">
               <div
                 key={calendarKey}
