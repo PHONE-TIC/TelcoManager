@@ -666,14 +666,97 @@ function Interventions() {
 
         {viewMode === "list" && !showForm && (
           <div className="fade-in">
-            <div className="mobile-only interventions-mobile-list">
+            <div className="interventions-mobile-list">
               <div className="interventions-mobile-summary">
                 <span>Aujourd'hui</span>
                 <strong>{sortedTodayInterventions.length} intervention{sortedTodayInterventions.length > 1 ? "s" : ""}</strong>
               </div>
               {sortedTodayInterventions.length > 0 ? (
-                sortedTodayInterventions.map((intervention) =>
-                  renderMobileInterventionCard(intervention)
+                isMobile ? (
+                  sortedTodayInterventions.map((intervention) =>
+                    renderMobileInterventionCard(intervention)
+                  )
+                ) : (
+                  <div className="responsive-scroll">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>N°</th>
+                          {getSortableHeader("Date planifiée", "datePlanifiee")}
+                          <th>Type</th>
+                          <th>Titre</th>
+                          {getSortableHeader("Client", "client")}
+                          {user?.role === "admin" &&
+                            getSortableHeader("Technicien", "technicien")}
+                          {getSortableHeader("Statut", "statut")}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedTodayInterventions.map((intervention) => (
+                          <tr
+                            key={intervention.id}
+                            className="clickable-row"
+                            onClick={() => navigate(`/interventions/${intervention.id}`)}
+                          >
+                            <td>
+                              <div style={{ display: "flex", alignItems: "center" }}>
+                                {getInterventionPriorityIndicator(
+                                  intervention.datePlanifiee,
+                                  intervention.statut
+                                )}
+                                <span className="font-bold text-gray-800">
+                                  {intervention.numero}
+                                </span>
+                              </div>
+                            </td>
+                            <td>{new Date(intervention.datePlanifiee).toLocaleString("fr-FR")}</td>
+                            <td>
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-semibold ${intervention.type === "Installation"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-indigo-100 text-indigo-800"
+                                  }`}
+                              >
+                                {intervention.type || "SAV"}
+                              </span>
+                            </td>
+                            <td className="font-medium">{intervention.titre}</td>
+                            <td>
+                              {intervention.client?.nom || (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            {user?.role === "admin" && (
+                              <td>
+                                <div style={{ display: "flex", alignItems: "center" }}>
+                                  {getTechnicianAvatar(intervention.technicien)}
+                                  <span>
+                                    {intervention.technicien?.nom || (
+                                      <span className="text-gray-400">Non assigné</span>
+                                    )}
+                                  </span>
+                                </div>
+                              </td>
+                            )}
+                            <td>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  flexWrap: "nowrap",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {getInterventionProgressLine(intervention.statut)}
+                                {getStatusBadge(intervention.statut)}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )
               ) : (
                 <div className="interventions-mobile-empty">
@@ -682,118 +765,6 @@ function Interventions() {
                   <div className="mt-2">Utilisez le calendrier pour voir toutes les interventions.</div>
                 </div>
               )}
-            </div>
-            <div className="responsive-scroll desktop-only">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>N°</th>
-                    {getSortableHeader("Date planifiée", "datePlanifiee")}
-                    <th>Type</th>
-                    <th>Titre</th>
-                    {getSortableHeader("Client", "client")}
-                    {user?.role === "admin" &&
-                      getSortableHeader("Technicien", "technicien")}
-                    {getSortableHeader("Statut", "statut")}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedTodayInterventions.length > 0 ? (
-                    sortedTodayInterventions.map((intervention) => (
-                        <tr
-                          key={intervention.id}
-                          className="clickable-row"
-                          onClick={() =>
-                            navigate(`/interventions/${intervention.id}`)
-                          }
-                        >
-                          <td>
-                            <div
-                              style={{ display: "flex", alignItems: "center" }}
-                            >
-                              {getInterventionPriorityIndicator(
-                                intervention.datePlanifiee,
-                                intervention.statut
-                              )}
-                              <span className="font-bold text-gray-800">
-                                {intervention.numero}
-                              </span>
-                            </div>
-                          </td>
-                          <td>
-                            {new Date(
-                              intervention.datePlanifiee
-                            ).toLocaleString("fr-FR")}
-                          </td>
-                          <td>
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-semibold ${intervention.type === "Installation"
-                                ? "bg-purple-100 text-purple-800"
-                                : "bg-indigo-100 text-indigo-800"
-                                }`}
-                            >
-                              {intervention.type || "SAV"}
-                            </span>
-                          </td>
-                          <td className="font-medium">{intervention.titre}</td>
-                          <td>
-                            {intervention.client?.nom || (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          {user?.role === "admin" && (
-                            <td>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                }}
-                              >
-                                {getTechnicianAvatar(intervention.technicien)}
-                                <span>
-                                  {intervention.technicien?.nom || (
-                                    <span className="text-gray-400">
-                                      Non assigné
-                                    </span>
-                                  )}
-                                </span>
-                              </div>
-                            </td>
-                          )}
-                          <td>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 8,
-                                flexWrap: "nowrap",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {getInterventionProgressLine(intervention.statut)}
-                              {getStatusBadge(intervention.statut)}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                    <tr>
-                      <td colSpan={user?.role === "admin" ? 6 : 5}>
-                        <div className="text-center py-12">
-                          <div className="text-4xl mb-4">📅</div>
-                          <h3 className="text-lg font-medium text-gray-900">
-                            Aucune intervention aujourd'hui
-                          </h3>
-                          <p className="text-gray-500 mt-2">
-                            "Utilisez le calendrier pour voir toutes les
-                            interventions"
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
