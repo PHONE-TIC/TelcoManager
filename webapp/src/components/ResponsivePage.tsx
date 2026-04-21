@@ -40,18 +40,20 @@ export function ResponsivePage({
             ) : null}
           </div>
           {actions.length > 0 ? (
-            <div className="responsive-page__actions">
-              {actions.map((action) => (
-                <button
-                  key={action.label}
-                  type="button"
-                  onClick={action.onClick}
-                  disabled={action.disabled}
-                  className={`responsive-page__${action.variant || "secondary"}`}
-                >
-                  {action.label}
-                </button>
-              ))}
+            <div className="responsive-page__header-actions-wrap">
+              <div className="responsive-page__actions">
+                {actions.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={action.onClick}
+                    disabled={action.disabled}
+                    className={`responsive-page__${action.variant || "secondary"}`}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : null}
         </div>

@@ -29,7 +29,6 @@ const Inventaire = lazy(() => import("./pages/Inventaire"));
 const TechnicianStock = lazy(() => import("./pages/TechnicianStock"));
 const Reports = lazy(() => import("./pages/Reports"));
 const IpLinksSupervision = lazy(() => import("./pages/IpLinksSupervision"));
-const GlobalSearch = lazy(() => import("./components/GlobalSearch"));
 const PwaInstallButton = lazy(() =>
   import("./components/PwaInstall").then((module) => ({
     default: module.PwaInstallButton,
@@ -47,8 +46,8 @@ import { useAuth } from "./contexts/useAuth";
 import { useTheme } from "./contexts/useTheme";
 import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
-import { NotificationCenter } from "./components/NotificationCenter";
 import { NotificationToastOverlay } from "./components/NotificationToastOverlay";
+import { SearchAndNotifications } from "./components/SearchAndNotifications";
 import { useNotifications } from "./hooks/useNotifications";
 import { NotificationCenterProvider } from "./contexts/NotificationCenterContext";
 
@@ -169,11 +168,9 @@ function Navigation() {
         </div>
       </div>
       {(user.role === "admin" || user.role === "gestionnaire") && (
-        <Suspense fallback={null}>
-          <div style={{ padding: "0 16px", marginBottom: "20px" }}>
-            <GlobalSearch />
-          </div>
-        </Suspense>
+        <div style={{ padding: "0 16px", marginBottom: "20px" }}>
+          <SearchAndNotifications />
+        </div>
       )}
       <div
         style={{
@@ -200,9 +197,6 @@ function Navigation() {
         </ul>
       </nav>
       <div style={{ marginTop: "auto", paddingTop: "20px" }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
-          <NotificationCenter />
-        </div>
         {/* PWA Install button for desktop */}
         <Suspense fallback={null}>
           <div style={{ marginBottom: "10px" }}>

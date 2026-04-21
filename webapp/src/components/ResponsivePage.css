@@ -49,6 +49,14 @@
   font-size: 0.95rem;
 }
 
+.responsive-page__header-actions-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .responsive-page__actions {
   display: flex;
   flex-wrap: wrap;
@@ -212,8 +220,13 @@
     gap: 8px;
   }
 
+  .responsive-page__header-actions-wrap {
+    width: 100%;
+  }
+
   .responsive-page__actions {
     flex-direction: column;
+    width: 100%;
   }
 
   .responsive-page__actions > * {

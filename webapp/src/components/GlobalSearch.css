@@ -1,17 +1,20 @@
 .global-search-trigger {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
+    justify-content: flex-start;
+    padding: 10px 16px;
     background: var(--bg-secondary, #f5f5f5);
     border: 1px solid var(--border-color, #e5e5e5);
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s;
     font-size: 14px;
     color: var(--text-secondary, #6b7280);
     width: 100%;
     box-sizing: border-box;
+    min-height: 42px;
+    text-align: left;
+    overflow: hidden;
 }
 
 .global-search-trigger:hover {
@@ -21,25 +24,21 @@
     transform: translateY(-1px);
 }
 
-.search-icon {
-    font-size: 18px;
+.search-text-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
 }
 
 .search-text {
-    color: var(--text-secondary, #6b7280);
-    flex: 1;
-}
-
-.search-shortcut {
-    padding: 2px 6px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 11px;
-    font-family: monospace;
-    color: var(--text-tertiary);
-    display: none;
-    /* Hidden to prevent overflow in sidebar */
+    color: var(--text-primary, #1a1a1a);
+    font-weight: 600;
+    flex: 1 1 auto;
+    text-align: left;
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
 .global-search-overlay {

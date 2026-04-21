@@ -13,6 +13,8 @@ TelcoManager est une application web de gestion pour le suivi des stocks, des in
 - Gestion du stock courant et du stock HS
 - Module d’inventaire avec scan, comptage, écarts et export PDF
 - Recherche globale sur les principales entités
+- Centre de notifications intégré avec badge, panneau global et fermeture contextuelle
+- Alertes visuelles de déconnexion des liens IP avec toasts et notifications persistées côté interface
 - Authentification JWT
 - Support PWA
 
@@ -133,6 +135,10 @@ Optimisations et simplifications importantes, sans modification fonctionnelle vo
 - compactage global des compteurs et KPI pour tenir sur une seule ligne autant que possible
 - amélioration de la lisibilité des actions d’interface, notamment le bouton de déconnexion en rouge et un sélecteur clair/sombre plus visible
 - simplification de la vue `Interventions` pour les techniciens, limitée aux interventions du jour avec compteur dédié dans le titre
+- harmonisation de l’écran `Supervision de liens IP` avec les autres écrans de l’application
+- ajout d’un centre de notifications in-app avec cloche dans le header partagé, badge non lu, marquage lu et suppression
+- ajout de toasts de déconnexion pour les liens IP et persistance locale des notifications côté navigateur
+- repositionnement de la recherche globale et de la cloche dans une barre commune, avec comportement modal cohérent pour la recherche et les notifications
 
 ### Décembre 2025
 

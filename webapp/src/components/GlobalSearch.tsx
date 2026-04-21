@@ -331,9 +331,9 @@ const GlobalSearch: React.FC = () => {
   if (!isOpen) {
     return (
       <button className="global-search-trigger" onClick={() => setIsOpen(true)}>
-        <span className="search-icon">🔍</span>
-        <span className="search-text">Rechercher...</span>
-        <kbd className="search-shortcut">Ctrl+K</kbd>
+        <span className="search-text-wrap">
+          <span className="search-text">Recherche</span>
+        </span>
       </button>
     );
   }

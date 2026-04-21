@@ -238,6 +238,26 @@ textarea {
   position: relative;
 }
 
+.search-notifications-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  overflow: visible;
+}
+
+.search-notifications-bar__search {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: min(420px, 100%);
+}
+
+.search-notifications-bar__notification {
+  flex: 0 0 auto;
+  position: relative;
+  overflow: visible;
+}
+
 .notification-center {
   position: relative;
 }
@@ -289,7 +309,8 @@ textarea {
 .notification-panel {
   position: absolute;
   top: calc(100% + 10px);
-  right: 0;
+  left: 0;
+  right: auto;
   width: min(380px, calc(100vw - 32px));
   max-height: min(70vh, 560px);
   overflow: hidden;
@@ -300,6 +321,97 @@ textarea {
   background: var(--bg-primary);
   box-shadow: var(--shadow-xl);
   z-index: 1200;
+}
+
+.notification-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1990;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.notification-overlay.closing {
+  animation: fadeOut 0.2s ease-out forwards;
+}
+
+.notification-panel--portal {
+  position: fixed;
+  top: 10vh;
+  left: 50%;
+  width: min(520px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: min(70vh, 560px);
+  z-index: 2000;
+  transform: translateX(-50%) translateY(0) scale(1);
+  transform-origin: top center;
+  animation: notificationModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notification-panel--portal.closing {
+  animation: notificationModalOut 0.2s ease-out forwards;
+}
+
+@keyframes notificationModalIn {
+  from {
+    transform: translateX(-50%) translateY(-30px) scale(0.96);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes notificationModalOut {
+  from {
+    transform: translateX(-50%) translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(-50%) translateY(-30px) scale(0.96);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .notification-panel--portal {
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: 65vh;
+    transform: translateY(0) scale(1);
+    transform-origin: top center;
+  }
+
+  @keyframes notificationModalIn {
+    from {
+      transform: translateY(-30px) scale(0.96);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes notificationModalOut {
+    from {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    to {
+      transform: translateY(-30px) scale(0.96);
+      opacity: 0;
+    }
+  }
 }
 
 .notification-panel__header {
@@ -346,6 +458,23 @@ textarea {
 .notification-panel__action--danger,
 .notification-item__button--danger {
   color: var(--danger-color);
+}
+
+.notification-panel__close {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.notification-panel__close:hover {
+  background: var(--bg-elevated);
+  border-color: var(--primary-color);
 }
 
 .notification-panel__summary {
@@ -480,6 +609,10 @@ textarea {
 }
 
 @media (max-width: 767px) {
+  .search-notifications-bar {
+    display: none;
+  }
+
   .notification-panel {
     position: fixed;
     top: 64px;
