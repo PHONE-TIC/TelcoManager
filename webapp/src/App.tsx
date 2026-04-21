@@ -217,14 +217,16 @@ function Navigation() {
           className="btn app-theme-toggle"
           style={{ width: "100%", marginBottom: "10px" }}
         >
-          {theme === "dark" ? "☀️ Mode clair" : "🌙 Mode sombre"}
+          <span className="theme-icon" aria-hidden="true">{theme === "dark" ? "☀️" : "🌙"}</span>
+          <span style={{ flex: 1, textAlign: "left" }}>{theme === "dark" ? "Mode clair" : "Mode sombre"}</span>
         </button>
         <button
           onClick={logout}
-          className="btn btn-danger"
+          className="btn btn-danger app-logout-button"
           style={{ width: "100%" }}
         >
-          Déconnexion
+          <span className="logout-icon" aria-hidden="true">⎋</span>
+          <span style={{ flex: 1, textAlign: "left" }}>Déconnexion</span>
         </button>
       </div>
     </div>

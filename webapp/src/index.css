@@ -1921,7 +1921,7 @@ textarea {
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
 }
 
@@ -1949,6 +1949,18 @@ textarea {
 [data-theme="dark"] .theme-toggle-login:hover,
 [data-theme="dark"] .app-theme-toggle:hover {
   color: white;
+}
+
+.app-theme-toggle .theme-icon,
+.app-logout-button .logout-icon {
+  width: 20px;
+  display: inline-flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.app-logout-button {
+  justify-content: flex-start;
 }
 
 /* ========================================
