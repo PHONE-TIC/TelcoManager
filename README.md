@@ -136,8 +136,12 @@ Optimisations et simplifications importantes, sans modification fonctionnelle vo
 - amélioration de la lisibilité des actions d’interface, notamment le bouton de déconnexion en rouge et un sélecteur clair/sombre plus visible
 - simplification de la vue `Interventions` pour les techniciens, limitée aux interventions du jour avec compteur dédié dans le titre
 - harmonisation de l’écran `Supervision de liens IP` avec les autres écrans de l’application
-- ajout d’un centre de notifications in-app avec cloche dans le header partagé, badge non lu, marquage lu et suppression
-- ajout de toasts de déconnexion pour les liens IP et persistance locale des notifications côté navigateur
+- intégration de la supervision des liens IP directement dans le tableau de bord avec KPI dédiés et panneau des liens KO
+- ajout d’un centre de notifications in-app avec cloche dans le header partagé, badge non lu, marquage lu, suppression et lien direct vers la fiche concernée
+- ajout d’un watcher global de supervision des liens IP pour déclencher les notifications même hors de la page dédiée
+- ajout de toasts in-app pour les changements d’état des liens IP, affichés en bas à droite pendant 5 secondes, avec navigation directe vers la fiche du lien
+- ajout d’une page détail par lien IP (`/supervision-liens-ip/:reference`)
+- remplacement global des émojis d’interface par des icônes SVG homogènes via le composant partagé `AppIcon`
 - repositionnement de la recherche globale et de la cloche dans une barre commune, avec comportement modal cohérent pour la recherche et les notifications
 
 ### Décembre 2025
