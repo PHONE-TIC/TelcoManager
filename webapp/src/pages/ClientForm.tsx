@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
+import { AppIcon } from "../components/AppIcon";
 import "./detail-form-harmonization.css";
 import "./screen-harmonization.css";
 
@@ -189,8 +190,7 @@ function ClientForm() {
       <div className="harmonized-detail-header">
         <button
           onClick={() => navigate("/clients")}
-          className="btn btn-back"
-          style={{ marginBottom: "12px" }}
+          className="harmonized-back-button"
         >
           ← Retour aux clients
         </button>
@@ -201,7 +201,7 @@ function ClientForm() {
             color: "var(--text-primary)",
           }}
         >
-          {isEditing ? "✏️ Modifier le client" : "➕ Nouveau client"}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}><AppIcon name={isEditing ? "edit" : "plus"} size={24} /> {isEditing ? "Modifier le client" : "Nouveau client"}</span>
         </h1>
         <p style={{ color: "var(--text-secondary)", marginTop: "4px" }}>
           {isEditing
@@ -214,7 +214,7 @@ function ClientForm() {
       <div className="harmonized-card">
         {error && (
           <div className="harmonized-error-box" style={{ marginBottom: "20px" }}>
-            ⚠️ {error}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="warning" size={18} /> {error}</span>
           </div>
         )}
 
@@ -231,7 +231,7 @@ function ClientForm() {
                 style={getInputStyle("nom")}
               />
               {fieldErrors.nom && (
-                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+                <p style={fieldErrorStyle}>Ce champ est obligatoire</p>
               )}
             </div>
 
@@ -258,12 +258,12 @@ function ClientForm() {
                 style={getInputStyle("rue")}
               />
               {fieldErrors.rue && (
-                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+                <p style={fieldErrorStyle}>Ce champ est obligatoire</p>
               )}
             </div>
 
             {/* Code postal + Ville */}
-            <div className="mobile-form-grid-2" style={{ gridTemplateColumns: "1fr 2fr" }}>
+            <div className="mobile-form-grid-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
               <div>
                 <label style={getLabelStyle("codePostal")}>Code postal *</label>
                 <input
@@ -274,7 +274,7 @@ function ClientForm() {
                   style={getInputStyle("codePostal")}
                 />
                 {fieldErrors.codePostal && (
-                  <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+                  <p style={fieldErrorStyle}>Ce champ est obligatoire</p>
                 )}
               </div>
               <div>
@@ -287,7 +287,7 @@ function ClientForm() {
                   style={getInputStyle("ville")}
                 />
                 {fieldErrors.ville && (
-                  <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+                  <p style={fieldErrorStyle}>Ce champ est obligatoire</p>
                 )}
               </div>
             </div>
@@ -303,7 +303,7 @@ function ClientForm() {
                 style={getInputStyle("contact")}
               />
               {fieldErrors.contact && (
-                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+                <p style={fieldErrorStyle}>Ce champ est obligatoire</p>
               )}
             </div>
 
@@ -318,7 +318,7 @@ function ClientForm() {
                 style={getInputStyle("telephone")}
               />
               {fieldErrors.telephone && (
-                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+                <p style={fieldErrorStyle}>Ce champ est obligatoire</p>
               )}
             </div>
 
@@ -365,13 +365,13 @@ function ClientForm() {
               type="submit"
               className="btn btn-primary"
               disabled={saving}
-              style={{ minWidth: "150px" }}
+              style={{ minWidth: 0 }}
             >
               {saving
-                ? "⏳ Enregistrement..."
+                ? "Enregistrement..."
                 : isEditing
-                ? "✓ Enregistrer"
-                : "+ Créer le client"}
+                ? "Enregistrer"
+                : "Créer le client"}
             </button>
           </div>
         </form>

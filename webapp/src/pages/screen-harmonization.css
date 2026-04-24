@@ -1,5 +1,7 @@
 .harmonized-page {
   color: var(--text-primary);
+  width: 100%;
+  min-width: 0;
 }
 
 .harmonized-header {
@@ -27,6 +29,7 @@
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
+  min-width: 0;
 }
 
 .harmonized-primary-action:disabled {
@@ -34,7 +37,8 @@
   cursor: not-allowed;
 }
 
-.harmonized-secondary-action {
+.harmonized-secondary-action,
+.harmonized-back-button {
   padding: 10px 16px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
@@ -42,11 +46,30 @@
   color: var(--text-primary);
   font-weight: 500;
   cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  min-width: 0;
 }
 
-.harmonized-secondary-action:disabled {
+.harmonized-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.harmonized-secondary-action:hover:not(:disabled),
+.harmonized-back-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--primary-color);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.harmonized-secondary-action:disabled,
+.harmonized-back-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .harmonized-accent-action {
@@ -56,6 +79,7 @@
   color: white;
   font-weight: 600;
   cursor: pointer;
+  min-width: 0;
 }
 
 .harmonized-stats-grid {
@@ -72,6 +96,8 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
+  width: 100%;
+  min-width: 0;
 }
 
 .harmonized-header-with-stats .harmonized-header {
@@ -123,6 +149,8 @@
   padding-bottom: 16px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
 }
 
 .harmonized-filter-row,
@@ -132,6 +160,14 @@
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.harmonized-filter-row > *,
+.harmonized-filter-group > *,
+.harmonized-chip-row > * {
+  min-width: 0;
 }
 
 .harmonized-chip,
@@ -170,6 +206,37 @@
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   outline: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 1399px) {
+  .harmonized-header {
+    padding: 18px;
+    gap: 12px;
+  }
+
+  .harmonized-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .harmonized-header-with-stats .harmonized-stats-grid {
+    padding: 0 18px 18px;
+  }
+
+  .harmonized-surface {
+    padding: 16px;
+  }
+
+  .harmonized-toolbar {
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+  }
+
+  .harmonized-filter-group,
+  .harmonized-chip-row {
+    width: 100%;
+  }
 }
 
 @media (max-width: 767px) {
@@ -188,9 +255,11 @@
 
   .harmonized-primary-action,
   .harmonized-secondary-action,
-  .harmonized-accent-action {
+  .harmonized-accent-action,
+  .harmonized-back-button {
     width: 100%;
     min-height: 46px;
+    justify-content: center;
   }
 
   .harmonized-stats-grid {

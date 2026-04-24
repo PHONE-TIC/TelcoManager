@@ -1,5 +1,6 @@
 import type { InventoryItem } from "./inventory.types";
 import { getInventoryDiscrepancies } from "./inventory.utils";
+import { AppIcon } from "../components/AppIcon";
 
 interface InventoryDiscrepancyModalProps {
   isOpen: boolean;
@@ -39,8 +40,8 @@ export default function InventoryDiscrepancyModal({
           backgroundColor: "var(--bg-primary)",
           borderRadius: "12px",
           padding: "30px",
-          width: "90%",
-          maxWidth: "600px",
+          width: "100%",
+          maxWidth: "min(680px, 100%)",
           boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
           maxHeight: "90vh",
           display: "flex",
@@ -50,7 +51,7 @@ export default function InventoryDiscrepancyModal({
         <h2
           style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "20px" }}
         >
-          ⚠️ Vérification des écarts
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="warning" size={22} /> Vérification des écarts</span>
         </h2>
 
         <div style={{ flex: 1, overflowY: "auto", marginBottom: "20px" }}>
@@ -64,7 +65,7 @@ export default function InventoryDiscrepancyModal({
                 color: "#059669",
               }}
             >
-              ✅ Aucun écart détecté ! Tout est conforme.
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="check-circle" size={18} /> Aucun écart détecté ! Tout est conforme.</span>
             </div>
           ) : (
             <div className="space-y-3">
@@ -78,6 +79,8 @@ export default function InventoryDiscrepancyModal({
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "12px",
                     padding: "10px",
                     backgroundColor: "var(--bg-secondary)",
                     borderRadius: "8px",
@@ -117,8 +120,8 @@ export default function InventoryDiscrepancyModal({
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
           <button
             onClick={onClose}
-            className="btn btn-secondary"
-            style={{ marginRight: "auto" }}
+            className="harmonized-back-button"
+            style={{ marginRight: "auto", marginBottom: 0 }}
           >
             ← Retourner au comptage
           </button>

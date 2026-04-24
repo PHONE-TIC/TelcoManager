@@ -71,12 +71,13 @@ export interface InterventionNotification {
 }
 
 export interface IpLinkNotification {
-    type: 'ip_link_disconnected';
+    type: 'ip_link_disconnected' | 'ip_link_restored';
     linkId: number;
     reference: string;
     clientName: string;
     title: string;
     message: string;
+    url?: string;
 }
 
 // Show intervention-specific notification
@@ -104,9 +105,26 @@ export const showIpLinkDisconnectedNotification = (notification: IpLinkNotificat
         data: {
             type: notification.type,
             linkId: notification.linkId,
-            url: '/supervision-liens-ip',
+            url: notification.url || '/supervision-liens-ip',
         },
         requireInteraction: true,
+        actions: [
+            { action: 'view', title: 'Voir' },
+            { action: 'dismiss', title: 'Ignorer' },
+        ],
+    } as NotificationOptions);
+};
+
+export const showIpLinkRestoredNotification = (notification: IpLinkNotification): void => {
+    showNotification(notification.title, {
+        body: notification.message,
+        tag: `ip-link-restored-${notification.linkId}`,
+        data: {
+            type: notification.type,
+            linkId: notification.linkId,
+            url: notification.url || '/supervision-liens-ip',
+        },
+        requireInteraction: false,
         actions: [
             { action: 'view', title: 'Voir' },
             { action: 'dismiss', title: 'Ignorer' },

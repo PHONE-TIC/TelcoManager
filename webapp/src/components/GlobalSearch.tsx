@@ -5,11 +5,14 @@ import searchHistory, {
   type SearchHistoryItem,
 } from "../services/searchHistory.service";
 import { useNavigate } from "react-router-dom";
+import { AppIcon } from "./AppIcon";
 import "./GlobalSearch.css";
 
 import type {
   Client,
+  GlobalSearchResults,
   Intervention,
+  IpLink,
   Stock as StockItem,
   Technicien,
 } from "../types";
@@ -24,21 +27,14 @@ type SearchFilters = {
   technicianId?: string;
 } & Record<string, SearchFilterValue>;
 
-interface SearchResults {
-  clients: Client[];
-  interventions: Intervention[];
-  stock: StockItem[];
-  techniciens: Technicien[];
-  totalResults: number;
-}
-
-type EntityTab = "all" | "clients" | "interventions" | "stock" | "techniciens";
+type EntityTab = "all" | "clients" | "interventions" | "stock" | "techniciens" | "ipLinks";
 
 type SearchResultItem =
   | { type: "client"; data: Client }
   | { type: "intervention"; data: Intervention }
   | { type: "stock"; data: StockItem }
-  | { type: "technicien"; data: Technicien };
+  | { type: "technicien"; data: Technicien }
+  | { type: "ipLink"; data: IpLink };
 
 const getPersistedFilters = (
   searchFilters: SearchFilters
@@ -65,16 +61,31 @@ const getApiFilters = (searchFilters: SearchFilters): Record<string, string> =>
     })
   );
 
+const emptyResults: GlobalSearchResults = {
+  clients: [],
+  interventions: [],
+  stock: [],
+  techniciens: [],
+  ipLinks: [],
+  totalResults: 0,
+};
+
+const normalizeResults = (data: Partial<GlobalSearchResults> | undefined): GlobalSearchResults => ({
+  clients: Array.isArray(data?.clients) ? data!.clients : [],
+  interventions: Array.isArray(data?.interventions) ? data!.interventions : [],
+  stock: Array.isArray(data?.stock) ? data!.stock : [],
+  techniciens: Array.isArray(data?.techniciens) ? data!.techniciens : [],
+  ipLinks: Array.isArray(data?.ipLinks) ? data!.ipLinks : [],
+  totalResults: typeof data?.totalResults === "number"
+    ? data.totalResults
+    : [data?.clients, data?.interventions, data?.stock, data?.techniciens, data?.ipLinks]
+        .reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0),
+});
+
 const GlobalSearch: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResults>({
-    clients: [],
-    interventions: [],
-    stock: [],
-    techniciens: [],
-    totalResults: 0,
-  });
+  const [results, setResults] = useState<GlobalSearchResults>(emptyResults);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<EntityTab>("all");
   const [showFilters, setShowFilters] = useState(false);
@@ -120,13 +131,7 @@ const GlobalSearch: React.FC = () => {
     } else {
       // Reset on close
       setQuery("");
-      setResults({
-        clients: [],
-        interventions: [],
-        stock: [],
-        techniciens: [],
-        totalResults: 0,
-      });
+      setResults(emptyResults);
       setActiveTab("all");
       setShowFilters(false);
       setShowHistory(false);
@@ -138,13 +143,7 @@ const GlobalSearch: React.FC = () => {
   const performSearch = useCallback(
     async (searchQuery: string) => {
       if (!searchQuery || searchQuery.trim().length === 0) {
-        setResults({
-          clients: [],
-          interventions: [],
-          stock: [],
-          techniciens: [],
-          totalResults: 0,
-        });
+        setResults(emptyResults);
         setShowHistory(true);
         return;
       }
@@ -158,7 +157,7 @@ const GlobalSearch: React.FC = () => {
           filters: getApiFilters(filters),
         });
 
-        setResults(data);
+        setResults(normalizeResults(data));
 
         // Save to history
         searchHistory.saveSearch(searchQuery, getPersistedFilters(filters));
@@ -219,6 +218,11 @@ const GlobalSearch: React.FC = () => {
         allResults.push({ type: "technicien", data: item })
       );
     }
+    if (activeTab === "all" || activeTab === "ipLinks") {
+      results.ipLinks.forEach((item) =>
+        allResults.push({ type: "ipLink", data: item })
+      );
+    }
 
     return allResults;
   };
@@ -255,6 +259,9 @@ const GlobalSearch: React.FC = () => {
       case "technicien":
         navigate(`/techniciens/${data.id}`);
         break;
+      case "ipLink":
+        navigate(`/supervision-liens-ip/${encodeURIComponent(data.reference)}`);
+        break;
     }
 
     closeModal();
@@ -275,6 +282,7 @@ const GlobalSearch: React.FC = () => {
   const renderResult = (result: SearchResultItem, index: number) => {
     const isSelected = index === selectedIndex;
     const { type, data } = result;
+    const typeLabel = type === "ipLink" ? "LIEN IP" : type;
 
     return (
       <div
@@ -283,7 +291,7 @@ const GlobalSearch: React.FC = () => {
         onClick={() => handleResultClick(result)}
         onMouseEnter={() => setSelectedIndex(index)}
       >
-        <div className="result-type-badge">{type}</div>
+        <div className="result-type-badge">{typeLabel}</div>
         <div className="result-content">
           {type === "client" && (
             <>
@@ -323,6 +331,16 @@ const GlobalSearch: React.FC = () => {
               <div className="result-subtitle">@{data.username}</div>
             </>
           )}
+          {type === "ipLink" && (
+            <>
+              <div className="result-title">
+                {highlightText(data.reference, query)}
+              </div>
+              <div className="result-subtitle">
+                {data.clientName} • {data.collecteOperator || "-"} • {data.healthLabel}
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -349,26 +367,26 @@ const GlobalSearch: React.FC = () => {
       <div className="global-search-modal" onClick={(e) => e.stopPropagation()}>
         <div className="search-header">
           <div className="search-input-wrapper">
-            <span className="search-icon-large">🔍</span>
+            <span className="search-icon-large"><AppIcon name="search" size={22} /></span>
             <input
               ref={searchInputRef}
               type="text"
               className="search-input"
-              placeholder="Rechercher clients, interventions, stock, techniciens..."
+              placeholder="Rechercher clients, interventions, stock, techniciens, liens IP..."
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               onKeyDown={handleKeyDown}
             />
-            {loading && <span className="search-loading">⌛</span>}
+            {loading && <span className="search-loading"><AppIcon name="clock" size={18} /></span>}
           </div>
           <button
             className="filter-toggle"
             onClick={() => setShowFilters(!showFilters)}
           >
-            🎚️ Filtres
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="filter" size={18} />Filtres</span>
           </button>
           <button className="close-button" onClick={closeModal}>
-            ✕
+            <AppIcon name="close" size={18} />
           </button>
         </div>
 
@@ -439,6 +457,12 @@ const GlobalSearch: React.FC = () => {
             Techniciens{" "}
             <span className="tab-count">{results.techniciens.length}</span>
           </button>
+          <button
+            className={`tab ${activeTab === "ipLinks" ? "active" : ""}`}
+            onClick={() => setActiveTab("ipLinks")}
+          >
+            Liens IP <span className="tab-count">{results.ipLinks.length}</span>
+          </button>
         </div>
 
         <div className="search-results">
@@ -456,7 +480,7 @@ const GlobalSearch: React.FC = () => {
                   className="history-item"
                   onClick={() => handleHistoryItemClick(item)}
                 >
-                  <span className="history-icon">🕐</span>
+                  <span className="history-icon"><AppIcon name="history" size={16} /></span>
                   <span className="history-query">{item.query}</span>
                 </div>
               ))}
@@ -471,7 +495,7 @@ const GlobalSearch: React.FC = () => {
 
           {!showHistory && !loading && query && allResults.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">🔍</div>
+              <div className="empty-icon"><AppIcon name="search" size={28} /></div>
               <div className="empty-text">Aucun résultat pour "{query}"</div>
             </div>
           )}

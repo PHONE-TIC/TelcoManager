@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth.middleware";
-import { getIpLinksSnapshot, syncIpLinks } from "../services/ip-links.service";
+import { fetchIpLinkRouterUptime, getIpLinksSnapshot, syncIpLinks } from "../services/ip-links.service";
 
 function ensureManagerOrAdmin(req: AuthRequest, res: Response) {
   if (req.user?.role !== "admin" && req.user?.role !== "gestionnaire") {
@@ -15,6 +15,42 @@ export async function getIpLinks(req: AuthRequest, res: Response) {
 
   const snapshot = getIpLinksSnapshot();
   res.json(snapshot);
+}
+
+export function getIpLinkByReference(req: AuthRequest, res: Response) {
+  if (!ensureManagerOrAdmin(req, res)) return;
+
+  const reference = decodeURIComponent(String(req.params.reference || "")).trim().toLowerCase();
+  const snapshot = getIpLinksSnapshot();
+  const item = snapshot.items.find((link) => link.reference.trim().toLowerCase() === reference);
+
+  if (!item) {
+    res.status(404).json({ error: "Lien IP introuvable" });
+    return;
+  }
+
+  res.json({
+    item,
+    stats: snapshot.stats,
+  });
+}
+
+export async function getIpLinkUptime(req: AuthRequest, res: Response) {
+  if (!ensureManagerOrAdmin(req, res)) return;
+
+  const linkId = Number(req.params.id);
+  if (!Number.isFinite(linkId) || linkId <= 0) {
+    res.status(400).json({ error: "Identifiant de lien IP invalide" });
+    return;
+  }
+
+  try {
+    const routerUptime = await fetchIpLinkRouterUptime(linkId);
+    res.json({ routerUptime });
+  } catch (error: any) {
+    console.error("IP link uptime fetch error:", error);
+    res.status(500).json({ error: error.message || "Erreur lors de la récupération de l'uptime du lien IP" });
+  }
 }
 
 export async function syncIpLinksNow(req: AuthRequest, res: Response) {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiService } from "../services/api.service";
+import { AppIcon } from "./AppIcon";
 
 interface SerialTransferModalProps {
   onClose: () => void;
@@ -166,7 +167,7 @@ function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
           borderRadius: "16px",
           padding: "24px",
           width: "100%",
-          maxWidth: "500px",
+          maxWidth: "min(560px, 100%)",
           boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
           border: "1px solid var(--border-color)",
         }}
@@ -186,7 +187,7 @@ function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
               color: "var(--text-primary)",
             }}
           >
-            🚚 Transférer vers Technicien
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="vehicle" size={18} /> Transférer vers Technicien</span>
           </h2>
           <button
             onClick={onClose}
@@ -278,7 +279,7 @@ function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
                     color: "var(--text-secondary)",
                   }}
                 >
-                  ⏳
+                  <AppIcon name="clock" size={16} />
                 </span>
               )}
             </div>
@@ -329,7 +330,7 @@ function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
                         color: "var(--primary-color)",
                       }}
                     >
-                      🔢 {item.numeroSerie}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="label" size={14} /> {item.numeroSerie}</span>
                     </div>
                     <div
                       style={{
@@ -364,7 +365,7 @@ function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
                   marginBottom: "8px",
                 }}
               >
-                ✓ Article sélectionné
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="check-circle" size={16} /> Article sélectionné</span>
               </div>
               <div
                 style={{
@@ -382,7 +383,7 @@ function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
                   fontWeight: 500,
                 }}
               >
-                🔢 S/N: {selectedItem.numeroSerie}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="label" size={14} /> S/N: {selectedItem.numeroSerie}</span>
               </div>
               <div
                 style={{
@@ -429,7 +430,7 @@ function SerialTransferModal({ onClose, onSuccess }: SerialTransferModalProps) {
                 opacity: loading ? 0.7 : 1,
               }}
             >
-              {loading ? "⏳ Transfert..." : "🚚 Transférer"}
+              {loading ? "Transfert..." : "Transférer"}
             </button>
           </div>
         </form>

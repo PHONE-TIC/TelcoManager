@@ -269,7 +269,7 @@ function Clients() {
       </div>
 
       {/* Mini Dashboard Stats */}
-      <div className="harmonized-stats-grid" style={{ padding: "0 24px 24px" }}>
+      <div className="harmonized-stats-grid screen-summary-strip">
         <div
           className="harmonized-stat-card"
           style={{ borderLeft: "4px solid #f97316" }}
@@ -299,7 +299,7 @@ function Clients() {
       <div className="harmonized-surface">
         {/* Filters Row */}
         <div className="harmonized-toolbar">
-          <div className="harmonized-filter-group">
+          <div className="harmonized-filter-group screen-select-row">
             <span
               style={{
                 fontSize: "13px",
@@ -323,7 +323,7 @@ function Clients() {
               ))}
             </select>
           </div>
-          <div className="harmonized-filter-group">
+          <div className="harmonized-filter-group screen-chip-scroll">
             <span
               style={{
                 fontSize: "13px",
@@ -365,8 +365,8 @@ function Clients() {
                 <div className="flex flex-col">
                   <span className="font-bold text-gray-800">{client.nom}</span>
                   {client.sousLieu && (
-                    <span className="text-xs text-gray-500 mt-1">
-                      📍 {client.sousLieu}
+                    <span className="text-xs text-gray-500 mt-1" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                      <AppIcon name="location" size={14} /> {client.sousLieu}
                     </span>
                   )}
                 </div>
@@ -377,9 +377,9 @@ function Clients() {
               label: "Contact",
               render: (client) => (
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
+                  style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}
                 >
-                  <div className="flex flex-col" style={{ minWidth: "120px" }}>
+                  <div className="flex flex-col" style={{ minWidth: 0, flex: "1 1 140px" }}>
                     <span className="text-gray-900">{client.contact}</span>
                     <span className="text-sm text-gray-500">
                       {client.telephone}
@@ -389,8 +389,8 @@ function Clients() {
                     style={{
                       display: "flex",
                       gap: "4px",
-                      width: "72px",
                       justifyContent: "flex-start",
+                      flex: "0 0 auto",
                     }}
                   >
                     {client.telephone && (
@@ -422,7 +422,7 @@ function Clients() {
                           e.currentTarget.style.color = "#10b981";
                         }}
                       >
-                        📞
+                        <AppIcon name="user" size={16} />
                       </button>
                     )}
                     {client.email && (
@@ -454,7 +454,7 @@ function Clients() {
                           e.currentTarget.style.color = "#f59e0b";
                         }}
                       >
-                        📧
+                        <AppIcon name="mailbox" size={16} />
                       </button>
                     )}
                   </div>
@@ -507,7 +507,7 @@ function Clients() {
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
                 }}
               >
-                👁️
+                <AppIcon name="eye" size={16} />
               </button>
               <button
                 style={{
@@ -539,7 +539,7 @@ function Clients() {
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
                 }}
               >
-                ✏️
+                <AppIcon name="edit" size={16} />
               </button>
               <button
                 style={{
@@ -571,7 +571,7 @@ function Clients() {
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
                 }}
               >
-                🗑️
+                <AppIcon name="trash" size={16} />
               </button>
             </div>
           )}
@@ -579,7 +579,7 @@ function Clients() {
 
         {clients.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-4xl mb-4">👥</div>
+            <div className="text-4xl mb-4" style={{ display: "flex", justifyContent: "center" }}><AppIcon name="clients" size={36} /></div>
             <h3 className="text-lg font-medium text-gray-900">
               Aucun client trouvé
             </h3>
@@ -665,13 +665,13 @@ function Clients() {
               backgroundColor: "var(--card-bg)",
               borderRadius: "12px",
               padding: "24px",
-              maxWidth: "400px",
-              width: "90%",
+              width: "100%",
+              maxWidth: "min(460px, 100%)",
               boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.3)",
             }}
           >
             <div style={{ textAlign: "center", marginBottom: "20px" }}>
-              <div style={{ fontSize: "3rem", marginBottom: "12px" }}>⚠️</div>
+              <div style={{ fontSize: "3rem", marginBottom: "12px", display: "flex", justifyContent: "center" }}><AppIcon name="warning" size={38} /></div>
               <h3
                 style={{
                   fontSize: "1.25rem",
@@ -697,7 +697,7 @@ function Clients() {
               </p>
             </div>
             <div
-              style={{ display: "flex", gap: "12px", justifyContent: "center" }}
+              style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}
             >
               <button
                 onClick={() => setDeleteModal({ show: false, client: null })}
@@ -725,7 +725,7 @@ function Clients() {
                   fontWeight: 500,
                 }}
               >
-                🗑️ Supprimer
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="trash" size={16} /> Supprimer</span>
               </button>
             </div>
           </div>
@@ -736,3 +736,4 @@ function Clients() {
 }
 
 export default Clients;
+import { AppIcon } from "../components/AppIcon";

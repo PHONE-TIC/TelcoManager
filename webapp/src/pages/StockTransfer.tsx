@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import type { AxiosError } from "axios";
 import { apiService } from "../services/api.service";
 import { useNavigate } from "react-router-dom";
+import { AppIcon } from "../components/AppIcon";
 import type { Stock, TechnicianStock, Technicien, TechniciensListResponse } from "../types";
 import "./screen-harmonization.css";
 import "./detail-form-harmonization.css";
@@ -230,28 +231,27 @@ const StockTransfer = () => {
   // Styles
   const inputStyle = {
     width: "100%",
-    padding: "12px 16px",
-    backgroundColor: "var(--bg-secondary, #f8fafc)",
-    border: "1px solid var(--border-color, #e2e8f0)",
-    borderRadius: "12px",
+    padding: "10px 14px",
+    backgroundColor: "var(--bg-secondary)",
+    border: "1px solid var(--border-color)",
+    borderRadius: "8px",
     fontSize: "0.95rem",
-    color: "var(--text-primary, #1e293b)",
+    color: "var(--text-primary)",
     outline: "none",
-    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
   };
 
   const cardStyle = {
-    backgroundColor: "var(--bg-primary, #ffffff)",
-    borderRadius: "16px",
-    padding: "24px",
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
-    border: "1px solid var(--border-color, #e2e8f0)",
+    backgroundColor: "var(--bg-primary)",
+    borderRadius: "12px",
+    padding: "20px",
+    boxShadow: "var(--shadow)",
+    border: "1px solid var(--border-color)",
   };
 
   const labelStyle = {
     display: "block",
     fontWeight: 600,
-    color: "var(--text-secondary, #64748b)",
+    color: "var(--text-secondary)",
     marginBottom: "8px",
     fontSize: "0.875rem",
   };
@@ -269,18 +269,15 @@ const StockTransfer = () => {
   });
 
   return (
-    <div className="harmonized-shell" style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px" }}>
+    <div className="harmonized-shell" style={{ width: "100%", margin: 0, padding: "24px" }}>
       {/* Header */}
       <div className="harmonized-header">
         <div>
           <h1
             style={{
-              fontSize: "1.875rem",
-              fontWeight: 800,
-              background:
-                "linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              fontSize: "1.75rem",
+              fontWeight: 700,
+              color: "var(--text-primary)",
               marginBottom: "8px",
             }}
           >
@@ -301,7 +298,7 @@ const StockTransfer = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
           gap: "24px",
           marginBottom: "24px",
         }}
@@ -327,14 +324,14 @@ const StockTransfer = () => {
                 borderRadius: "10px",
               }}
             >
-              📤
+              <AppIcon name="return" size={22} />
             </span>
             Source
           </h2>
 
           <div style={{ marginBottom: "20px" }}>
             <label style={labelStyle}>Type de source</label>
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <button
                 type="button"
                 onClick={() => setSourceType("warehouse")}
@@ -343,7 +340,7 @@ const StockTransfer = () => {
                   "#3b82f6"
                 )}
               >
-                🏢 Stock Courant
+                <AppIcon name="warehouse" size={16} /> Stock Courant
               </button>
               <button
                 onClick={() => setSourceType("technician")}
@@ -352,7 +349,7 @@ const StockTransfer = () => {
                   "#3b82f6"
                 )}
               >
-                👷 Technicien
+                <AppIcon name="technician" size={16} /> Technicien
               </button>
             </div>
           </div>
@@ -397,14 +394,14 @@ const StockTransfer = () => {
                 borderRadius: "10px",
               }}
             >
-              📥
+              <AppIcon name="box" size={22} />
             </span>
             Destination
           </h2>
 
           <div style={{ marginBottom: "20px" }}>
             <label style={labelStyle}>Type de destination</label>
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <button
                 type="button"
                 onClick={() => setDestType("warehouse")}
@@ -413,7 +410,7 @@ const StockTransfer = () => {
                   "#22c55e"
                 )}
               >
-                🏢 Stock Courant
+                <AppIcon name="warehouse" size={16} /> Stock Courant
               </button>
               <button
                 onClick={() => setDestType("technician")}
@@ -422,7 +419,7 @@ const StockTransfer = () => {
                   "#22c55e"
                 )}
               >
-                👷 Technicien
+                <AppIcon name="technician" size={16} /> Technicien
               </button>
             </div>
           </div>
@@ -458,7 +455,7 @@ const StockTransfer = () => {
             flexWrap: "wrap",
           }}
         >
-          <div style={{ flex: 1, minWidth: "250px" }}>
+          <div style={{ flex: "1 1 250px", minWidth: 0 }}>
             <label style={labelStyle}>
               Scanner ou saisir un numéro de série / code-barres
             </label>
@@ -485,7 +482,7 @@ const StockTransfer = () => {
                   fontSize: "1.2rem",
                 }}
               >
-                🔍
+                <AppIcon name="search" size={18} />
               </span>
             </div>
           </div>
@@ -521,7 +518,7 @@ const StockTransfer = () => {
               gap: "8px",
             }}
           >
-            ⚠️ {error}
+            <><AppIcon name="warning" size={18} /> {error}</>
           </div>
         )}
         {success && (
@@ -539,7 +536,7 @@ const StockTransfer = () => {
               gap: "8px",
             }}
           >
-            ✅ {success}
+            <><AppIcon name="check-circle" size={18} /> {success}</>
           </div>
         )}
       </div>
@@ -742,7 +739,7 @@ const StockTransfer = () => {
                           justifyContent: "center",
                         }}
                       >
-                        ✕
+                        <AppIcon name="close" size={16} />
                       </button>
                     </td>
                   </tr>

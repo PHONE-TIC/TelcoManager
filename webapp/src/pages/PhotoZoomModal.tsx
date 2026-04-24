@@ -1,4 +1,5 @@
 import type { MutableRefObject } from "react";
+import { AppIcon } from "../components/AppIcon";
 
 interface PhotoZoomModalProps {
   photoUrl: string | null;
@@ -57,7 +58,7 @@ export default function PhotoZoomModal({
           justifyContent: "center",
         }}
       >
-        ✕
+        <AppIcon name="close" size={20} />
       </button>
 
       <div
@@ -92,7 +93,7 @@ export default function PhotoZoomModal({
           style={{
             color: "white",
             fontSize: "14px",
-            minWidth: "50px",
+            minWidth: "3.5rem",
             textAlign: "center",
           }}
         >

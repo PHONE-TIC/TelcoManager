@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 import { useTheme } from "../contexts/useTheme";
 import logo from "../assets/logo.png";
+import { AppIcon } from "../components/AppIcon";
 
 interface ApiErrorResponse {
   error?: string;
@@ -41,7 +42,10 @@ function Login() {
         className="theme-toggle-login"
         title="Changer le thème"
       >
-        {theme === "dark" ? "☀️ Mode Clair" : "🌙 Mode Sombre"}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+          <AppIcon name={theme === "dark" ? "sun" : "moon"} size={18} />
+          {theme === "dark" ? "Mode Clair" : "Mode Sombre"}
+        </span>
       </button>
 
       <div className="login-card">

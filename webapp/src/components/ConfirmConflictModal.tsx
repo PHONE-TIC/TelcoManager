@@ -1,4 +1,5 @@
 import React from "react";
+import { AppIcon } from "./AppIcon";
 
 interface ConfirmConflictModalProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ const ConfirmConflictModal: React.FC<ConfirmConflictModalProps> = ({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: "500px" }}>
+      <div className="modal-content" style={{ width: "100%", maxWidth: "min(560px, 100%)" }}>
         <h3
           style={{
             color: "var(--danger-color)",
@@ -36,7 +37,7 @@ const ConfirmConflictModal: React.FC<ConfirmConflictModalProps> = ({
             gap: "10px",
           }}
         >
-          ⚠️ Conflit de planning détecté
+          <AppIcon name="warning" size={22} /> Conflit de planning détecté
         </h3>
 
         <div style={{ marginBottom: "20px", lineHeight: "1.6" }}>
@@ -57,7 +58,7 @@ const ConfirmConflictModal: React.FC<ConfirmConflictModalProps> = ({
             <strong>{conflictingIntervention.titre}</strong>
             <br />
             <span style={{ fontSize: "0.9rem" }}>
-              📅{" "}
+              <AppIcon name="interventions" size={16} />{" "}
               {conflictingIntervention.datePlanifiee
                 ? new Date(conflictingIntervention.datePlanifiee).toLocaleString(
                     "fr-FR"
@@ -66,7 +67,7 @@ const ConfirmConflictModal: React.FC<ConfirmConflictModalProps> = ({
             </span>
             <br />
             <span style={{ fontSize: "0.9rem" }}>
-              📍 {conflictingIntervention.client?.nom}
+              <AppIcon name="location" size={16} /> {conflictingIntervention.client?.nom}
             </span>
           </div>
 
@@ -77,7 +78,7 @@ const ConfirmConflictModal: React.FC<ConfirmConflictModalProps> = ({
         </div>
 
         <div
-          style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}
+          style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" }}
         >
           <button className="btn btn-secondary" onClick={onClose}>
             Annuler

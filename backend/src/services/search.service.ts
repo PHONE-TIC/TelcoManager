@@ -3,6 +3,7 @@ import {
   interventionClientListSelect,
   interventionTechnicienListSelect,
 } from "../controllers/prisma-selects";
+import { getIpLinksSnapshot } from "./ip-links.service";
 
 interface SearchFilters {
   dateFrom?: string;
@@ -22,6 +23,7 @@ export async function runGlobalSearch(
       interventions: [],
       stock: [],
       techniciens: [],
+      ipLinks: [],
       totalResults: 0,
     };
   }
@@ -37,6 +39,16 @@ export async function runGlobalSearch(
       parsedFilters = {};
     }
   }
+
+  const ipLinksSnapshot = getIpLinksSnapshot();
+  const ipLinks = ipLinksSnapshot.items
+    .filter((link) =>
+      [link.reference, link.clientName, link.collecteOperator || "", link.type, link.maxBandwidth]
+        .join(" ")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    )
+    .slice(0, maxResults);
 
   const [clients, interventions, stock, techniciens] = await Promise.all([
     prisma.client.findMany({
@@ -126,7 +138,8 @@ export async function runGlobalSearch(
     interventions,
     stock,
     techniciens,
+    ipLinks,
     totalResults:
-      clients.length + interventions.length + stock.length + techniciens.length,
+      clients.length + interventions.length + stock.length + techniciens.length + ipLinks.length,
   };
 }

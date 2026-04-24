@@ -17,7 +17,7 @@ export function getStockLocation(
 ): { label: string; color: string; bgColor: string } {
   if (item.statut === "retour_fournisseur") {
     return {
-      label: "↩️ Retour Fournisseur",
+      label: "Retour Fournisseur",
       color: "#d97706",
       bgColor: "rgba(245, 158, 11, 0.15)",
     };
@@ -31,7 +31,7 @@ export function getStockLocation(
       if (activeTechStock.client) {
         const clientName = activeTechStock.client.nom || "Client";
         return {
-          label: `🏢 Client: ${clientName}`,
+          label: `Client: ${clientName}`,
           color: "#0891b2",
           bgColor: "rgba(8, 145, 178, 0.15)",
         };
@@ -39,7 +39,7 @@ export function getStockLocation(
 
       const techName = activeTechStock.technicien?.nom || "Technicien";
       return {
-        label: `🔧 Tech: ${techName}`,
+        label: `Tech: ${techName}`,
         color: "#7c3aed",
         bgColor: "rgba(124, 58, 237, 0.15)",
       };
@@ -55,7 +55,7 @@ export function getStockLocation(
     if (installed) {
       const clientName = installed.client?.nom || "Client";
       return {
-        label: `🏢 Client: ${clientName}`,
+        label: `Client: ${clientName}`,
         color: "#0891b2",
         bgColor: "rgba(8, 145, 178, 0.15)",
       };
@@ -64,14 +64,14 @@ export function getStockLocation(
 
   if (item.statut === "hs") {
     return {
-      label: "⚠️ HS",
+      label: "HS",
       color: "#dc2626",
       bgColor: "rgba(220, 38, 38, 0.15)",
     };
   }
 
   return {
-    label: "📦 Stock courant",
+    label: "Stock courant",
     color: "#16a34a",
     bgColor: "rgba(22, 163, 74, 0.15)",
   };

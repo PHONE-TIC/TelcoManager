@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api.service';
+import { AppIcon } from './AppIcon';
 
 interface StockTransferModalProps {
     stockId: string;
@@ -95,7 +96,7 @@ function StockTransferModal({ stockId, stockName, maxQuantite, onClose, onSucces
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        🚚 Transférer vers Technicien
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="vehicle" size={18} /> Transférer vers Technicien</span>
                     </h2>
                     <button
                         onClick={onClose}
@@ -231,7 +232,7 @@ function StockTransferModal({ stockId, stockName, maxQuantite, onClose, onSucces
                                 opacity: loading ? 0.7 : 1
                             }}
                         >
-                            {loading ? 'Transfert...' : '🚚 Transférer'}
+                            {loading ? 'Transfert...' : 'Transférer'}
                         </button>
                     </div>
                 </form>

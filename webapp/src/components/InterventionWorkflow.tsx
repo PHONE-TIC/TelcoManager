@@ -2,6 +2,7 @@ import { useState } from "react";
 import { apiService } from "../services/api.service";
 import SignaturePad from "./SignaturePad";
 import BarcodeScanner from "./BarcodeScanner";
+import { AppIcon } from "./AppIcon";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
 import type { Intervention } from "../types";
 import "./InterventionWorkflow.css";
@@ -409,7 +410,7 @@ export default function InterventionWorkflow({
                 onClick={handleStep1Next}
                 disabled={loading}
               >
-                Suivant & Enregistrer ➔
+                Suivant & Enregistrer
               </button>
             </div>
           </div>
@@ -480,10 +481,10 @@ export default function InterventionWorkflow({
 
             <div className="wizard-actions">
               <button className="btn btn-secondary" onClick={prevStep}>
-                ⬅ Retour
+                Retour
               </button>
               <button className="btn btn-primary" onClick={nextStep}>
-                Suivant ➔
+                Suivant
               </button>
             </div>
           </div>
@@ -533,7 +534,7 @@ export default function InterventionWorkflow({
                         setEquipments(equipments.filter((_, idx) => idx !== i))
                       }
                     >
-                      ✕
+                      <AppIcon name="close" size={14} />
                     </button>
                   </div>
                 ))}
@@ -602,10 +603,10 @@ export default function InterventionWorkflow({
 
             <div className="wizard-actions">
               <button className="btn btn-secondary" onClick={prevStep}>
-                ⬅ Retour
+                Retour
               </button>
               <button className="btn btn-primary" onClick={nextStep}>
-                Suivant ➔
+                Suivant
               </button>
             </div>
           </div>
@@ -627,7 +628,7 @@ export default function InterventionWorkflow({
             />
             <div className="wizard-actions">
               <button className="btn btn-secondary" onClick={prevStep}>
-                ⬅ Retour
+                Retour
               </button>
               <button
                 className="btn btn-primary"
@@ -639,7 +640,7 @@ export default function InterventionWorkflow({
                   nextStep();
                 }}
               >
-                Suivant ➔
+                Suivant
               </button>
             </div>
           </div>
@@ -679,14 +680,14 @@ export default function InterventionWorkflow({
 
             <div className="wizard-actions">
               <button className="btn btn-secondary" onClick={prevStep}>
-                ⬅ Retour
+                Retour
               </button>
               <button
                 className="btn btn-primary btn-lg"
                 onClick={handleClose}
                 disabled={loading || !signature || !clientSigner}
               >
-                ✅ CLÔTURER L'INTERVENTION
+                Clôturer l'intervention
               </button>
             </div>
           </div>

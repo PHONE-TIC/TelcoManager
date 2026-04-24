@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import AutocompleteInput from "../components/AutocompleteInput";
+import { AppIcon } from "../components/AppIcon";
 import type { Stock, StockListResponse } from "../types";
 import "./detail-form-harmonization.css";
 
@@ -333,24 +334,12 @@ function StockForm() {
       <div className="harmonized-detail-header">
         <button
           onClick={() => navigate("/stock")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "16px",
-            padding: "8px 16px",
-            borderRadius: "8px",
-            border: "1.5px solid rgba(255,255,255,0.3)",
-            backgroundColor: "rgba(255,255,255,0.05)",
-            color: "var(--text-primary)",
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
+          className="harmonized-back-button"
         >
           ← Retour au stock
         </button>
         <h1 className="text-2xl font-bold text-gray-800">
-          {isEditing ? "✏️ Modifier le matériel" : "📦 Nouveau matériel"}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}><AppIcon name={isEditing ? "edit" : "stock"} size={28} /> {isEditing ? "Modifier le matériel" : "Nouveau matériel"}</span>
         </h1>
         <p className="text-gray-500">
           {isEditing
@@ -374,7 +363,7 @@ function StockForm() {
               whiteSpace: "pre-line",
             }}
           >
-            ⚠️ {error}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="warning" size={18} /> {error}</span>
           </div>
         )}
 
@@ -508,7 +497,7 @@ function StockForm() {
                 }}
               />
               {fieldErrors.numeroSerie && (
-                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+                <p style={fieldErrorStyle}>Ce champ est obligatoire</p>
               )}
               {!isEditing && !fieldErrors.numeroSerie && (
                 <p
@@ -518,7 +507,7 @@ function StockForm() {
                     marginTop: "4px",
                   }}
                 >
-                  💡 La quantité s'ajuste automatiquement au nombre de numéros
+                  La quantité s'ajuste automatiquement au nombre de numéros
                   de série
                 </p>
               )}
@@ -565,7 +554,7 @@ function StockForm() {
                 ))}
               </select>
               {fieldErrors.categorie && (
-                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+                <p style={fieldErrorStyle}>Ce champ est obligatoire</p>
               )}
             </div>
 
@@ -604,7 +593,7 @@ function StockForm() {
                 ))}
               </select>
               {fieldErrors.fournisseur && (
-                <p style={fieldErrorStyle}>⚠️ Ce champ est obligatoire</p>
+                <p style={fieldErrorStyle}>Ce champ est obligatoire</p>
               )}
             </div>
 
@@ -638,8 +627,8 @@ function StockForm() {
                   cursor: "pointer",
                 }}
               >
-                <option value="courant">📦 En stock</option>
-                <option value="hs">⚠️ Hors service</option>
+                <option value="courant">En stock</option>
+                <option value="hs">Hors service</option>
               </select>
             </div>
 
@@ -690,10 +679,10 @@ function StockForm() {
               }}
             >
               {saving
-                ? "⏳ Enregistrement..."
+                ? "Enregistrement..."
                 : isEditing
-                  ? "💾 Enregistrer"
-                  : "➕ Créer"}
+                  ? "Enregistrer"
+                  : "Créer"}
             </button>
           </div>
         </form>

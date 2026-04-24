@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api.service';
+import { AppIcon } from './AppIcon';
 
 interface StockLocationModalProps {
     stockId: string;
@@ -108,7 +109,7 @@ function StockLocationModal({ stockId, currentStatut, currentTechnicianId, onClo
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        ✏️ Modifier la localisation
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="edit" size={18} /> Modifier la localisation</span>
                     </h2>
                     <button
                         onClick={onClose}
@@ -157,9 +158,9 @@ function StockLocationModal({ stockId, currentStatut, currentTechnicianId, onClo
                                 color: 'var(--text-primary)'
                             }}
                         >
-                            <option value="courant">✅ En Stock (Fonctionnel)</option>
-                            <option value="hs">⚠️ Hors Service</option>
-                            <option value="retour_fournisseur">↩️ Retour Fournisseur</option>
+                            <option value="courant">En Stock (Fonctionnel)</option>
+                            <option value="hs">Hors Service</option>
+                            <option value="retour_fournisseur">Retour Fournisseur</option>
                         </select>
                     </div>
 
@@ -188,7 +189,7 @@ function StockLocationModal({ stockId, currentStatut, currentTechnicianId, onClo
                                     onChange={() => setLocationType('warehouse')}
                                     style={{ display: 'none' }}
                                 />
-                                🏭 Stock Central
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="warehouse" size={16} /> Stock Central</span>
                             </label>
                             <label style={{
                                 flex: 1,
@@ -209,7 +210,7 @@ function StockLocationModal({ stockId, currentStatut, currentTechnicianId, onClo
                                     onChange={() => setLocationType('technician')}
                                     style={{ display: 'none' }}
                                 />
-                                🔧 Technicien
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="technician" size={16} /> Technicien</span>
                             </label>
                         </div>
                     </div>

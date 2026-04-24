@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { AppIcon } from "./AppIcon";
 import "./PhotoCapture.css";
 
 interface Photo {
@@ -59,11 +60,11 @@ export default function PhotoCapture({
   const getTypeLabel = (type: string) => {
     switch (type) {
       case "before":
-        return "📸 Avant";
+        return "Avant";
       case "after":
-        return "✅ Après";
+        return "Après";
       default:
-        return "📷 Autre";
+        return "Autre";
     }
   };
 
@@ -84,7 +85,7 @@ export default function PhotoCapture({
   return (
     <div className={`photo-capture ${className || ""}`} style={style}>
       <div className="photo-header">
-        <h3>📸 Photos d'intervention</h3>
+        <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="image" size={20} /> Photos d'intervention</h3>
         {!readOnly && (
           <div className="photo-type-selector">
             <select
@@ -94,9 +95,9 @@ export default function PhotoCapture({
               }
               className="type-select"
             >
-              <option value="before">📸 Avant intervention</option>
-              <option value="after">✅ Après intervention</option>
-              <option value="other">📷 Autre</option>
+              <option value="before">Avant intervention</option>
+              <option value="after">Après intervention</option>
+              <option value="other">Autre</option>
             </select>
           </div>
         )}
@@ -108,14 +109,14 @@ export default function PhotoCapture({
             className="photo-btn camera-btn"
             onClick={() => cameraInputRef.current?.click()}
           >
-            <span className="btn-icon">📷</span>
+            <span className="btn-icon"><AppIcon name="image" size={18} /></span>
             <span className="btn-text">Prendre une photo</span>
           </button>
           <button
             className="photo-btn gallery-btn"
             onClick={() => fileInputRef.current?.click()}
           >
-            <span className="btn-icon">🖼️</span>
+            <span className="btn-icon"><AppIcon name="image" size={18} /></span>
             <span className="btn-text">Galerie</span>
           </button>
 
@@ -144,7 +145,7 @@ export default function PhotoCapture({
       <div className="photos-gallery">
         {beforePhotos.length > 0 && (
           <div className="photo-section">
-            <h4>📸 Avant intervention ({beforePhotos.length})</h4>
+            <h4 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="image" size={18} /> Avant intervention ({beforePhotos.length})</h4>
             <div className="photo-grid">
               {beforePhotos.map((photo) => (
                 <div
@@ -161,7 +162,7 @@ export default function PhotoCapture({
                         onPhotoRemove(photo.id);
                       }}
                     >
-                      ✕
+                      <AppIcon name="close" size={14} />
                     </button>
                   )}
                 </div>
@@ -172,7 +173,7 @@ export default function PhotoCapture({
 
         {afterPhotos.length > 0 && (
           <div className="photo-section">
-            <h4>✅ Après intervention ({afterPhotos.length})</h4>
+            <h4 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="check-circle" size={18} /> Après intervention ({afterPhotos.length})</h4>
             <div className="photo-grid">
               {afterPhotos.map((photo) => (
                 <div
@@ -189,7 +190,7 @@ export default function PhotoCapture({
                         onPhotoRemove(photo.id);
                       }}
                     >
-                      ✕
+                      <AppIcon name="close" size={14} />
                     </button>
                   )}
                 </div>
@@ -200,7 +201,7 @@ export default function PhotoCapture({
 
         {otherPhotos.length > 0 && (
           <div className="photo-section">
-            <h4>📷 Autres photos ({otherPhotos.length})</h4>
+            <h4 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="image" size={18} /> Autres photos ({otherPhotos.length})</h4>
             <div className="photo-grid">
               {otherPhotos.map((photo) => (
                 <div
@@ -217,7 +218,7 @@ export default function PhotoCapture({
                         onPhotoRemove(photo.id);
                       }}
                     >
-                      ✕
+                      <AppIcon name="close" size={14} />
                     </button>
                   )}
                 </div>
@@ -228,7 +229,7 @@ export default function PhotoCapture({
 
         {photos.length === 0 && (
           <div className="no-photos">
-            <p>📷 Aucune photo pour le moment</p>
+            <p style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}><AppIcon name="image" size={18} /> Aucune photo pour le moment</p>
             <small>Prenez des photos avant et après l'intervention</small>
           </div>
         )}
@@ -242,7 +243,7 @@ export default function PhotoCapture({
         >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="close-modal-btn" onClick={handleClose}>
-              ✕
+              <AppIcon name="close" size={16} />
             </button>
             <img src={selectedPhoto.dataUrl} alt="Preview" />
             <div className="photo-info">
@@ -250,7 +251,7 @@ export default function PhotoCapture({
                 {getTypeLabel(selectedPhoto.type)}
               </span>
               <span className="photo-time">
-                🕒 {selectedPhoto.timestamp.toLocaleString("fr-FR")}
+                <AppIcon name="clock" size={16} /> {selectedPhoto.timestamp.toLocaleString("fr-FR")}
               </span>
             </div>
 
@@ -263,13 +264,13 @@ export default function PhotoCapture({
                 className="modal-btn download-btn"
                 onClick={(e) => e.stopPropagation()}
               >
-                📥 Télécharger
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="download" size={16} /> Télécharger</span>
               </a>
               <button
                 className="modal-btn close-footer-btn"
                 onClick={handleClose}
               >
-                ✕ Fermer
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="close" size={16} /> Fermer</span>
               </button>
             </div>
           </div>

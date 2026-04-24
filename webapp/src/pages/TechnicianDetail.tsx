@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import UserAvatar from "../components/UserAvatar";
+import { AppIcon } from "../components/AppIcon";
 import { getTechnicianRoleBadgeClass } from "./technician-detail.utils";
 import type { TechnicianStock, Technicien } from "../types";
 
@@ -107,7 +108,7 @@ function TechnicianDetail() {
         <div className="error-message">Technicien non trouvé</div>
         <button
           onClick={() => navigate("/techniciens")}
-          className="btn btn-secondary"
+          className="harmonized-back-button"
         >
           ← Retour à la liste
         </button>
@@ -122,7 +123,7 @@ function TechnicianDetail() {
         <div>
           <button
             onClick={() => navigate("/techniciens")}
-            className="btn btn-back"
+            className="harmonized-back-button"
           >
             ← Retour à la liste
           </button>
@@ -165,21 +166,21 @@ function TechnicianDetail() {
           className={`tab ${activeTab === "info" ? "active" : ""}`}
           onClick={() => setActiveTab("info")}
         >
-          📋 Informations
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> Informations</span>
         </button>
         {technician.role !== "admin" && technician.role !== "gestionnaire" && (
           <button
             className={`tab ${activeTab === "stock" ? "active" : ""}`}
             onClick={() => setActiveTab("stock")}
           >
-            🚗 Stock Véhicule
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="vehicle" size={18} /> Stock Véhicule</span>
           </button>
         )}
         <button
           className={`tab ${activeTab === "journal" ? "active" : ""}`}
           onClick={() => setActiveTab("journal")}
         >
-          📜 Journal
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="history" size={18} /> Journal</span>
         </button>
       </div>
 
@@ -247,7 +248,7 @@ function TechnicianDetail() {
           <div className="tab-content">
             <div className="info-card harmonized-card">
               <div className="vehicle-stock-header">
-                <h3>🚗 Stock embarqué dans le véhicule</h3>
+                <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="vehicle" size={18} /> Stock embarqué dans le véhicule</h3>
 
               </div>
 
@@ -272,7 +273,7 @@ function TechnicianDetail() {
                               marginLeft: "8px",
                             }}
                           >
-                            🔢 {item.stock.numeroSerie}
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="label" size={14} /> {item.stock.numeroSerie}</span>
                           </span>
                         )}
                         <small>
@@ -303,7 +304,7 @@ function TechnicianDetail() {
                           }
                           title="Changer l'état"
                         >
-                          {item.etat === "ok" ? "✅ OK" : "❌ HS"}
+                          {item.etat === "ok" ? "OK" : "HS"}
                         </button>
                         <button
                           className="btn-quantity"
@@ -336,7 +337,7 @@ function TechnicianDetail() {
                           onClick={() => handleRemoveFromVehicle(item.stockId)}
                           title="Retirer du véhicule"
                         >
-                          🗑️
+                          <AppIcon name="trash" size={14} />
                         </button>
                         {item.etat === "hs" && (
                           <button
@@ -381,7 +382,7 @@ function TechnicianDetail() {
                 </div>
               ) : (
                 <div className="empty-stock">
-                  <p>🚗 Aucun matériel dans le véhicule</p>
+                  <p style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="vehicle" size={16} /> Aucun matériel dans le véhicule</p>
 
                 </div>
               )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
+import { AppIcon } from "../components/AppIcon";
 import TableResponsive from "../components/TableResponsive";
 import UserAvatar from "../components/UserAvatar";
 import type { Technicien } from "../types";
@@ -86,7 +87,7 @@ function Techniciens() {
           onClick={() => navigate("/techniciens/new")}
           className="harmonized-primary-action"
         >
-          + Nouvel utilisateur
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="plus" size={16} /> Nouvel utilisateur</span>
         </button>
       </div>
 
@@ -103,12 +104,12 @@ function Techniciens() {
                 e.target.value as "all" | "admin" | "gestionnaire" | "technicien"
               )
             }
-            style={{ cursor: "pointer", minWidth: "160px" }}
+            style={{ cursor: "pointer" }}
           >
-            <option value="all">🏷️ Tous les rôles</option>
-            <option value="admin">👑 Administrateurs</option>
-            <option value="gestionnaire">📋 Gestionnaires</option>
-            <option value="technicien">🔧 Techniciens</option>
+            <option value="all">Tous les rôles</option>
+            <option value="admin">Administrateurs</option>
+            <option value="gestionnaire">Gestionnaires</option>
+            <option value="technicien">Techniciens</option>
           </select>
         </div>
 
@@ -217,7 +218,7 @@ function Techniciens() {
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
                 }}
               >
-                👁️
+                <AppIcon name="eye" size={16} />
               </button>
               <button
                 style={{
@@ -249,7 +250,7 @@ function Techniciens() {
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
                 }}
               >
-                ✏️
+                <AppIcon name="edit" size={16} />
               </button>
               <button
                 style={{
@@ -278,7 +279,7 @@ function Techniciens() {
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
                 }}
               >
-                🗑️
+                <AppIcon name="trash" size={16} />
               </button>
             </div>
           )}

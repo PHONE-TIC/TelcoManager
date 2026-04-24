@@ -8,12 +8,12 @@ interface Artifact {
 }
 
 export const TECHNICIAN_INTERVENTION_STEPS = [
-  { id: "info", label: "📋 Infos", icon: "📋" },
-  { id: "heures", label: "🕐 Heures", icon: "🕐" },
-  { id: "materiel", label: "🔧 Matériel", icon: "🔧" },
-  { id: "rapport", label: "📝 Rapport", icon: "📝" },
-  { id: "sign-tech", label: "✍️ Tech", icon: "✍️" },
-  { id: "sign-client", label: "✍️ Client", icon: "✍️" },
+  { id: "info", label: "Infos", icon: "Infos" },
+  { id: "heures", label: "Heures", icon: "Heures" },
+  { id: "materiel", label: "Matériel", icon: "Matériel" },
+  { id: "rapport", label: "Rapport", icon: "Rapport" },
+  { id: "sign-tech", label: "Tech", icon: "Tech" },
+  { id: "sign-client", label: "Client", icon: "Client" },
 ] as const;
 
 export function extractInterventionTime(isoStr?: string): string {

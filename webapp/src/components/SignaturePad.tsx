@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { AppIcon } from './AppIcon';
 import './SignaturePad.css';
 
 interface SignaturePadProps {
@@ -118,14 +119,14 @@ export default function SignaturePad({
     return (
         <div className="signature-pad-container">
             <div className="signature-header">
-                <label className="signature-label">✍️ {label}</label>
+                <label className="signature-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="edit" size={18} /> {label}</label>
                 {!readOnly && hasSignature && (
                     <button
                         type="button"
                         className="btn-clear-signature"
                         onClick={clearSignature}
                     >
-                        🗑️ Effacer
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="trash" size={16} /> Effacer</span>
                     </button>
                 )}
             </div>
@@ -150,7 +151,7 @@ export default function SignaturePad({
             </div>
 
             {hasSignature && (
-                <p className="signature-hint">✅ Signature enregistrée</p>
+                <p className="signature-hint" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="check-circle" size={16} /> Signature enregistrée</p>
             )}
         </div>
     );

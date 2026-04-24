@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AppIcon } from './AppIcon';
 import './LocationPicker.css';
 
 interface LocationPickerProps {
@@ -69,7 +70,7 @@ export default function LocationPicker({
     return (
         <div className="location-picker">
             <div className="location-header">
-                <h3>📍 Localisation</h3>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><AppIcon name="location" size={20} /> Localisation</h3>
                 {clientAddress && (
                     <p className="client-address">{clientAddress}</p>
                 )}
@@ -87,7 +88,7 @@ export default function LocationPicker({
                     onClick={getCurrentPosition}
                     disabled={loading}
                 >
-                    {loading ? '📡 Localisation...' : '📍 Obtenir ma position'}
+                    {loading ? 'Localisation...' : 'Obtenir ma position'}
                 </button>
 
                 {latitude && longitude && (
@@ -96,13 +97,13 @@ export default function LocationPicker({
                             className="btn btn-secondary"
                             onClick={openInMaps}
                         >
-                            🗺️ Voir sur la carte
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="map" size={16} /> Voir sur la carte</span>
                         </button>
                         <button
                             className="btn btn-success"
                             onClick={openNavigation}
                         >
-                            🧭 Naviguer
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="navigation" size={16} /> Naviguer</span>
                         </button>
                     </>
                 )}
@@ -135,7 +136,7 @@ export default function LocationPicker({
 
                     <div className="location-accuracy">
                         <small>
-                            💡 Astuce : Assurez-vous d'être à l'extérieur pour une meilleure précision
+                            Astuce : Assurez-vous d'être à l'extérieur pour une meilleure précision
                         </small>
                     </div>
                 </div>

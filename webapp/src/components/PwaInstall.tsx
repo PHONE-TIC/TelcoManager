@@ -1,4 +1,5 @@
 import { usePwaInstall } from "../hooks/usePwaInstall";
+import { AppIcon } from "./AppIcon";
 
 // Desktop install button component
 export function PwaInstallButton() {
@@ -139,7 +140,7 @@ export function PwaInstallPopup() {
             flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: "28px" }}>📦</span>
+          <AppIcon name="stock" size={28} />
         </div>
 
         {/* Text */}

@@ -1,14 +1,17 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { apiService } from "../services/api.service";
 import type { Intervention } from "../types";
+import type { IpLink } from "../types";
 import {
   buildInterventionStats,
   type DashboardStats,
+  type DashboardIpLinksAlertItem,
   type InterventionStat,
 } from "./dashboard.utils";
 import {
   DashboardChartSection,
   DashboardHeader,
+  DashboardIpLinksPanel,
   DashboardLowStockAlerts,
   DashboardRecentInterventions,
   DashboardStockCategories,
@@ -22,27 +25,34 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [recentInterventions, setRecentInterventions] = useState<Intervention[]>([]);
   const [interventionStats, setInterventionStats] = useState<InterventionStat[]>([]);
+  const [ipLinksAlerts, setIpLinksAlerts] = useState<DashboardIpLinksAlertItem[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [stockStats, clientsData, interventionsData, recentInterventionsData] =
+        const [stockStats, clientsData, interventionsData, recentInterventionsData, ipLinksSnapshot] =
           await Promise.all([
             apiService.getStockStats(),
             apiService.getClients({ limit: 1 }),
             apiService.getInterventions({ limit: 1000 }),
             apiService.getInterventions({ limit: 5, sort: "datePlanifiee:desc" }),
+            apiService.getIpLinks(),
           ]);
 
         const interventions = interventionsData.interventions || [];
+        const disconnectedLinks = (ipLinksSnapshot.items || [])
+          .filter((link: IpLink) => link.healthStatus === "disconnected")
+          .sort((a: IpLink, b: IpLink) => a.reference.localeCompare(b.reference, "fr"));
 
         setStats({
           stock: stockStats,
+          ipLinks: ipLinksSnapshot.stats,
           totalClients: clientsData.pagination.total,
           totalInterventions: interventionsData.pagination.total,
         });
         setInterventionStats(buildInterventionStats(interventions));
         setRecentInterventions(recentInterventionsData.interventions || []);
+        setIpLinksAlerts(disconnectedLinks);
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
       } finally {
@@ -82,6 +92,7 @@ function Dashboard() {
 
       <div className="dashboard-secondary-grid animate-fade-in-4">
         <DashboardStockCategories categories={stats?.stock?.parCategorie ?? []} />
+        <DashboardIpLinksPanel stats={stats?.ipLinks} items={ipLinksAlerts} />
         <DashboardLowStockAlerts items={stats?.stock?.stockFaible ?? []} />
       </div>
     </div>

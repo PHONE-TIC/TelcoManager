@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
+import { AppIcon } from '../components/AppIcon';
 import './detail-form-harmonization.css';
 
 interface Client {
@@ -55,10 +56,10 @@ function ClientDetail() {
 
     const getStatusBadge = (statut: string) => {
         const badges: { [key: string]: { label: string; color: string; bg: string } } = {
-            planifiee: { label: '📅 Planifiée', color: '#1e40af', bg: '#dbeafe' },
-            en_cours: { label: '⏳ En cours', color: '#9a3412', bg: '#ffedd5' },
-            terminee: { label: '✓ Terminée', color: '#166534', bg: '#dcfce7' },
-            annulee: { label: '✕ Annulée', color: '#991b1b', bg: '#fee2e2' },
+            planifiee: { label: 'Planifiée', color: '#1e40af', bg: '#dbeafe' },
+            en_cours: { label: 'En cours', color: '#9a3412', bg: '#ffedd5' },
+            terminee: { label: 'Terminée', color: '#166534', bg: '#dcfce7' },
+            annulee: { label: 'Annulée', color: '#991b1b', bg: '#fee2e2' },
         };
         const badge = badges[statut] || { label: statut, color: '#374151', bg: '#f3f4f6' };
         return (
@@ -91,7 +92,7 @@ function ClientDetail() {
         return (
             <div className="page-container harmonized-shell">
                 <div className="error-message">Client non trouvé</div>
-                <button onClick={() => navigate('/clients')} className="btn btn-secondary">
+                <button onClick={() => navigate('/clients')} className="harmonized-back-button">
                     ← Retour aux clients
                 </button>
             </div>
@@ -104,7 +105,7 @@ function ClientDetail() {
             <div className="harmonized-detail-header">
                 <div className="mobile-inline-pairs">
                     <div>
-                        <button onClick={() => navigate('/clients')} className="btn btn-back" style={{ marginBottom: '12px' }}>
+                        <button onClick={() => navigate('/clients')} className="harmonized-back-button">
                             ← Retour aux clients
                         </button>
                         <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
@@ -112,7 +113,7 @@ function ClientDetail() {
                         </h1>
                         {client.sousLieu && (
                             <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                📍 {client.sousLieu}
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AppIcon name="location" size={16} /> {client.sousLieu}</span>
                             </span>
                         )}
                     </div>
@@ -138,11 +139,11 @@ function ClientDetail() {
             </div>
             </div>
 
-            <div className="harmonized-card-grid" style={{ gridTemplateColumns: 'minmax(280px, 1fr) minmax(0, 2fr)' }}>
+            <div className="harmonized-card-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
                 {/* Client Info Card */}
                 <div className="harmonized-card">
                     <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
-                        📋 Informations
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="document" size={18} /> Informations</span>
                     </h2>
                     <div className="mobile-stack-list">
                         <div>
@@ -153,7 +154,7 @@ function ClientDetail() {
                             <div style={detailLabelStyle}>Téléphone</div>
                             <div style={{ fontWeight: 500 }}>
                                 <a href={`tel:${client.telephone}`} style={{ color: 'var(--primary-color)' }}>
-                                    📞 {client.telephone}
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AppIcon name="user" size={14} /> {client.telephone}</span>
                                 </a>
                             </div>
                         </div>
@@ -162,7 +163,7 @@ function ClientDetail() {
                                 <div style={detailLabelStyle}>Email</div>
                                 <div style={{ fontWeight: 500 }}>
                                     <a href={`mailto:${client.email}`} style={{ color: 'var(--primary-color)' }}>
-                                        ✉️ {client.email}
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AppIcon name="mailbox" size={14} /> {client.email}</span>
                                     </a>
                                 </div>
                             </div>
@@ -176,7 +177,7 @@ function ClientDetail() {
                         </div>
                         {client.notes && (
                             <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
-                                <div style={detailLabelStyle}>📝 Notes</div>
+                                <div style={detailLabelStyle}>Notes</div>
                                 <div style={{ fontWeight: 400, fontSize: '0.875rem', whiteSpace: 'pre-wrap', color: 'var(--text-secondary)' }}>
                                     {client.notes}
                                 </div>
@@ -188,7 +189,7 @@ function ClientDetail() {
                 {/* Interventions List */}
                 <div className="harmonized-card">
                     <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '16px', color: 'var(--text-primary)' }}>
-                        📅 Historique des interventions ({interventions.length})
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="history" size={18} /> Historique des interventions ({interventions.length})</span>
                     </h2>
                     {interventions.length > 0 ? (
                         <div className="mobile-stack-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
@@ -226,7 +227,7 @@ function ClientDetail() {
                         </div>
                     ) : (
                         <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📋</div>
+                            <div style={{ fontSize: '2rem', marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><AppIcon name="document" size={32} /></div>
                             <div>Aucune intervention pour ce client</div>
                         </div>
                     )}

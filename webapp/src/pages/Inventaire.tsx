@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import moment from "moment";
 import { apiService } from "../services/api.service";
+import { AppIcon } from "../components/AppIcon";
 import { generateInventoryPDF } from "../utils/inventoryPdf";
 import InventoryDiscrepancyModal from "./InventoryDiscrepancyModal";
 import type { FilterType, InventorySession } from "./inventory.types";
@@ -231,18 +232,7 @@ function Inventaire() {
           <div className="flex items-center gap-4 harmonized-header-copy">
             <button
               onClick={() => setCurrentSession(null)}
-              style={{
-                padding: "8px 14px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                background: "var(--bg-secondary)",
-                color: "var(--text-primary)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                fontWeight: 500,
-              }}
+              className="harmonized-back-button"
             >
               ← Retour
             </button>
@@ -437,7 +427,7 @@ function Inventaire() {
                   fontSize: "1.2rem",
                 }}
               >
-                📷
+                <AppIcon name="image" size={20} />
               </span>
               <input
                 type="text"
@@ -472,7 +462,7 @@ function Inventaire() {
                   gap: "6px",
                 }}
               >
-                <span>❌</span> {scanError}
+                <AppIcon name="x-circle" size={16} /> {scanError}
               </div>
             )}
             {lastScannedItem && !scanError && (
@@ -486,7 +476,7 @@ function Inventaire() {
                   gap: "6px",
                 }}
               >
-                <span>✅</span> Scanné: <strong>{lastScannedItem}</strong> (+1)
+                <AppIcon name="check-circle" size={16} /> Scanné: <strong>{lastScannedItem}</strong> (+1)
               </div>
             )}
           </div>
@@ -494,18 +484,18 @@ function Inventaire() {
           {/* Filter buttons */}
           <div className="responsive-stack" style={{ width: "100%" }}>
             {[
-              { key: "all", label: "📦 Tous", count: stats.total },
+              { key: "all", label: "Tous", count: stats.total },
               {
                 key: "uncounted",
-                label: "⏳ Non comptés",
+                label: "Non comptés",
                 count: stats.total - stats.counted,
               },
               {
                 key: "discrepancy",
-                label: "⚠️ Écarts",
+                label: "Écarts",
                 count: stats.discrepancies,
               },
-              { key: "ok", label: "✅ Conformes", count: stats.ok },
+              { key: "ok", label: "Conformes", count: stats.ok },
             ].map((f) => (
               <button
                 key={f.key}
@@ -842,7 +832,7 @@ function Inventaire() {
                 color: "var(--text-secondary)",
               }}
             >
-              <div style={{ fontSize: "2rem", marginBottom: "8px" }}>🔍</div>
+              <div style={{ fontSize: "2rem", marginBottom: "8px", display: "flex", justifyContent: "center" }}><AppIcon name="search" size={30} /></div>
               <p>Aucun article trouvé avec ce filtre</p>
             </div>
           )}
@@ -864,11 +854,11 @@ function Inventaire() {
     <div className="space-y-6 screen-shell harmonized-page">
       {/* Header & Start Action */}
       <div className="harmonized-header" style={{ alignItems: "flex-start" }}>
-        <div className="harmonized-header-copy" style={{ minWidth: "300px" }}>
+        <div className="harmonized-header-copy">
           <h1
             style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "8px" }}
           >
-            📦 Inventaires
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}><AppIcon name="inventory" size={24} /> Inventaires</span>
           </h1>
           <p style={{ color: "var(--text-secondary)" }}>
             Gérez vos inventaires périodiques pour maintenir la précision du
@@ -882,7 +872,7 @@ function Inventaire() {
           style={{
             backgroundColor: "var(--bg-secondary)",
             width: "100%",
-            maxWidth: "450px",
+            maxWidth: "min(560px, 100%)",
           }}
         >
           <h3
@@ -892,7 +882,7 @@ function Inventaire() {
               marginBottom: "15px",
             }}
           >
-            🚀 Lancer un nouvel inventaire
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="plus" size={18} /> Lancer un nouvel inventaire</span>
           </h3>
           <div
             style={{ display: "flex", gap: "10px", flexDirection: "column" }}
@@ -923,7 +913,7 @@ function Inventaire() {
                 gap: "8px",
               }}
             >
-              <span>📸</span> Prendre un instantané & Démarrer
+              <AppIcon name="image" size={18} /> Prendre un instantané & Démarrer
             </button>
             <p
               style={{
@@ -975,7 +965,7 @@ function Inventaire() {
                   fontSize: "1.5rem",
                 }}
               >
-                {session.status === "completed" ? "✅" : "📝"}
+                {session.status === "completed" ? <AppIcon name="check-circle" size={22} /> : <AppIcon name="document" size={22} />}
               </div>
               <div>
                 <h3 style={{ fontWeight: 600, fontSize: "1.1rem" }}>
@@ -1014,7 +1004,7 @@ function Inventaire() {
                   }}
                   title="Supprimer"
                 >
-                  🗑️
+                  <AppIcon name="trash" size={16} />
                 </button>
               )}
               <span style={{ color: "var(--text-secondary)" }}>→</span>

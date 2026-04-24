@@ -9,6 +9,7 @@ import type { TravelEstimate } from "../services/geolocation.service";
 import PhotoCapture from "../components/PhotoCapture";
 import SignaturePad from "../components/SignaturePad";
 import BarcodeScanner from "../components/BarcodeScanner";
+import { AppIcon, type AppIconName } from "../components/AppIcon";
 import { useAuth } from "../contexts/useAuth";
 import PhotoZoomModal from "./PhotoZoomModal";
 import "./TechnicianInterventionView.css";
@@ -44,6 +45,14 @@ interface Equipment {
 type ApiErrorResponse = {
   error?: string;
   message?: string;
+};
+
+const getAttachmentIconName = (name: string): AppIconName => {
+  if (name.endsWith(".pdf")) return "document";
+  if (name.match(/\.(jpg|jpeg|png|gif)$/i)) return "image";
+  if (name.match(/\.(doc|docx)$/i)) return "comment";
+  if (name.match(/\.(xls|xlsx)$/i)) return "reports";
+  return "attachment";
 };
 
 interface VehicleStockItem {
@@ -272,7 +281,7 @@ const TechnicianInterventionView: React.FC = () => {
   const handleSaveHours = async () => {
     if (!id) return;
     if (!timeArrivee || !timeDepart) {
-      alert("⚠️ Veuillez renseigner l'heure d'arrivée et de départ.");
+      alert("Veuillez renseigner l'heure d'arrivée et de départ.");
       return false;
     }
 
@@ -501,17 +510,17 @@ const TechnicianInterventionView: React.FC = () => {
   const handleClose = async () => {
     if (!id || !intervention) return;
     if (!timeArrivee || !timeDepart) {
-      alert("⚠️ Veuillez saisir les heures d'arrivée et de départ");
+      alert("Veuillez saisir les heures d'arrivée et de départ");
       setCurrentStep(1);
       return;
     }
     if (!clientSigner.trim()) {
-      alert("⚠️ Le nom du signataire est obligatoire");
+      alert("Le nom du signataire est obligatoire");
       setCurrentStep(5);
       return;
     }
     if (!signatureClient) {
-      alert("⚠️ La signature du client est obligatoire");
+      alert("La signature du client est obligatoire");
       setCurrentStep(5);
       return;
     }
@@ -613,14 +622,14 @@ const TechnicianInterventionView: React.FC = () => {
         await apiService.uploadInterventionArtifacts(id, formData);
       }
 
-      alert("✅ Intervention clôturée avec succès !");
+      alert("Intervention clôturée avec succès !");
       navigate("/interventions");
     } catch (err: unknown) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
       console.error("Error closing intervention:", err);
       setLoading(false);
       alert(
-        "❌ Erreur: " +
+        "Erreur: " +
         (axiosError.response?.data?.error ||
           axiosError.message ||
           "Erreur lors de la clôture")
@@ -630,10 +639,10 @@ const TechnicianInterventionView: React.FC = () => {
 
   const getStatusBadge = (statut: string) => {
     const badges: { [key: string]: { label: string; class: string } } = {
-      planifiee: { label: "🔵 Planifiée", class: "badge-info" },
-      en_cours: { label: "🟠 En cours", class: "badge-warning" },
-      terminee: { label: "🟢 Terminée", class: "badge-success" },
-      annulee: { label: "🔴 Annulée", class: "badge-danger" },
+      planifiee: { label: "Planifiée", class: "badge-info" },
+      en_cours: { label: "En cours", class: "badge-warning" },
+      terminee: { label: "Terminée", class: "badge-success" },
+      annulee: { label: "Annulée", class: "badge-danger" },
     };
     const badge = badges[statut] || { label: statut, class: "badge-gray" };
     return <span className={`badge ${badge.class}`}>{badge.label}</span>;
@@ -653,7 +662,7 @@ const TechnicianInterventionView: React.FC = () => {
         <div className="error-message">Intervention non trouvée</div>
         <button
           onClick={() => navigate("/interventions")}
-          className="btn btn-secondary"
+          className="harmonized-back-button"
         >
           ← Retour
         </button>
@@ -688,7 +697,7 @@ const TechnicianInterventionView: React.FC = () => {
           <div className="tech-header harmonized-header" style={{ border: "none", borderRadius: 0, margin: 0 }}>
             <button
               onClick={() => navigate("/interventions")}
-              className="btn btn-back"
+              className="harmonized-back-button"
             >
               ← Retour
             </button>
@@ -714,7 +723,7 @@ const TechnicianInterventionView: React.FC = () => {
               }}
               className="btn btn-primary"
             >
-              📄 {reportUrl ? "Voir le rapport" : "Télécharger PDF"}
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> {reportUrl ? "Voir le rapport" : "Télécharger PDF"}</span>
             </button>
           </div>
 
@@ -727,13 +736,13 @@ const TechnicianInterventionView: React.FC = () => {
               paddingBottom: "10px",
             }}
           >
-            📋 Compte-rendu d'intervention
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={22} /> Compte-rendu d'intervention</span>
           </h2>
 
           {/* Informations client */}
           <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
             <h3 style={{ marginBottom: "10px", color: "var(--primary-color)" }}>
-              👤 Client
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="user" size={18} /> Client</span>
             </h3>
             <p>
               <strong>Nom :</strong> {intervention.client?.nom}
@@ -750,7 +759,7 @@ const TechnicianInterventionView: React.FC = () => {
           {/* Informations intervention */}
           <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
             <h3 style={{ marginBottom: "10px", color: "var(--primary-color)" }}>
-              📅 Dates & Horaires
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="clock" size={18} /> Dates & Horaires</span>
             </h3>
             <p>
               <strong>Date planifiée :</strong>{" "}
@@ -786,7 +795,7 @@ const TechnicianInterventionView: React.FC = () => {
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
-                📝 Description
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Description</span>
               </h3>
               <p style={{ whiteSpace: "pre-wrap" }}>
                 {intervention.description}
@@ -800,7 +809,7 @@ const TechnicianInterventionView: React.FC = () => {
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
-                🔧 Équipements
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="technician" size={18} /> Équipements</span>
               </h3>
               <table className="table" style={{ marginTop: "10px" }}>
                 <thead>
@@ -817,8 +826,8 @@ const TechnicianInterventionView: React.FC = () => {
                         <td>{eq.stock?.nomMateriel || eq.nom || "N/A"}</td>
                         <td>
                           {eq.action === "install"
-                            ? "✅ Installation"
-                            : "🔄 Retrait"}
+                            ? "Installation"
+                            : "Retrait"}
                         </td>
                         <td>{eq.quantite || 1}</td>
                       </tr>
@@ -835,7 +844,7 @@ const TechnicianInterventionView: React.FC = () => {
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
-                💬 Commentaire du technicien
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Commentaire du technicien</span>
               </h3>
               <p
                 style={{
@@ -864,7 +873,7 @@ const TechnicianInterventionView: React.FC = () => {
                 }}
               >
                 <h3 style={{ margin: 0, color: "var(--primary-color)" }}>
-                  📷 Photos de l'intervention ({photos.length})
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="image" size={18} /> Photos de l'intervention ({photos.length})</span>
                 </h3>
                 <button
                   onClick={() => {
@@ -878,7 +887,7 @@ const TechnicianInterventionView: React.FC = () => {
                   className="btn btn-secondary"
                   style={{ fontSize: "14px", padding: "8px 12px" }}
                 >
-                  ⬇️ Tout télécharger
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="download" size={16} /> Tout télécharger</span>
                 </button>
               </div>
 
@@ -982,7 +991,7 @@ const TechnicianInterventionView: React.FC = () => {
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
-                📎 Fichiers joints ({loadedAttachments.length})
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="attachment" size={18} /> Fichiers joints ({loadedAttachments.length})</span>
               </h3>
               <div>
                 {loadedAttachments.map((file, index) => (
@@ -1005,16 +1014,8 @@ const TechnicianInterventionView: React.FC = () => {
                         gap: "10px",
                       }}
                     >
-                      <span style={{ fontSize: "20px" }}>
-                        {file.name.endsWith(".pdf")
-                          ? "📄"
-                          : file.name.match(/\.(jpg|jpeg|png|gif)$/i)
-                            ? "🖼️"
-                            : file.name.match(/\.(doc|docx)$/i)
-                              ? "📝"
-                              : file.name.match(/\.(xls|xlsx)$/i)
-                                ? "📊"
-                                : "📁"}
+                      <span style={{ fontSize: "20px", display: "inline-flex" }}>
+                        <AppIcon name={getAttachmentIconName(file.name)} size={20} />
                       </span>
                       <span style={{ fontWeight: "500" }}>{file.name}</span>
                     </div>
@@ -1024,7 +1025,7 @@ const TechnicianInterventionView: React.FC = () => {
                       className="btn btn-secondary"
                       style={{ fontSize: "12px", padding: "6px 12px" }}
                     >
-                      ⬇️ Télécharger
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="download" size={14} /> Télécharger</span>
                     </a>
                   </div>
                 ))}
@@ -1038,7 +1039,7 @@ const TechnicianInterventionView: React.FC = () => {
               <h3
                 style={{ marginBottom: "10px", color: "var(--primary-color)" }}
               >
-                📒 Notes
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Notes</span>
               </h3>
               <p style={{ whiteSpace: "pre-wrap" }}>{intervention.notes}</p>
             </div>
@@ -1066,7 +1067,7 @@ const TechnicianInterventionView: React.FC = () => {
       <div className="tech-header harmonized-header">
         <button
           onClick={() => navigate("/interventions")}
-          className="btn btn-back"
+          className="harmonized-back-button"
         >
           ← Retour
         </button>
@@ -1098,8 +1099,8 @@ const TechnicianInterventionView: React.FC = () => {
               }
             >
               {isScheduledForToday
-                ? "▶️ Prendre en charge"
-                : "🔒 Non disponible"}
+                ? "Prendre en charge"
+                : "Non disponible"}
             </button>
             {!isScheduledForToday && (
               <span
@@ -1164,7 +1165,7 @@ const TechnicianInterventionView: React.FC = () => {
         {(currentStep === 0 || isPlanifiee) && (
           <div className="step-panel">
             <div className="info-card harmonized-card">
-              <h3>📋 Informations générales</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> Informations générales</h3>
               <div className="info-grid">
                 <div className="info-item">
                   <label>Client</label>
@@ -1201,13 +1202,13 @@ const TechnicianInterventionView: React.FC = () => {
             </div>
 
             <div className="info-card harmonized-card">
-              <h3>📍 Localisation client</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="location" size={18} /> Localisation client</h3>
               <div className="address-info">
                 <div className="address-line">
-                  🏠 {intervention.client?.rue || "Adresse non renseignée"}
+                  <AppIcon name="home" size={16} /> {intervention.client?.rue || "Adresse non renseignée"}
                 </div>
                 <div className="address-line">
-                  📮 {intervention.client?.codePostal}{" "}
+                  <AppIcon name="mailbox" size={16} /> {intervention.client?.codePostal}{" "}
                   {intervention.client?.ville}
                 </div>
               </div>
@@ -1225,7 +1226,7 @@ const TechnicianInterventionView: React.FC = () => {
                     gap: "15px",
                   }}
                 >
-                  <span style={{ fontSize: "1.5rem" }}>⏱️</span>
+                  <span style={{ fontSize: "1.5rem", display: "inline-flex" }}><AppIcon name="clock" size={22} /></span>
                   <div>
                     <div style={{ fontWeight: "bold" }}>
                       {travelEstimate.formattedTime}
@@ -1256,7 +1257,7 @@ const TechnicianInterventionView: React.FC = () => {
                     );
                   }}
                 >
-                  🗺️ Google Maps
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="map" size={16} /> Google Maps</span>
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -1276,7 +1277,7 @@ const TechnicianInterventionView: React.FC = () => {
                     );
                   }}
                 >
-                  🚗 Waze
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="vehicle" size={16} /> Waze</span>
                 </button>
               </div>
 
@@ -1299,19 +1300,19 @@ const TechnicianInterventionView: React.FC = () => {
                 }}
               >
                 {loadingTravel
-                  ? "⏳ Calcul en cours..."
-                  : "⏱️ Estimer le temps de trajet"}
+                  ? "Calcul en cours..."
+                  : "Estimer le temps de trajet"}
               </button>
             </div>
 
             <div className="info-card harmonized-card">
-              <h3>📄 Description</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> Description</h3>
               <p>{intervention.description || "Aucune description"}</p>
             </div>
 
             {intervention.notes && (
               <div className="info-card harmonized-card">
-                <h3>📝 Notes</h3>
+                <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Notes</h3>
                 <p>{intervention.notes}</p>
               </div>
             )}
@@ -1320,8 +1321,9 @@ const TechnicianInterventionView: React.FC = () => {
             {clientHistory.length > 0 && (
               <div className="info-card harmonized-card">
                 <h3>
-                  📜 Historique client ({clientHistory.length} précédente
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="history" size={18} /> Historique client ({clientHistory.length} précédente
                   {clientHistory.length > 1 ? "s" : ""})
+                  </span>
                 </h3>
                 <div style={{ marginTop: "10px" }}>
                   {clientHistory.map((hist: HistoryIntervention) => (
@@ -1376,7 +1378,7 @@ const TechnicianInterventionView: React.FC = () => {
                           marginTop: "4px",
                         }}
                       >
-                        📅{" "}
+                        <AppIcon name="clock" size={14} />{" "}
                         {new Date(hist.datePlanifiee).toLocaleDateString(
                           "fr-FR"
                         )}
@@ -1392,7 +1394,7 @@ const TechnicianInterventionView: React.FC = () => {
                 className="btn btn-primary btn-block"
                 onClick={() => setCurrentStep(1)}
               >
-                Suivant →
+                Suivant
               </button>
             )}
           </div>
@@ -1402,7 +1404,7 @@ const TechnicianInterventionView: React.FC = () => {
         {currentStep === 1 && isEnCours && (
           <div className="step-panel">
             <div className="info-card harmonized-card">
-              <h3>🕐 Heures d'intervention</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="clock" size={18} /> Heures d'intervention</h3>
               <div className="form-group">
                 <label>Heure d'arrivée</label>
                 <input
@@ -1430,7 +1432,7 @@ const TechnicianInterventionView: React.FC = () => {
                 className="btn btn-outline"
                 onClick={() => setCurrentStep(0)}
               >
-                ← Précédent
+                Précédent
               </button>
               <button
                 className="btn btn-primary"
@@ -1439,7 +1441,7 @@ const TechnicianInterventionView: React.FC = () => {
                   if (saved) setCurrentStep(2);
                 }}
               >
-                Suivant →
+                Suivant
               </button>
             </div>
           </div>
@@ -1449,7 +1451,7 @@ const TechnicianInterventionView: React.FC = () => {
         {currentStep === 2 && isEnCours && (
           <div className="step-panel">
             <div className="info-card harmonized-card">
-              <h3>🔧 Matériel</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="technician" size={18} /> Matériel</h3>
               <p
                 style={{
                   color: "var(--text-secondary)",
@@ -1464,7 +1466,7 @@ const TechnicianInterventionView: React.FC = () => {
                   className="equipment-btn install-btn"
                   onClick={handleOpenInstallModal}
                 >
-                  <span className="eq-btn-icon">📥</span>
+                  <span className="eq-btn-icon"><AppIcon name="download" size={16} /></span>
                   <span className="eq-btn-text">Installation</span>
                   <span className="eq-btn-hint">Assigner au client</span>
                 </button>
@@ -1472,7 +1474,7 @@ const TechnicianInterventionView: React.FC = () => {
                   className="equipment-btn retrait-btn"
                   onClick={handleOpenRetraitModal}
                 >
-                  <span className="eq-btn-icon">📤</span>
+                  <span className="eq-btn-icon"><AppIcon name="return" size={16} /></span>
                   <span className="eq-btn-text">Retrait</span>
                   <span className="eq-btn-hint">Reprendre du client</span>
                 </button>
@@ -1483,7 +1485,7 @@ const TechnicianInterventionView: React.FC = () => {
                   {equipments.map((eq, i) => (
                     <div key={i} className={`equipment-item ${eq.action}`}>
                       <span>
-                        {eq.action === "install" ? "📥" : "📤"} {eq.nom}
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name={eq.action === "install" ? "download" : "return"} size={16} /> {eq.nom}</span>
                         {eq.etat && (
                           <span
                             style={{
@@ -1505,7 +1507,7 @@ const TechnicianInterventionView: React.FC = () => {
                         className="btn-remove"
                         onClick={() => handleRemoveEquipment(i)}
                       >
-                        ✕
+                        <AppIcon name="close" size={14} />
                       </button>
                     </div>
                   ))}
@@ -1513,7 +1515,7 @@ const TechnicianInterventionView: React.FC = () => {
                     className="btn btn-success"
                     onClick={handleSaveEquipments}
                   >
-                    💾 Enregistrer le matériel
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="save" size={16} /> Enregistrer le matériel</span>
                   </button>
                 </div>
               )}
@@ -1535,7 +1537,7 @@ const TechnicianInterventionView: React.FC = () => {
                               gap: "8px",
                             }}
                           >
-                            📥 Matériel installé
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="download" size={16} /> Matériel installé</span>
                           </h4>
                           {intervention.equipements
                             .filter(
@@ -1593,7 +1595,7 @@ const TechnicianInterventionView: React.FC = () => {
                               gap: "8px",
                             }}
                           >
-                            📤 Matériel repris
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="return" size={16} /> Matériel repris</span>
                           </h4>
                           {intervention.equipements
                             .filter(
@@ -1647,7 +1649,7 @@ const TechnicianInterventionView: React.FC = () => {
                                         eq.etat === "ok" ? "#10b981" : "#ef4444",
                                     }}
                                   >
-                                    {eq.etat === "ok" ? "✅ OK" : "❌ HS"}
+                                    {eq.etat === "ok" ? "OK" : "HS"}
                                   </span>
                                 )}
                               </div>
@@ -1667,7 +1669,7 @@ const TechnicianInterventionView: React.FC = () => {
                       className="btn btn-secondary"
                       onClick={() => setCurrentStep(3)}
                     >
-                      ✓ Pas de matériel installé/repris
+                      Pas de matériel installé/repris
                     </button>
                   </div>
                 )}
@@ -1678,13 +1680,13 @@ const TechnicianInterventionView: React.FC = () => {
                 className="btn btn-outline"
                 onClick={() => setCurrentStep(1)}
               >
-                ← Précédent
+                Précédent
               </button>
               <button
                 className="btn btn-primary"
                 onClick={() => setCurrentStep(3)}
               >
-                Suivant →
+                Suivant
               </button>
             </div>
           </div>
@@ -1694,7 +1696,7 @@ const TechnicianInterventionView: React.FC = () => {
         {currentStep === 3 && isEnCours && (
           <div className="step-panel">
             <div className="info-card harmonized-card">
-              <h3>📝 Rapport technicien</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Rapport technicien</h3>
 
               {/* Added Fields */}
               {/* Added Fields */}
@@ -1766,7 +1768,7 @@ const TechnicianInterventionView: React.FC = () => {
                 />
                 {!commentaire.trim() && (
                   <p className="field-hint">
-                    ⚠️ Le commentaire est obligatoire pour passer à l'étape
+                    Le commentaire est obligatoire pour passer à l'étape
                     suivante
                   </p>
                 )}
@@ -1783,7 +1785,7 @@ const TechnicianInterventionView: React.FC = () => {
 
             {/* Fichiers joints */}
             <div className="info-card file-upload-section">
-              <h3>📎 Fichiers joints</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="attachment" size={18} /> Fichiers joints</h3>
               <p className="file-upload-hint">
                 Ajoutez des documents, PDFs, ou autres fichiers liés à
                 l'intervention
@@ -1804,7 +1806,7 @@ const TechnicianInterventionView: React.FC = () => {
                 htmlFor="file-upload"
                 className="btn btn-secondary file-upload-label"
               >
-                📁 Ajouter des fichiers
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="attachment" size={16} /> Ajouter des fichiers</span>
               </label>
 
               {attachedFiles.length > 0 && (
@@ -1813,17 +1815,7 @@ const TechnicianInterventionView: React.FC = () => {
                     <div key={index} className="file-item">
                       <div className="file-info">
                         <span className="file-icon">
-                          {file.type.includes("pdf")
-                            ? "📄"
-                            : file.type.includes("image")
-                              ? "🖼️"
-                              : file.type.includes("word") ||
-                                file.type.includes("document")
-                                ? "📝"
-                                : file.type.includes("excel") ||
-                                  file.type.includes("spreadsheet")
-                                  ? "📊"
-                                  : "📁"}
+                          <AppIcon name={getAttachmentIconName(file.name)} size={18} />
                         </span>
                         <div className="file-details">
                           <div className="file-name">{file.name}</div>
@@ -1840,7 +1832,7 @@ const TechnicianInterventionView: React.FC = () => {
                           )
                         }
                       >
-                        ✕
+                        <AppIcon name="close" size={14} />
                       </button>
                     </div>
                   ))}
@@ -1853,7 +1845,7 @@ const TechnicianInterventionView: React.FC = () => {
                 className="btn btn-outline"
                 onClick={() => setCurrentStep(2)}
               >
-                ← Précédent
+                Précédent
               </button>
               <button
                 className="btn btn-primary"
@@ -1879,7 +1871,7 @@ const TechnicianInterventionView: React.FC = () => {
                   setCurrentStep(4);
                 }}
               >
-                Suivant →
+                Suivant
               </button>
             </div>
           </div>
@@ -1889,7 +1881,7 @@ const TechnicianInterventionView: React.FC = () => {
         {currentStep === 4 && isEnCours && (
           <div className="step-panel">
             <div className="info-card harmonized-card">
-              <h3>✍️ Signature du technicien</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="edit" size={18} /> Signature du technicien</h3>
               <p className="hint">
                 Signez pour confirmer les travaux effectués
               </p>
@@ -1906,19 +1898,19 @@ const TechnicianInterventionView: React.FC = () => {
                 className="btn btn-outline"
                 onClick={() => setCurrentStep(3)}
               >
-                ← Précédent
+                Précédent
               </button>
               <button
                 className="btn btn-primary"
                 onClick={() => {
                   if (!signatureTechnicien) {
-                    alert("⚠️ Veuillez signer avant de continuer");
+                    alert("Veuillez signer avant de continuer");
                     return;
                   }
                   setCurrentStep(5);
                 }}
               >
-                Suivant →
+                Suivant
               </button>
             </div>
           </div>
@@ -1928,7 +1920,7 @@ const TechnicianInterventionView: React.FC = () => {
         {currentStep === 5 && isEnCours && (
           <div className="step-panel">
             <div className="info-card harmonized-card">
-              <h3>✍️ Signature du client</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="edit" size={18} /> Signature du client</h3>
 
               <div className="form-group" style={{ marginBottom: "15px" }}>
                 <label>Remarques Client (Optionnel)</label>
@@ -1962,7 +1954,7 @@ const TechnicianInterventionView: React.FC = () => {
             />
 
             <div className="closure-section">
-              <h3>✅ Clôturer l'intervention</h3>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="check-circle" size={18} /> Clôturer l'intervention</h3>
               <p className="hint">
                 Vérifiez que toutes les informations sont correctes avant de
                 clôturer.
@@ -1973,13 +1965,13 @@ const TechnicianInterventionView: React.FC = () => {
                 onClick={() => {
                   // Logs removed for production
                   if (!signatureClient) {
-                    alert("⚠️ La signature du client est obligatoire");
+                    alert("La signature du client est obligatoire");
                     return;
                   }
                   handleClose();
                 }}
               >
-                ✅ Clôturer l'intervention
+                Clôturer l'intervention
               </button>
             </div>
 
@@ -1988,7 +1980,7 @@ const TechnicianInterventionView: React.FC = () => {
                 className="btn btn-outline"
                 onClick={() => setCurrentStep(4)}
               >
-                ← Précédent
+                Précédent
               </button>
             </div>
           </div>
@@ -2034,7 +2026,8 @@ const TechnicianInterventionView: React.FC = () => {
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: "500px",
+              width: "100%",
+              maxWidth: "min(560px, 100%)",
               maxHeight: "80vh",
               backgroundColor: "var(--card-bg)",
               borderRadius: "16px",
@@ -2070,7 +2063,7 @@ const TechnicianInterventionView: React.FC = () => {
                 (e.currentTarget.style.backgroundColor = "transparent")
               }
             >
-              ✕
+              <AppIcon name="close" size={18} />
             </button>
             <div
               className="modal-header"
@@ -2084,8 +2077,8 @@ const TechnicianInterventionView: React.FC = () => {
             >
               <h3 style={{ margin: 0, color: "var(--text-primary)" }}>
                 {vehicleStockAction === "install"
-                  ? "📥 Installer du matériel"
-                  : "📤 Reprendre du matériel"}
+                  ? "Installer du matériel"
+                  : "Reprendre du matériel"}
               </h3>
             </div>
             <div
@@ -2178,7 +2171,7 @@ const TechnicianInterventionView: React.FC = () => {
                                       fontWeight: 500,
                                     }}
                                   >
-                                    🔢 S/N: {item.stock.numeroSerie}
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="label" size={14} /> S/N: {item.stock.numeroSerie}</span>
                                   </div>
                                 )}
                               </div>
@@ -2267,7 +2260,7 @@ const TechnicianInterventionView: React.FC = () => {
                                       fontWeight: 500,
                                     }}
                                   >
-                                    🔢 S/N: {item.stock.numeroSerie}
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="label" size={14} /> S/N: {item.stock.numeroSerie}</span>
                                   </div>
                                 )}
                                 <div
@@ -2277,7 +2270,7 @@ const TechnicianInterventionView: React.FC = () => {
                                     color: "var(--text-secondary)",
                                   }}
                                 >
-                                  📍 Installé le{" "}
+                                  <AppIcon name="location" size={14} /> Installé le{" "}
                                   {item.assignedAt
                                     ? new Date(
                                       item.assignedAt
@@ -2324,7 +2317,8 @@ const TechnicianInterventionView: React.FC = () => {
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
             style={{
-              maxWidth: "400px",
+              width: "100%",
+              maxWidth: "min(460px, 100%)",
               textAlign: "center",
               backgroundColor: "var(--card-bg)",
               borderRadius: "16px",
@@ -2344,7 +2338,7 @@ const TechnicianInterventionView: React.FC = () => {
               }}
             >
               <h3 style={{ margin: 0, color: "var(--text-primary)" }}>
-                📦 État du matériel
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="box" size={18} /> État du matériel</span>
               </h3>
               <button
                 className="modal-close"
@@ -2361,7 +2355,7 @@ const TechnicianInterventionView: React.FC = () => {
                   padding: "5px",
                 }}
               >
-                ✕
+                <AppIcon name="close" size={18} />
               </button>
             </div>
             <div className="modal-body" style={{ padding: "25px" }}>
@@ -2376,7 +2370,7 @@ const TechnicianInterventionView: React.FC = () => {
                     marginBottom: "20px",
                   }}
                 >
-                  🔢 S/N: {selectedVehicleItem.stock.numeroSerie}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="label" size={14} /> S/N: {selectedVehicleItem.stock.numeroSerie}</span>
                 </p>
               )}
               <p
@@ -2389,6 +2383,7 @@ const TechnicianInterventionView: React.FC = () => {
                   display: "flex",
                   gap: "15px",
                   justifyContent: "center",
+                  flexWrap: "wrap",
                 }}
               >
                 <button
@@ -2412,7 +2407,7 @@ const TechnicianInterventionView: React.FC = () => {
                     (e.currentTarget.style.transform = "scale(1)")
                   }
                 >
-                  ✅ OK
+                  OK
                 </button>
                 <button
                   onClick={() => handleRetrieveItem("hs")}
@@ -2435,7 +2430,7 @@ const TechnicianInterventionView: React.FC = () => {
                     (e.currentTarget.style.transform = "scale(1)")
                   }
                 >
-                  ❌ HS
+                  HS
                 </button>
               </div>
             </div>

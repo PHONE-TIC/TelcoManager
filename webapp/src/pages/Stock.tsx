@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { useAuth } from "../contexts/useAuth";
 import SerialTransferModal from "../components/SerialTransferModal";
+import { AppIcon } from "../components/AppIcon";
 import type { Technicien, TechnicianStock } from "../types";
 import {
   getStockLocation,
@@ -230,7 +231,7 @@ function Stock() {
   const handleDelete = async (id: string, nom: string) => {
     if (
       !confirm(
-        `⚠️ Êtes-vous sûr de vouloir supprimer définitivement "${nom}" ?\n\nCette action est irréversible.`
+        `Êtes-vous sûr de vouloir supprimer définitivement "${nom}" ?\n\nCette action est irréversible.`
       )
     )
       return;
@@ -301,7 +302,7 @@ function Stock() {
       </div>
 
       {/* Stats Cards */}
-      <div className="harmonized-stats-grid" style={{ padding: "0 24px 24px" }}>
+      <div className="harmonized-stats-grid screen-summary-strip">
         {[
           {
             value: totalItems,
@@ -342,7 +343,7 @@ function Stock() {
           {/* Top Row: Buttons and Search */}
           <div className="harmonized-toolbar">
             {/* Status buttons */}
-            <div className="responsive-stack" style={{ width: "100%" }}>
+            <div className="screen-chip-scroll" style={{ width: "100%" }}>
               <button
                 className={`harmonized-chip ${filter === "all" ? "active" : ""}`}
                 onClick={() => setFilter("all")}
@@ -401,7 +402,7 @@ function Stock() {
           </div>
 
           {/* Bottom Row: Dropdowns */}
-          <div className="harmonized-filter-group">
+          <div className="harmonized-filter-group screen-select-row">
             {/* Technician Select (Visible only when filter is technician) */}
             {filter === "technician" && (
               <select
@@ -411,7 +412,6 @@ function Stock() {
                 style={{
                   border: "2px solid #7c3aed",
                   cursor: "pointer",
-                  minWidth: "200px",
                   fontWeight: 600,
                 }}
               >
@@ -429,7 +429,7 @@ function Stock() {
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="harmonized-select"
-              style={{ cursor: "pointer", minWidth: "160px" }}
+              style={{ cursor: "pointer" }}
             >
               <option value="all">Toutes catégories</option>
               {categories.map((cat, i) => (
@@ -494,8 +494,8 @@ function Stock() {
                           {item.nomMateriel}
                         </span>
                         {item.codeBarre && (
-                          <span className="text-xs text-gray-500">
-                            📊 {item.codeBarre}
+                          <span className="text-xs text-gray-500" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            <AppIcon name="label" size={14} /> {item.codeBarre}
                           </span>
                         )}
                       </div>
@@ -571,7 +571,7 @@ function Stock() {
                                 title="Rupture de stock"
                                 style={{ cursor: "help" }}
                               >
-                                🔴
+                                <AppIcon name="warning" size={16} />
                               </span>
                             )}
                           </div>
@@ -633,8 +633,8 @@ function Stock() {
                             e.currentTarget.style.borderColor =
                               "rgba(255,255,255,0.25)";
                           }}
-                        >
-                          👁️
+                          >
+                          <AppIcon name="eye" size={18} />
                         </button>
                         {/* Edit Button */}
                         {canManageStock && (
@@ -667,7 +667,7 @@ function Stock() {
                                 "rgba(255,255,255,0.25)";
                             }}
                           >
-                            ✏️
+                            <AppIcon name="edit" size={18} />
                           </button>
                         )}
                         {/* Move to HS Button (only for courant stock) */}
@@ -703,7 +703,7 @@ function Stock() {
                                 "rgba(255,255,255,0.25)";
                             }}
                           >
-                            ⚠️
+                            <AppIcon name="warning" size={18} />
                           </button>
                         )}
                         {/* Return to Supplier Button (for courant and hs stock) */}
@@ -741,7 +741,7 @@ function Stock() {
                                   "rgba(255,255,255,0.25)";
                               }}
                             >
-                              ↩️
+                              <AppIcon name="return" size={18} />
                             </button>
                           )}
                         {/* Delete Button (Admin only) */}
@@ -777,7 +777,7 @@ function Stock() {
                                 "rgba(255,255,255,0.25)";
                             }}
                           >
-                            🗑️
+                            <AppIcon name="trash" size={18} />
                           </button>
                         )}
                       </div>
@@ -788,7 +788,7 @@ function Stock() {
                 <tr>
                   <td colSpan={7}>
                     <div className="text-center py-12">
-                      <div className="text-4xl mb-4">📦</div>
+                      <div className="text-4xl mb-4" style={{ display: "flex", justifyContent: "center" }}><AppIcon name="stock" size={40} /></div>
                       <h3 className="text-lg font-medium text-gray-900">
                         Aucun article trouvé
                       </h3>
@@ -872,7 +872,7 @@ function Stock() {
                       }}
                       onClick={() => navigate(`/stock/${item.id}`)}
                     >
-                      👁️ Voir
+                      <AppIcon name="eye" size={16} /> Voir
                     </button>
                     {canManageStock && (
                       <button
@@ -880,7 +880,7 @@ function Stock() {
                         style={{ border: "none", backgroundColor: "#3b82f6", color: "white", cursor: "pointer" }}
                         onClick={() => navigate(`/stock/${item.id}/edit`)}
                       >
-                        ✏️ Modifier
+                        <AppIcon name="edit" size={16} /> Modifier
                       </button>
                     )}
                     {canManageStock && filter === "courant" && (
@@ -889,7 +889,7 @@ function Stock() {
                         style={{ border: "none", backgroundColor: "#ef4444", color: "white", cursor: "pointer" }}
                         onClick={() => handleMoveToHS(item.id, item.nomMateriel)}
                       >
-                        ⚠️ Mettre HS
+                        <AppIcon name="warning" size={16} /> Mettre HS
                       </button>
                     )}
                     {canManageStock && (filter === "courant" || filter === "hs") && (
@@ -898,7 +898,7 @@ function Stock() {
                         style={{ border: "none", backgroundColor: "#d97706", color: "white", cursor: "pointer" }}
                         onClick={() => handleMoveToSupplier(item.id, item.nomMateriel)}
                       >
-                        ↩️ Retour fournisseur
+                        <AppIcon name="return" size={16} /> Retour fournisseur
                       </button>
                     )}
                     {canDeleteStock && (
@@ -907,7 +907,7 @@ function Stock() {
                         style={{ border: "none", backgroundColor: "#dc2626", color: "white", cursor: "pointer" }}
                         onClick={() => handleDelete(item.id, item.nomMateriel)}
                       >
-                        🗑️ Supprimer
+                        <AppIcon name="trash" size={16} /> Supprimer
                       </button>
                     )}
                   </div>
@@ -916,7 +916,7 @@ function Stock() {
             })
           ) : (
             <div className="mobile-list-card" style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "2rem", marginBottom: "8px" }}>📦</div>
+              <div style={{ fontSize: "2rem", marginBottom: "8px", display: "flex", justifyContent: "center" }}><AppIcon name="stock" size={36} /></div>
               <h3 style={{ fontSize: "1rem", fontWeight: 600 }}>Aucun article trouvé</h3>
               <p style={{ color: "var(--text-secondary)", marginTop: "8px" }}>
                 {filter === "technician"
@@ -1027,7 +1027,7 @@ function Stock() {
                   />
                   {!selectedItem && (
                     <p className="text-xs text-gray-500 mt-1">
-                      💡 La quantité s'ajuste automatiquement au nombre de
+                  La quantité s'ajuste automatiquement au nombre de
                       numéros de série
                     </p>
                   )}

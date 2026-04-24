@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AppIcon } from './AppIcon';
 import './BarcodeScanner.css';
 
 interface BarcodeScannerProps {
@@ -21,8 +22,8 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
         <div className="barcode-scanner-overlay" onClick={onClose}>
             <div className="barcode-scanner-container manual-only" onClick={(e) => e.stopPropagation()}>
                 <div className="scanner-header">
-                    <h2>🔧 Ajouter du Matériel</h2>
-                    <button className="close-btn" onClick={onClose} type="button">✕</button>
+                    <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><AppIcon name="stock" size={22} /> Ajouter du Matériel</h2>
+                    <button className="close-btn" onClick={onClose} type="button"><AppIcon name="close" size={18} /></button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="manual-form">
@@ -51,7 +52,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
                             className="btn btn-success"
                             disabled={!code.trim()}
                         >
-                            ✓ Ajouter
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="plus" size={16} /> Ajouter</span>
                         </button>
                     </div>
                 </form>

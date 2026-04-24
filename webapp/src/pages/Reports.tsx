@@ -9,6 +9,7 @@ import {
   ResponsiveStat,
   ResponsiveStats,
 } from "../components/ResponsivePage";
+import { AppIcon } from "../components/AppIcon";
 import { useResponsive } from "../hooks/useResponsive";
 import type { Intervention, Technicien } from "../types";
 import "./Reports.css";
@@ -361,7 +362,7 @@ function Reports() {
           <ResponsiveSection title={`Interventions (${interventions.length})`}>
             {interventions.length === 0 ? (
               <div className="reports-empty-state">
-                <div className="reports-empty-state__icon">📭</div>
+                <div className="reports-empty-state__icon"><AppIcon name="mailbox" size={36} /></div>
                 <h3>Aucune intervention trouvée</h3>
                 <p>Modifiez les filtres pour afficher des résultats.</p>
               </div>

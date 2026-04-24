@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { Link } from "react-router-dom";
 import { useNotificationCenter } from "../contexts/NotificationCenterContext";
+import { AppIcon } from "./AppIcon";
 
 function formatRelativeDate(value: string) {
   const date = new Date(value);
@@ -73,7 +74,7 @@ export function NotificationCenter() {
         }}
         aria-label="Centre de notifications"
       >
-        <span className="notification-bell__icon" aria-hidden="true">🔔</span>
+        <span className="notification-bell__icon" aria-hidden="true"><AppIcon name="bell" size={24} /></span>
         {unreadCount > 0 ? <span className="notification-bell__badge">{unreadCount}</span> : null}
       </button>
 
@@ -88,7 +89,7 @@ export function NotificationCenter() {
               <div>
                 <div className="notification-panel__title">Notifications</div>
                 <div className="notification-panel__subtitle">
-                  {hasNotifications ? `${notifications.length} alerte(s)` : "Aucune alerte"}
+                  {hasNotifications ? `${notifications.length} notification(s)` : "Aucune notification"}
                 </div>
               </div>
               <div className="notification-panel__actions">
@@ -108,7 +109,7 @@ export function NotificationCenter() {
                   onClick={closePanel}
                   aria-label="Fermer le centre de notifications"
                 >
-                  ✕
+                  <AppIcon name="close" size={18} />
                 </button>
               </div>
             </div>
@@ -152,12 +153,12 @@ export function NotificationCenter() {
                       </button>
                     ) : null}
                     <button type="button" className="notification-item__button notification-item__button--danger" onClick={() => removeNotification(notification.id)}>
-                      ✕
+                      <AppIcon name="close" size={16} />
                     </button>
                   </div>
                 </article>
               )) : (
-                <div className="notification-panel__empty">Aucune notification de déconnexion pour le moment.</div>
+                <div className="notification-panel__empty">Aucune notification pour le moment.</div>
               )}
             </div>
           </div>

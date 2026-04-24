@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { Intervention, Stock } from "../types";
+import type { Intervention, IpLink, IpLinksStats, Stock } from "../types";
 
 const FALLBACK_STATUS = "Inconnu";
 
@@ -19,11 +19,12 @@ export const DASHBOARD_PANEL_STYLE: CSSProperties = {
 };
 
 export const QUICK_LINKS = [
-  { to: "/interventions", icon: "📅", label: "Interventions" },
-  { to: "/clients", icon: "👥", label: "Clients" },
-  { to: "/stock", icon: "📦", label: "Stock" },
-  { to: "/inventaire", icon: "🔍", label: "Inventaire" },
-  { to: "/rapports", icon: "📈", label: "Rapports" },
+  { to: "/interventions", iconName: "interventions", label: "Interventions" },
+  { to: "/clients", iconName: "clients", label: "Clients" },
+  { to: "/stock", iconName: "stock", label: "Stock" },
+  { to: "/inventaire", iconName: "inventory", label: "Inventaire" },
+  { to: "/supervision-liens-ip", iconName: "ip-links", label: "Liens IP" },
+  { to: "/rapports", iconName: "reports", label: "Rapports" },
 ] as const;
 
 export interface InterventionStat {
@@ -52,9 +53,15 @@ export interface DashboardStats {
     stockFaible?: LowStockItem[];
     parCategorie?: StockCategorySummary[];
   };
+  ipLinks?: IpLinksStats;
   totalClients: number;
   totalInterventions: number;
 }
+
+export interface DashboardIpLinksAlertItem extends Pick<
+  IpLink,
+  "id" | "reference" | "clientName" | "collecteOperator" | "healthStatus"
+> {}
 
 export function buildInterventionStats(
   interventions: Pick<Intervention, "statut">[]
@@ -93,19 +100,29 @@ export function getDashboardStatCards(stats: DashboardStats | null) {
       label: "Pièces HS",
       color: "#ef4444",
     },
+    {
+      value: stats?.ipLinks?.total || 0,
+      label: "Liens IP",
+      color: "#2563eb",
+    },
+    {
+      value: stats?.ipLinks?.disconnected || 0,
+      label: "Liens KO",
+      color: "#dc2626",
+    },
   ];
 }
 
 export function getInterventionStatusBadge(statut?: string) {
   switch (statut) {
     case "terminee":
-      return { backgroundColor: "#10b981", label: "✓ Terminée" };
+      return { backgroundColor: "#10b981", label: "Terminée" };
     case "planifiee":
-      return { backgroundColor: "#3b82f6", label: "📅 Planifiée" };
+      return { backgroundColor: "#3b82f6", label: "Planifiée" };
     case "en_cours":
-      return { backgroundColor: "#f59e0b", label: "⏳ En cours" };
+      return { backgroundColor: "#f59e0b", label: "En cours" };
     case "annulee":
-      return { backgroundColor: "#ef4444", label: "✕ Annulée" };
+      return { backgroundColor: "#ef4444", label: "Annulée" };
     default:
       return { backgroundColor: "#6b7280", label: statut || FALLBACK_STATUS };
   }
@@ -123,4 +140,17 @@ export function getLowStockStyles(quantite: number) {
     containerColor: empty ? "rgba(239, 68, 68, 0.1)" : "rgba(249, 115, 22, 0.1)",
     badgeColor: empty ? "#ef4444" : "#f97316",
   };
+}
+
+export function formatDashboardSyncDate(value?: string | null) {
+  if (!value) return "Jamais synchronisé";
+  return new Date(value).toLocaleString("fr-FR");
+}
+
+export function getIpLinksHealthBadge(status: IpLink["healthStatus"]) {
+  if (status === "connected") {
+    return { backgroundColor: "#16a34a", label: "Connecté" };
+  }
+
+  return { backgroundColor: "#dc2626", label: "Déconnecté" };
 }

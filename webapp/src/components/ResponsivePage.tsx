@@ -14,6 +14,7 @@ interface ResponsivePageProps {
   subtitle?: string;
   actions?: Action[];
   headerStats?: ReactNode;
+  headerAside?: ReactNode;
   filters?: ReactNode;
   children: ReactNode;
 }
@@ -23,6 +24,7 @@ export function ResponsivePage({
   subtitle,
   actions = [],
   headerStats,
+  headerAside,
   filters,
   children,
 }: ResponsivePageProps) {
@@ -57,6 +59,7 @@ export function ResponsivePage({
             </div>
           ) : null}
         </div>
+        {headerAside ? <div className="responsive-page__header-aside">{headerAside}</div> : null}
         {headerStats ? <div className="responsive-page__header-stats">{headerStats}</div> : null}
       </section>
 

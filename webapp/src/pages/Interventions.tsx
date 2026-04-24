@@ -8,6 +8,7 @@ import ConfirmConflictModal from "../components/ConfirmConflictModal";
 import { useOffline } from "../hooks/useOffline";
 import { useReminders } from "../hooks/useReminders";
 import { useResponsive } from "../hooks/useResponsive";
+import { AppIcon } from "../components/AppIcon";
 import {
   buildCalendarEventTitle,
   getCalendarTransitionClass,
@@ -54,6 +55,7 @@ function Interventions() {
   } = useOffline();
   const { scheduleForInterventions } = useReminders();
   const { isMobile } = useResponsive();
+  const useCardLayout = isMobile;
 
   // Restore viewMode from navigation state if present
   const initialViewMode =
@@ -584,8 +586,7 @@ function Interventions() {
       {/* Stats Cards (show only when not in form) */}
       {!showForm && (
         <div
-          className="interventions-stats-grid harmonized-stats-grid"
-          style={{ padding: "0 24px 24px" }}
+          className="interventions-stats-grid harmonized-stats-grid screen-summary-strip"
         >
           {interventionStats.map((stat, idx) => (
             <div
@@ -637,7 +638,7 @@ function Interventions() {
         {/* Tabs with Search */}
         {!showForm && (
           <div className="interventions-toolbar">
-            <div className="interventions-view-switcher">
+            <div className="interventions-view-switcher screen-chip-scroll">
               {user?.role !== "technicien" && (
                 <button
                   className={`interventions-tab ${viewMode === "calendar" ? "active" : ""}`}
@@ -672,7 +673,7 @@ function Interventions() {
             </div>
             {user?.role === "admin" && (
               <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", alignSelf: "center" }}>
-                {isMobile ? "Appuyez sur une carte pour ouvrir le détail." : "Cliquez sur une ligne pour ouvrir le détail."}
+                {useCardLayout ? "Appuyez sur une carte pour ouvrir le détail." : "Cliquez sur une ligne pour ouvrir le détail."}
               </div>
             )}
           </div>
@@ -686,7 +687,7 @@ function Interventions() {
                 <strong>{sortedTodayInterventions.length} intervention{sortedTodayInterventions.length > 1 ? "s" : ""}</strong>
               </div>
               {sortedTodayInterventions.length > 0 ? (
-                isMobile ? (
+                useCardLayout ? (
                   sortedTodayInterventions.map((intervention) =>
                     renderMobileInterventionCard(intervention)
                   )
@@ -774,7 +775,7 @@ function Interventions() {
                 )
               ) : (
                 <div className="interventions-mobile-empty">
-                  <div className="text-4xl mb-4">📅</div>
+                  <div className="text-4xl mb-4" style={{ display: "flex", justifyContent: "center" }}><AppIcon name="interventions" size={36} /></div>
                   <div className="font-medium">Aucune intervention aujourd'hui</div>
                   <div className="mt-2">Utilisez le calendrier pour voir toutes les interventions.</div>
                 </div>
@@ -798,7 +799,7 @@ function Interventions() {
                 >
                   Filtrer par statut
                 </span>
-                <div className="interventions-filter-row">
+                <div className="interventions-filter-row screen-chip-scroll">
                   <button
                     onClick={() => setStatusFilter("all")}
                     className={`interventions-filter-chip filter-all ${statusFilter === "all" ? "active" : ""}`}
@@ -809,25 +810,25 @@ function Interventions() {
                     onClick={() => setStatusFilter("planifiee")}
                     className={`interventions-filter-chip filter-planifiee ${statusFilter === "planifiee" ? "active" : ""}`}
                   >
-                    📅 Planifiées
+                    Planifiées
                   </button>
                   <button
                     onClick={() => setStatusFilter("en_cours")}
                     className={`interventions-filter-chip filter-en_cours ${statusFilter === "en_cours" ? "active" : ""}`}
                   >
-                    ⏳ En cours
+                    En cours
                   </button>
                   <button
                     onClick={() => setStatusFilter("terminee")}
                     className={`interventions-filter-chip filter-terminee ${statusFilter === "terminee" ? "active" : ""}`}
                   >
-                    ✓ Terminées
+                    Terminées
                   </button>
                   <button
                     onClick={() => setStatusFilter("annulee")}
                     className={`interventions-filter-chip filter-annulee ${statusFilter === "annulee" ? "active" : ""}`}
                   >
-                    ✕ Annulées
+                    Annulées
                   </button>
                 </div>
               </div>
@@ -838,7 +839,7 @@ function Interventions() {
                 {allInterventions.length !== 1 ? "s" : ""}
               </span>
             </div>
-            <div className="mobile-only interventions-mobile-list">
+            <div className="desktop-table-only interventions-mobile-list">
               <div className="interventions-mobile-summary">
                 <span>Vue filtrée</span>
                 <strong>{sortedAllInterventions.length} intervention{sortedAllInterventions.length > 1 ? "s" : ""}</strong>
@@ -849,13 +850,13 @@ function Interventions() {
                 )
               ) : (
                 <div className="interventions-mobile-empty">
-                  <div className="text-4xl mb-4">📋</div>
+                  <div className="text-4xl mb-4" style={{ display: "flex", justifyContent: "center" }}><AppIcon name="document" size={36} /></div>
                   <div className="font-medium">Aucune intervention</div>
                   <div className="mt-2">Aucune intervention enregistrée pour ce filtre.</div>
                 </div>
               )}
             </div>
-            <div className="responsive-scroll desktop-only">
+            <div className="responsive-scroll desktop-table-only">
               <table className="table">
                 <thead>
                   <tr>
@@ -950,7 +951,7 @@ function Interventions() {
                     <tr>
                       <td colSpan={6}>
                         <div className="text-center py-12">
-                          <div className="text-4xl mb-4">📋</div>
+                          <div className="text-4xl mb-4" style={{ display: "flex", justifyContent: "center" }}><AppIcon name="document" size={36} /></div>
                           <h3 className="text-lg font-medium text-gray-900">
                             Aucune intervention
                           </h3>
@@ -969,7 +970,7 @@ function Interventions() {
 
         {/* Mobile Planning View - Only show in calendar mode */}
         {user?.role !== "technicien" && viewMode === "calendar" && !showForm && (
-          <div className="mobile-only">
+          <div className="desktop-table-only">
             <MobilePlanning interventions={mobilePlanningInterventions} />
           </div>
         )}
@@ -1030,7 +1031,7 @@ function Interventions() {
                       } ${currentStep > 1 ? "completed" : ""} `}
                   >
                     <div className="step-indicator">
-                      {currentStep > 1 ? "✓" : "1"}
+                      {currentStep > 1 ? <AppIcon name="check-circle" size={18} /> : "1"}
                     </div>
                     <div className="step-label">Client</div>
                   </div>
@@ -1039,7 +1040,7 @@ function Interventions() {
                       } ${currentStep > 2 ? "completed" : ""} `}
                   >
                     <div className="step-indicator">
-                      {currentStep > 2 ? "✓" : "2"}
+                      {currentStep > 2 ? <AppIcon name="check-circle" size={18} /> : "2"}
                     </div>
                     <div className="step-label">Détails</div>
                   </div>
@@ -1048,7 +1049,7 @@ function Interventions() {
                       } ${currentStep > 3 ? "completed" : ""} `}
                   >
                     <div className="step-indicator">
-                      {currentStep > 3 ? "✓" : "3"}
+                      {currentStep > 3 ? <AppIcon name="check-circle" size={18} /> : "3"}
                     </div>
                     <div className="step-label">Planification</div>
                   </div>
@@ -1057,8 +1058,9 @@ function Interventions() {
 
               <div
                 style={{
-                  maxWidth: "800px",
-                  margin: "0 auto",
+                  width: "100%",
+                  maxWidth: "min(1100px, 100%)",
+                  margin: 0,
                   backgroundColor: "var(--bg-color)",
                   padding: "30px",
                   borderRadius: "8px",
@@ -1072,7 +1074,7 @@ function Interventions() {
 
                     <div className="selection-search">
                       <div className="search-container">
-                        <span className="search-icon">🔍</span>
+                        <span className="search-icon"><AppIcon name="search" size={18} /></span>
                         <input
                           type="text"
                           className="search-input"
@@ -1111,7 +1113,7 @@ function Interventions() {
                                     : "Sans adresse"}
                                 </span>
                               </div>
-                              <div className="selection-check">✓</div>
+                              <div className="selection-check"><AppIcon name="check-circle" size={16} /></div>
                             </div>
                           ))}
                         {filteredClients.length === 0 && (
@@ -1234,7 +1236,7 @@ function Interventions() {
 
                       <div className="selection-search">
                         <div className="search-container">
-                          <span className="search-icon">🔍</span>
+                          <span className="search-icon"><AppIcon name="search" size={18} /></span>
                           <input
                             type="text"
                             className="search-input"
@@ -1270,7 +1272,7 @@ function Interventions() {
                                   {tech.role}
                                 </span>
                               </div>
-                              <div className="selection-check">✓</div>
+                              <div className="selection-check"><AppIcon name="check-circle" size={16} /></div>
                             </div>
                           ))}
                         {filteredTechnicians.length === 0 && (
@@ -1293,7 +1295,7 @@ function Interventions() {
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
                           gap: "15px",
                         }}
                       >

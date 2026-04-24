@@ -68,7 +68,7 @@ const showReminderNotification = (intervention: ReminderIntervention, minutesBef
     showNotification(
         `⏰ Rappel: Intervention dans ${minutesBefore} min`,
         {
-            body: `${intervention.titre}\n${clientName}${address ? '\n📍 ' + address : ''}`,
+            body: `${intervention.titre}\n${clientName}${address ? '\nAdresse : ' + address : ''}`,
             tag: `reminder-${intervention.id}`,
         }
     );

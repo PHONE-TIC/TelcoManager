@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../contexts/useTheme';
 import { useAuth } from '../contexts/useAuth';
 import { useNotifications } from '../hooks/useNotifications';
+import { AppIcon } from './AppIcon';
 import './MobileNav.css';
 
 interface MobileNavProps {
@@ -40,14 +41,14 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
     };
 
     const navLinks = [
-        { path: '/', icon: '📊', label: 'Tableau de bord', roles: ['admin', 'gestionnaire'] },
-        { path: '/interventions', icon: '📅', label: 'Interventions', roles: ['admin', 'gestionnaire', 'technicien'] },
-        { path: '/clients', icon: '👥', label: 'Clients', roles: ['admin', 'gestionnaire'] },
-        { path: '/techniciens', icon: '🛡️', label: 'Utilisateurs', roles: ['admin'] },
-        { path: '/stock', icon: '📦', label: 'Stock', roles: ['admin', 'gestionnaire'] },
-        { path: '/inventaire', icon: '🔍', label: 'Inventaire', roles: ['admin', 'gestionnaire'] },
-        { path: '/rapports', icon: '📈', label: 'Rapports', roles: ['admin'] },
-        { path: '/mon-stock', icon: '🚗', label: 'Mon Stock', roles: ['technicien'] },
+        { path: '/', icon: <AppIcon name="dashboard" />, label: 'Tableau de bord', roles: ['admin', 'gestionnaire'] },
+        { path: '/interventions', icon: <AppIcon name="interventions" />, label: 'Interventions', roles: ['admin', 'gestionnaire', 'technicien'] },
+        { path: '/clients', icon: <AppIcon name="clients" />, label: 'Clients', roles: ['admin', 'gestionnaire'] },
+        { path: '/techniciens', icon: <AppIcon name="users" />, label: 'Utilisateurs', roles: ['admin'] },
+        { path: '/stock', icon: <AppIcon name="stock" />, label: 'Stock', roles: ['admin', 'gestionnaire'] },
+        { path: '/inventaire', icon: <AppIcon name="inventory" />, label: 'Inventaire', roles: ['admin', 'gestionnaire'] },
+        { path: '/rapports', icon: <AppIcon name="reports" />, label: 'Rapports', roles: ['admin'] },
+        { path: '/mon-stock', icon: <AppIcon name="vehicle" />, label: 'Mon Stock', roles: ['technicien'] },
     ];
 
     // Filter links based on user role
@@ -89,7 +90,7 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
                                 aria-label="Fermer le menu"
                                 title="Fermer"
                             >
-                                <span aria-hidden="true">✕</span>
+                                <AppIcon name="close" size={18} />
                             </button>
                         </div>
 

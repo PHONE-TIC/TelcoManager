@@ -20,6 +20,7 @@ type AtlasLink = {
   type: string;
   maxBandwidth: string;
   gtr: string | null;
+  routerUptime: string | null;
   backup4g: boolean;
   firewall: boolean;
   collecteOperator: string | null;
@@ -42,6 +43,9 @@ type IpLinksSnapshot = {
 };
 
 let syncTimer: NodeJS.Timeout | null = null;
+let atlasSessionPromise: Promise<{ client: ReturnType<typeof wrapper>; jar: CookieJar }> | null = null;
+const uptimeCache = new Map<number, { value: string | null; expiresAt: number }>();
+const UPTIME_CACHE_TTL_MS = 5 * 60 * 1000;
 let latestSnapshot: IpLinksSnapshot = {
   items: [],
   stats: {
@@ -202,7 +206,7 @@ async function createAtlasClient() {
   return { client, jar };
 }
 
-async function authenticateAtlasSession() {
+async function createAuthenticatedAtlasSession() {
   requireAtlasConfig();
   const { client, jar } = await createAtlasClient();
 
@@ -257,6 +261,17 @@ async function authenticateAtlasSession() {
   return { client, jar };
 }
 
+async function authenticateAtlasSession() {
+  if (!atlasSessionPromise) {
+    atlasSessionPromise = createAuthenticatedAtlasSession().catch((error) => {
+      atlasSessionPromise = null;
+      throw error;
+    });
+  }
+
+  return atlasSessionPromise;
+}
+
 async function fetchAllAtlasLinks(): Promise<AtlasLink[]> {
   const { client } = await authenticateAtlasSession();
   const items: AtlasLink[] = [];
@@ -296,6 +311,10 @@ async function fetchAllAtlasLinks(): Promise<AtlasLink[]> {
     );
 
     if (typeof response.data === "string") {
+      atlasSessionPromise = null;
+      if (start === 0) {
+        return fetchAllAtlasLinks();
+      }
       throw new Error("Atlas a renvoyé du HTML au lieu du JSON pour /lien/parc");
     }
 
@@ -304,8 +323,9 @@ async function fetchAllAtlasLinks(): Promise<AtlasLink[]> {
 
     for (const row of rows) {
       const health = parseHealth(row.sante);
+      const atlasLinkId = Number(row.id ?? row.lienIp_id ?? 0);
       items.push({
-        id: Number(row.id ?? row.lienIp_id ?? 0),
+        id: atlasLinkId,
         reference: decodeHtml(row.reference || row.lienIp_name),
         clientName: decodeHtml(
           row.client_name ||
@@ -326,6 +346,7 @@ async function fetchAllAtlasLinks(): Promise<AtlasLink[]> {
             : ""
         ),
         gtr: decodeHtml(row.lienIp_gtr) || null,
+        routerUptime: null,
         backup4g: toBoolFromNullableLabel(row.backup_option_label),
         firewall: toBoolFromNullableLabel(row.firewall_option_label),
         collecteOperator: parseProvider(row.lienIp_offre_fournisseur),
@@ -392,6 +413,50 @@ export async function syncIpLinks(): Promise<IpLinksSnapshot> {
     return await syncInFlight;
   } finally {
     syncInFlight = null;
+  }
+}
+
+function extractRouterUptime(html: string): string | null {
+  const normalized = html.replace(/\s+/g, " ");
+  const patterns = [
+    /Durée uptime routeur<[^>]*>\s*<[^>]*>(.*?)<\//i,
+    /Durée uptime routeur\s*<\/[^>]+>\s*<[^>]+>(.*?)<\//i,
+    /Durée uptime routeur\s*[:：]\s*<[^>]*>(.*?)<\//i,
+    /Durée uptime routeur\s*[:：]\s*([^<]+)/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (match?.[1]) {
+      const value = decodeHtml(match[1]);
+      if (value) return value;
+    }
+  }
+
+  return null;
+}
+
+export async function fetchIpLinkRouterUptime(linkId: number): Promise<string | null> {
+  const cached = uptimeCache.get(linkId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
+  try {
+    const { client } = await authenticateAtlasSession();
+    const response = await client.get(`${ATLAS_LOGIN_URL}/${linkId}`);
+    const html = String(response.data || "");
+    const value = extractRouterUptime(html);
+    uptimeCache.set(linkId, { value, expiresAt: Date.now() + UPTIME_CACHE_TTL_MS });
+    return value;
+  } catch (error) {
+    atlasSessionPromise = null;
+    const { client } = await authenticateAtlasSession();
+    const response = await client.get(`${ATLAS_LOGIN_URL}/${linkId}`);
+    const html = String(response.data || "");
+    const value = extractRouterUptime(html);
+    uptimeCache.set(linkId, { value, expiresAt: Date.now() + UPTIME_CACHE_TTL_MS });
+    return value;
   }
 }
 

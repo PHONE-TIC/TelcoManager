@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { apiService } from '../services/api.service';
+import { AppIcon } from '../components/AppIcon';
 import type { Stock } from '../types';
 import './detail-form-harmonization.css';
 import './screen-harmonization.css';
@@ -139,41 +140,19 @@ function StockLabels() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8 harmonized-shell">
+        <div className="page-container px-4 py-8 harmonized-shell" style={{ width: '100%', maxWidth: 'min(1680px, 100%)', margin: 0 }}>
             {/* Header */}
             <div className="flex justify-between items-start flex-wrap gap-4 mb-6">
                 <div>
                     <button
                         onClick={() => navigate('/stock')}
-                        style={{
-                            background: 'var(--bg-secondary)',
-                            border: '1px solid var(--border-color)',
-                            padding: '8px 14px',
-                            marginLeft: '-12px',
-                            borderRadius: '8px',
-                            color: 'var(--text-primary)',
-                            fontSize: '0.9rem',
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            marginBottom: '12px',
-                            transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--bg-primary)';
-                            e.currentTarget.style.borderColor = 'var(--primary-color)';
-                        }}
-                        onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
-                            e.currentTarget.style.borderColor = 'var(--border-color)';
-                        }}
+                        className="harmonized-back-button"
+                        style={{ marginLeft: '-12px' }}
                     >
                         ← Retour au stock
                     </button>
                     <h1 className="text-2xl font-bold flex items-center gap-3">
-                        🏷️ Impression d'Étiquettes QR Code
+                        <AppIcon name="label" size={28} /> Impression d'Étiquettes QR Code
                     </h1>
                     <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
                         Sélectionnez les articles puis imprimez les étiquettes
@@ -198,11 +177,11 @@ function StockLabels() {
                         boxShadow: selectedItems.length > 0 ? '0 4px 14px rgba(16, 185, 129, 0.35)' : 'none'
                     }}
                 >
-                    🖨️ Imprimer {selectedItems.length > 0 && `(${selectedItems.length})`}
+                    <AppIcon name="document" size={18} /> Imprimer {selectedItems.length > 0 && `(${selectedItems.length})`}
                 </button>
             </div>
 
-            <div className="grid gap-6" style={{ gridTemplateColumns: '1fr 2fr' }}>
+            <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
                 {/* Left Panel - Selection */}
                 <div style={{
                     backgroundColor: 'var(--bg-primary)',
@@ -232,7 +211,7 @@ function StockLabels() {
                                     : '0 2px 8px rgba(59, 130, 246, 0.3)'
                             }}
                         >
-                            {selectedItems.length === stock.length ? '✕ Désélectionner tout' : '✓ Tout sélectionner'}
+                            {selectedItems.length === stock.length ? 'Désélectionner tout' : 'Tout sélectionner'}
                         </button>
                     </div>
 
@@ -308,7 +287,7 @@ function StockLabels() {
                                                 transition: 'all 0.2s ease'
                                             }}
                                         >
-                                            {size === 'small' ? '📐 Petit' : size === 'medium' ? '📏 Moyen' : '📄 Grand'}
+                                            {size === 'small' ? 'Petit' : size === 'medium' ? 'Moyen' : 'Grand'}
                                         </button>
                                     ))}
                                 </div>
@@ -359,7 +338,7 @@ function StockLabels() {
                                 className="print-grid"
                                 style={{
                                     display: 'grid',
-                                    gridTemplateColumns: `repeat(auto-fill, minmax(${labelSize === 'small' ? '150px' : labelSize === 'medium' ? '200px' : '280px'}, 1fr))`,
+                                    gridTemplateColumns: `repeat(auto-fill, minmax(${labelSize === 'small' ? '140px' : labelSize === 'medium' ? '180px' : '220px'}, 1fr))`,
                                     gap: '12px',
                                     backgroundColor: 'var(--bg-secondary)',
                                     padding: '16px',
@@ -436,4 +415,3 @@ function StockLabels() {
 }
 
 export default StockLabels;
-

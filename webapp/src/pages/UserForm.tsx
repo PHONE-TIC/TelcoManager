@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api.service';
+import { AppIcon } from '../components/AppIcon';
 import './detail-form-harmonization.css';
 
 function UserForm() {
@@ -138,11 +139,11 @@ function UserForm() {
         <div className="page-container mobile-form-shell harmonized-shell">
             {/* Header */}
             <div className="harmonized-detail-header">
-                <button onClick={() => navigate('/techniciens')} className="btn btn-back" style={{ marginBottom: '12px' }}>
+                <button onClick={() => navigate('/techniciens')} className="harmonized-back-button">
                     ← Retour à la liste
                 </button>
                 <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {isEditing ? '✏️ Modifier l\'utilisateur' : '➕ Nouvel utilisateur'}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><AppIcon name={isEditing ? 'edit' : 'plus'} size={24} /> {isEditing ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}</span>
                 </h1>
                 <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
                     {isEditing ? 'Modifiez les informations du compte' : 'Créez un nouveau compte utilisateur'}
@@ -154,7 +155,7 @@ function UserForm() {
                 <form onSubmit={handleSubmit}>
                     {error && (
                         <div className="error-message">
-                            ⚠️ {error}
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="warning" size={18} /> {error}</span>
                         </div>
                     )}
 
@@ -250,7 +251,7 @@ function UserForm() {
                                         }}
                                         title={showPassword ? "Masquer" : "Afficher"}
                                     >
-                                        {showPassword ? '👁️' : '👁️‍🗨️'}
+                                        <AppIcon name="eye" size={18} />
                                     </button>
                                 </div>
                                 <button
@@ -260,7 +261,7 @@ function UserForm() {
                                     style={{ whiteSpace: 'nowrap' }}
                                     title="Générer un nouveau mot de passe"
                                 >
-                                    🎲 Générer
+                                    Générer
                                 </button>
                             </div>
                             {isEditing && <p className="text-xs text-gray-500 mt-1">Uniquement si vous souhaitez le changer</p>}
@@ -295,9 +296,9 @@ function UserForm() {
                             type="submit"
                             className="btn btn-primary"
                             disabled={saving}
-                            style={{ minWidth: '150px' }}
+                            style={{ minWidth: 0 }}
                         >
-                            {saving ? '⏳ Enregistrement...' : (isEditing ? '✓ Enregistrer' : '+ Créer')}
+                            {saving ? 'Enregistrement...' : (isEditing ? 'Enregistrer' : 'Créer')}
                         </button>
                     </div>
                 </form>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AppIcon } from './AppIcon';
 import './InterventionLocation.css';
 
 interface InterventionLocationProps {
@@ -73,23 +74,23 @@ export default function InterventionLocation({
     return (
         <div className="intervention-location">
             <div className="location-header">
-                <h3>📍 Localisation Client</h3>
+                <h3 style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="location" size={18} />Localisation Client</h3>
             </div>
 
             <div className="client-address-info">
                 <div className="address-line">
-                    <span className="address-icon">🏠</span>
+                    <span className="address-icon"><AppIcon name="home" size={18} /></span>
                     <span>{clientAddress}</span>
                 </div>
                 <div className="address-line">
-                    <span className="address-icon">📮</span>
+                    <span className="address-icon"><AppIcon name="mailbox" size={18} /></span>
                     <span>{clientPostalCode} {clientCity}</span>
                 </div>
             </div>
 
             {error && (
                 <div className="location-error">
-                    <span>⚠️</span> {error}
+                    <span><AppIcon name="warning" size={16} /></span> {error}
                 </div>
             )}
 
@@ -98,7 +99,7 @@ export default function InterventionLocation({
                     className="location-btn navigate-btn"
                     onClick={openNavigation}
                 >
-                    <span className="btn-icon">🧭</span>
+                    <span className="btn-icon"><AppIcon name="navigation" size={18} /></span>
                     <span className="btn-text">Naviguer</span>
                 </button>
 
@@ -106,7 +107,7 @@ export default function InterventionLocation({
                     className="location-btn map-btn"
                     onClick={openInMaps}
                 >
-                    <span className="btn-icon">🗺️</span>
+                    <span className="btn-icon"><AppIcon name="map" size={18} /></span>
                     <span className="btn-text">Voir carte</span>
                 </button>
 
@@ -115,14 +116,14 @@ export default function InterventionLocation({
                     onClick={getCurrentPosition}
                     disabled={loading}
                 >
-                    <span className="btn-icon">{loading ? '⏳' : '📡'}</span>
+                    <span className="btn-icon">{loading ? <AppIcon name="clock" size={18} /> : <AppIcon name="signal" size={18} />}</span>
                     <span className="btn-text">{loading ? 'Localisation...' : 'Ma position'}</span>
                 </button>
             </div>
 
             {currentPosition && (
                 <div className="current-position">
-                    <p className="position-label">📍 Votre position actuelle</p>
+                    <p className="position-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="location" size={16} />Votre position actuelle</p>
                     <div className="position-coords">
                         <span>{currentPosition.lat.toFixed(5)}, {currentPosition.lng.toFixed(5)}</span>
                     </div>
@@ -140,7 +141,7 @@ export default function InterventionLocation({
                     allowFullScreen
                 />
                 <div className="map-overlay" onClick={openInMaps}>
-                    <span>🔍 Agrandir la carte</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="search" size={16} />Agrandir la carte</span>
                 </div>
             </div>
         </div>

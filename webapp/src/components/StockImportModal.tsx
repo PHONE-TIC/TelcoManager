@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useState } from "react";
 import { apiService } from "../services/api.service";
+import { AppIcon } from "./AppIcon";
 
 interface StockImportItem {
   nomMateriel: string;
@@ -149,7 +150,7 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
           borderRadius: "16px",
           padding: "24px",
           width: "100%",
-          maxWidth: "600px",
+          maxWidth: "min(680px, 100%)",
           maxHeight: "80vh",
           overflow: "auto",
           boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
@@ -171,7 +172,7 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
               color: "var(--text-primary)",
             }}
           >
-            📥 Importer Stock (CSV)
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="box" size={18} /> Importer Stock (CSV)</span>
           </h2>
           <button
             onClick={onClose}
@@ -385,7 +386,7 @@ function StockImportModal({ onClose, onSuccess }: StockImportModalProps) {
             >
               {loading
                 ? "Import..."
-                : `📥 Importer ${csvData.length} article(s)`}
+                : `Importer ${csvData.length} article(s)`}
             </button>
           )}
         </div>

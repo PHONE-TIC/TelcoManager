@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export type DeviceType = 'mobile' | 'tablet' | 'desktop';
+export type DeviceType = 'mobile' | 'tablet' | 'desktop-compact' | 'desktop';
 
 interface UseResponsiveReturn {
     device: DeviceType;
@@ -32,6 +32,7 @@ export const useResponsive = (): UseResponsiveReturn => {
     const getDevice = (): DeviceType => {
         if (dimensions.width < 769) return 'mobile';
         if (dimensions.width < 1025) return 'tablet';
+        if (dimensions.width < 1400) return 'desktop-compact';
         return 'desktop';
     };
 
@@ -41,7 +42,7 @@ export const useResponsive = (): UseResponsiveReturn => {
         device,
         isMobile: device === 'mobile',
         isTablet: device === 'tablet',
-        isDesktop: device === 'desktop',
+        isDesktop: device === 'desktop' || device === 'desktop-compact',
         width: dimensions.width,
         height: dimensions.height
     };

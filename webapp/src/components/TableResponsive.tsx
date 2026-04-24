@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import './TableResponsive.css';
 
 interface Column<T> {
@@ -20,10 +20,38 @@ export default function TableResponsive<T extends object>({
     onRowClick,
     actions,
 }: TableResponsiveProps<T>) {
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const [useCards, setUseCards] = useState(false);
+
     const getCellValue = (item: T, key: string) => (item as Record<string, ReactNode>)[key];
+
+    useEffect(() => {
+        const node = containerRef.current;
+        if (!node) return;
+
+        const evaluateLayout = () => {
+            const width = node.clientWidth;
+            const nextUseCards = width > 0 && width < 1100;
+            setUseCards((prev) => (prev === nextUseCards ? prev : nextUseCards));
+        };
+
+        evaluateLayout();
+
+        if (typeof ResizeObserver !== 'undefined') {
+            const observer = new ResizeObserver(() => evaluateLayout());
+            observer.observe(node);
+            return () => observer.disconnect();
+        }
+
+        window.addEventListener('resize', evaluateLayout);
+        return () => window.removeEventListener('resize', evaluateLayout);
+    }, []);
+
     return (
-        <>
-            {/* Desktop Table */}
+        <div
+            ref={containerRef}
+            className={`table-responsive-shell ${useCards ? 'is-cards' : 'is-table'}`}
+        >
             <div className="table-desktop">
                 <table className="table">
                     <thead>
@@ -53,7 +81,6 @@ export default function TableResponsive<T extends object>({
                 </table>
             </div>
 
-            {/* Mobile Cards */}
             <div className="cards-mobile">
                 {data.map((item, index) => (
                     <div
@@ -73,6 +100,6 @@ export default function TableResponsive<T extends object>({
                     </div>
                 ))}
             </div>
-        </>
+        </div>
     );
 }

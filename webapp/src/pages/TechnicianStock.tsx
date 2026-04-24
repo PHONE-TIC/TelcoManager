@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/useAuth";
 import { apiService } from "../services/api.service";
+import { AppIcon } from "../components/AppIcon";
 import "./TechnicianStock.css";
 import "./screen-harmonization.css";
 import "./detail-form-harmonization.css";
@@ -62,7 +63,7 @@ export default function TechnicianStock() {
   return (
     <div className="technician-stock-page harmonized-shell">
       <div className="harmonized-header">
-        <h1 className="page-title">🚗 Mon Stock Véhicule</h1>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}><AppIcon name="vehicle" size={26} /> Mon Stock Véhicule</h1>
         <p className="page-subtitle">Gérez les articles dans votre véhicule</p>
       </div>
 
@@ -88,7 +89,7 @@ export default function TechnicianStock() {
                         fontWeight: 500,
                       }}
                     >
-                      🔢 S/N: {item.stock.numeroSerie}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="label" size={14} /> S/N: {item.stock.numeroSerie}</span>
                     </p>
                   )}
                   <span className="badge badge-info">
@@ -109,7 +110,7 @@ export default function TechnicianStock() {
                         color: "#1e40af",
                       }}
                     >
-                      📍 Chez {item.client.nom}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="location" size={14} /> Chez {item.client.nom}</span>
                     </span>
                   )}
                 </div>
@@ -135,7 +136,7 @@ export default function TechnicianStock() {
                       color: item.etat === "ok" ? "#065f46" : "#991b1b",
                     }}
                   >
-                    {item.etat === "ok" ? "✅ OK" : "❌ HS"}
+                    {item.etat === "ok" ? "OK" : "HS"}
                   </span>
 
                   {/* Action Buttons */}
@@ -148,7 +149,7 @@ export default function TechnicianStock() {
           </div>
         ) : (
           <div className="empty-state">
-            <p>📦 Aucun article trouvé</p>
+            <p style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="stock" size={16} /> Aucun article trouvé</p>
             <small>Votre stock véhicule est vide</small>
           </div>
         )}

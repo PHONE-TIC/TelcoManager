@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 export type AppNotification = {
   id: string;
-  type: "ip_link_disconnected";
+  type: "ip_link_disconnected" | "ip_link_restored";
   title: string;
   message: string;
   createdAt: string;

@@ -1,5 +1,26 @@
 /* TableResponsive Component Styles */
 
+.table-responsive-shell {
+    width: 100%;
+    min-width: 0;
+}
+
+.table-responsive-shell.is-table .table-desktop {
+    display: block;
+}
+
+.table-responsive-shell.is-table .cards-mobile {
+    display: none;
+}
+
+.table-responsive-shell.is-cards .table-desktop {
+    display: none;
+}
+
+.table-responsive-shell.is-cards .cards-mobile {
+    display: block;
+}
+
 /* Desktop Table - visible on larger screens */
 .table-desktop {
     display: block;
@@ -80,46 +101,27 @@
     min-height: 40px;
 }
 
-/* Responsive Breakpoint */
+/* Fluid compact card layout */
+.table-responsive-shell.is-cards .card-row {
+    flex-direction: column;
+    gap: 6px;
+}
+
+.table-responsive-shell.is-cards .card-label,
+.table-responsive-shell.is-cards .card-value {
+    text-align: left;
+}
+
+.table-responsive-shell.is-cards .card-actions > * {
+    flex: 1 1 calc(50% - 4px);
+}
+
 @media (max-width: 767px) {
-
-    /* Hide desktop table on mobile */
-    .table-desktop {
-        display: none;
-    }
-
-    /* Show mobile cards */
-    .cards-mobile {
-        display: block;
-    }
-
-    .card-row {
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .card-label,
-    .card-value {
-        text-align: left;
+    .mobile-card {
+        padding: 14px;
     }
 
     .card-actions > * {
-        flex: 1 1 calc(50% - 4px);
-    }
-}
-
-/* Tablet - keep table but make it scrollable */
-@media (min-width: 768px) and (max-width: 1023px) {
-    .table-desktop {
-        overflow-x: auto;
-    }
-
-    .table {
-        font-size: 0.875rem;
-    }
-
-    .table th,
-    .table td {
-        padding: 10px 8px;
+        flex: 1 1 100%;
     }
 }

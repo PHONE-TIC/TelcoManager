@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import type { IpLink, IpLinksSnapshot } from "../types";
 import { ResponsivePage } from "../components/ResponsivePage";
-import { useNotificationCenter } from "../contexts/NotificationCenterContext";
-import { useNotifications } from "../hooks/useNotifications";
-import { showIpLinkDisconnectedNotification } from "../services/notification.service";
+import { AppIcon } from "../components/AppIcon";
 import "./screen-harmonization.css";
 import "./IpLinksSupervision.css";
 
 type HealthFilter = "all" | "connected" | "disconnected";
+type ViewMode = "service" | "supervision";
 
 const emptySnapshot: IpLinksSnapshot = {
   items: [],
@@ -30,7 +30,7 @@ function renderHealthBadge(link: IpLink) {
   if (link.healthStatus === "connected") {
     return (
       <span className="ip-links-health ip-links-health--connected" title="Connecté">
-        <span className="ip-links-health__emoji">✅</span>
+        <span className="ip-links-health__emoji"><AppIcon name="check-circle" size={16} /></span>
         <span>Connecté</span>
       </span>
     );
@@ -39,7 +39,7 @@ function renderHealthBadge(link: IpLink) {
   if (link.healthStatus === "disconnected") {
     return (
       <span className="ip-links-health ip-links-health--disconnected" title="Déconnecté">
-        <span className="ip-links-health__emoji">❌</span>
+        <span className="ip-links-health__emoji"><AppIcon name="x-circle" size={16} /></span>
         <span>Déconnecté</span>
       </span>
     );
@@ -47,7 +47,7 @@ function renderHealthBadge(link: IpLink) {
 
   return (
     <span className="ip-links-health ip-links-health--ignored" title="Non supervisé">
-      <span className="ip-links-health__emoji">⛔</span>
+      <span className="ip-links-health__emoji"><AppIcon name="ban" size={16} /></span>
       <span>Non supervisé</span>
     </span>
   );
@@ -61,14 +61,18 @@ function renderYesNoBadge(value: boolean) {
   );
 }
 
+function getStatusTone(status: IpLink["healthStatus"]) {
+  if (status === "connected") return "connected";
+  if (status === "disconnected") return "disconnected";
+  return "ignored";
+}
+
 export default function IpLinksSupervision() {
   const [snapshot, setSnapshot] = useState<IpLinksSnapshot>(emptySnapshot);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [search, setSearch] = useState("");
   const [healthFilter, setHealthFilter] = useState<HealthFilter>("all");
-  const { isEnabled } = useNotifications();
-  const { addNotification } = useNotificationCenter();
+  const [viewMode, setViewMode] = useState<ViewMode>("service");
 
   const loadData = useCallback(async (silent = false) => {
     try {
@@ -101,76 +105,32 @@ export default function IpLinksSupervision() {
     }
   };
 
-  useEffect(() => {
-    if (!isEnabled || snapshot.items.length === 0) return;
-
-    const storageKey = "ip-links-disconnected-alerted";
-    const raw = localStorage.getItem(storageKey);
-    const alertedIds = new Set<number>(raw ? JSON.parse(raw) : []);
-
-    const disconnectedLinks = snapshot.items.filter(
-      (link) => link.healthStatus === "disconnected" && !alertedIds.has(link.id)
-    );
-
-    disconnectedLinks.forEach((link) => {
-      const title = "🔴 Lien IP déconnecté";
-      const message = `${link.reference} • ${link.clientName}`;
-
-      showIpLinkDisconnectedNotification({
-        type: "ip_link_disconnected",
-        linkId: link.id,
-        reference: link.reference,
-        clientName: link.clientName,
-        title,
-        message,
-      });
-
-      addNotification({
-        type: "ip_link_disconnected",
-        title,
-        message,
-        link: "/supervision-liens-ip",
-        metadata: {
-          linkId: link.id,
-          reference: link.reference,
-          clientName: link.clientName,
-        },
-      });
-
-      alertedIds.add(link.id);
-    });
-
-    const currentlyDisconnectedIds = new Set(
-      snapshot.items
-        .filter((link) => link.healthStatus === "disconnected")
-        .map((link) => link.id)
-    );
-
-    const nextAlertedIds = Array.from(alertedIds).filter((id) => currentlyDisconnectedIds.has(id));
-    localStorage.setItem(storageKey, JSON.stringify(nextAlertedIds));
-  }, [isEnabled, snapshot.items]);
-
   const filteredItems = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
     return snapshot.items.filter((link) => {
-      const matchesHealth =
-        healthFilter === "all" ? true : link.healthStatus === healthFilter;
-      const matchesSearch = normalizedSearch
-        ? [
-            link.reference,
-            link.clientName,
-            link.collecteOperator || "",
-            link.type,
-            link.maxBandwidth,
-          ]
-            .join(" ")
-            .toLowerCase()
-            .includes(normalizedSearch)
-        : true;
-
-      return matchesHealth && matchesSearch;
+      return healthFilter === "all" ? true : link.healthStatus === healthFilter;
     });
-  }, [healthFilter, search, snapshot.items]);
+  }, [healthFilter, snapshot.items]);
+
+  const disconnectedRatio = snapshot.stats.total > 0
+    ? Math.round((snapshot.stats.disconnected / snapshot.stats.total) * 100)
+    : 0;
+
+  const prioritizedItems = useMemo(() => {
+    return [...filteredItems].sort((a, b) => {
+      const priority = { disconnected: 0, connected: 1, ignored: 2 } as const;
+      const statusOrder = priority[getStatusTone(a.healthStatus)] - priority[getStatusTone(b.healthStatus)];
+      if (statusOrder !== 0) return statusOrder;
+      return a.reference.localeCompare(b.reference, "fr");
+    });
+  }, [filteredItems]);
+
+  const supervisionGroups = useMemo(() => {
+    return {
+      disconnected: prioritizedItems.filter((link) => getStatusTone(link.healthStatus) === "disconnected"),
+      connected: prioritizedItems.filter((link) => getStatusTone(link.healthStatus) === "connected"),
+      ignored: prioritizedItems.filter((link) => getStatusTone(link.healthStatus) === "ignored"),
+    };
+  }, [prioritizedItems]);
 
   const headerStats = (
     <div className="harmonized-stats-grid">
@@ -186,15 +146,33 @@ export default function IpLinksSupervision() {
         <div>{snapshot.stats.disconnected}</div>
         <div>Déconnectés</div>
       </div>
+      <div className="harmonized-stat-card ip-links-kpi-card ip-links-kpi-card--focus">
+        <div>{disconnectedRatio}%</div>
+        <div>Taux de rupture</div>
+      </div>
     </div>
   );
 
+  const supervisionLegend: ReactNode = viewMode === "supervision" ? (
+    <div className="ip-links-header-legend">
+      <span className="ip-links-legend ip-links-legend--connected">Connecté</span>
+      <span className="ip-links-legend ip-links-legend--disconnected">Déconnecté</span>
+      <span className="ip-links-legend ip-links-legend--ignored">Non supervisé</span>
+    </div>
+  ) : null;
+
   return (
     <ResponsivePage
-      title="Supervision de liens IP"
+      title="Liens IP"
       subtitle={`Dernière synchronisation: ${formatSyncDate(snapshot.stats.lastSyncedAt)} • ${snapshot.stats.ignored} lien(s) non supervisé(s) ignoré(s)`}
       headerStats={headerStats}
+      headerAside={supervisionLegend}
       actions={[
+        {
+          label: viewMode === "service" ? "Vue supervision" : "Vue service",
+          onClick: () => setViewMode((current) => current === "service" ? "supervision" : "service"),
+          variant: "secondary",
+        },
         {
           label: syncing ? "Synchronisation..." : "Synchroniser",
           onClick: handleSync,
@@ -206,14 +184,7 @@ export default function IpLinksSupervision() {
       <div className="ip-links-page">
       <div className="harmonized-surface ip-links-filters-surface">
         <div className="harmonized-toolbar ip-links-toolbar">
-          <div className="harmonized-filter-group ip-links-toolbar__group ip-links-toolbar__group--grow">
-            <input
-              type="search"
-              className="harmonized-input ip-links-search"
-              placeholder="Rechercher un lien, un client, une collecte..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+          <div className="harmonized-filter-group ip-links-toolbar__group">
             <select
               className="harmonized-select ip-links-select"
               value={healthFilter}
@@ -230,46 +201,150 @@ export default function IpLinksSupervision() {
         </div>
       </div>
 
-      <section className="ip-links-table-card">
-        <div className="ip-links-table-wrap">
-          <table className="ip-links-table">
-            <thead>
-              <tr>
-                <th className="ip-links-col-reference">Référence</th>
-                <th className="ip-links-col-client">Client</th>
-                <th className="ip-links-col-operator">Collecte</th>
-                <th className="ip-links-col-type">Type</th>
-                <th className="ip-links-col-bandwidth">Débit max</th>
-                <th>Backup 4G</th>
-                <th>Firewall</th>
-                <th>Santé</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!loading && filteredItems.length === 0 ? (
+      {viewMode === "service" ? (
+        <section className="ip-links-table-card">
+          <div className="ip-links-table-wrap">
+            <table className="ip-links-table">
+              <thead>
                 <tr>
-                  <td colSpan={8} className="ip-links-empty">
-                    Aucun lien IP trouvé
-                  </td>
+                  <th className="ip-links-col-reference">Référence</th>
+                  <th className="ip-links-col-client">Client</th>
+                  <th className="ip-links-col-operator">Collecte</th>
+                  <th className="ip-links-col-type">Type</th>
+                  <th className="ip-links-col-bandwidth">Débit max</th>
+                  <th>Backup 4G</th>
+                  <th>Firewall</th>
+                  <th>Santé</th>
                 </tr>
-              ) : (
-                filteredItems.map((link) => (
-                  <tr key={`${link.id}-${link.reference}`}>
-                    <td className="ip-links-col-reference">{link.reference}</td>
-                    <td className="ip-links-col-client">{link.clientName}</td>
-                    <td className="ip-links-col-operator">{link.collecteOperator || "-"}</td>
-                    <td className="ip-links-col-type">{link.type}</td>
-                    <td className="ip-links-col-bandwidth">{link.maxBandwidth || "-"}</td>
-                    <td>{renderYesNoBadge(link.backup4g)}</td>
-                    <td>{renderYesNoBadge(link.firewall)}</td>
-                    <td>{renderHealthBadge(link)}</td>
+              </thead>
+              <tbody>
+                {!loading && prioritizedItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="ip-links-empty">
+                      Aucun lien IP trouvé
+                    </td>
                   </tr>
-                ))
+                ) : (
+                  prioritizedItems.map((link) => (
+                    <tr key={`${link.id}-${link.reference}`}>
+                      <td className="ip-links-col-reference" data-label="Référence">
+                      <Link
+                        to={`/supervision-liens-ip/${encodeURIComponent(link.reference)}`}
+                        className="ip-links-reference-link"
+                      >
+                        {link.reference}
+                      </Link>
+                    </td>
+                      <td className="ip-links-col-client" data-label="Client">{link.clientName}</td>
+                      <td className="ip-links-col-operator" data-label="Collecte">{link.collecteOperator || "-"}</td>
+                      <td className="ip-links-col-type" data-label="Type">{link.type}</td>
+                      <td className="ip-links-col-bandwidth" data-label="Débit max">{link.maxBandwidth || "-"}</td>
+                      <td data-label="Backup 4G">{renderYesNoBadge(link.backup4g)}</td>
+                      <td data-label="Firewall">{renderYesNoBadge(link.firewall)}</td>
+                      <td data-label="Santé">{renderHealthBadge(link)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : (
+        <section className="ip-links-supervision-view">
+          <div className="ip-links-supervision-summary-grid">
+            <article className="ip-links-supervision-summary ip-links-supervision-summary--critical">
+              <span>Liens à traiter</span>
+              <strong>{snapshot.stats.disconnected}</strong>
+              <p>À afficher en priorité sur grand écran.</p>
+            </article>
+            <article className="ip-links-supervision-summary">
+              <span>Liens stables</span>
+              <strong>{snapshot.stats.connected}</strong>
+              <p>Connexion active détectée.</p>
+            </article>
+            <article className="ip-links-supervision-summary">
+              <span>Non supervisés</span>
+              <strong>{snapshot.stats.ignored}</strong>
+              <p>Exclus de la supervision active.</p>
+            </article>
+          </div>
+
+          {loading ? (
+            <div className="ip-links-empty">Chargement de la supervision…</div>
+          ) : prioritizedItems.length === 0 ? (
+            <div className="ip-links-empty">Aucun lien IP trouvé</div>
+          ) : (
+            <div className="ip-links-supervision-sections">
+              {([
+                ["Déconnectés", supervisionGroups.disconnected, "disconnected"],
+                ["Connectés", supervisionGroups.connected, "connected"],
+                ["Non supervisés", supervisionGroups.ignored, "ignored"],
+              ] as const).map(([title, items, tone]) =>
+                items.length > 0 ? (
+                  <section key={title} className={`ip-links-supervision-section ip-links-supervision-section--${tone}`}>
+                    <div className="ip-links-supervision-section__header">
+                      <h3>{title}</h3>
+                      <span>{items.length} lien(s)</span>
+                    </div>
+                    <div className="ip-links-supervision-grid">
+                      {items.map((link) => {
+                        const cardTone = getStatusTone(link.healthStatus);
+                        return (
+                          <article
+                            key={`${link.id}-${link.reference}`}
+                            className={`ip-links-supervision-card ip-links-supervision-card--${cardTone}`}
+                          >
+                            <div className="ip-links-supervision-card__top">
+                              <div>
+                                <div className="ip-links-supervision-card__reference">
+                                  <Link
+                                    to={`/supervision-liens-ip/${encodeURIComponent(link.reference)}`}
+                                    className="ip-links-reference-link"
+                                  >
+                                    {link.reference}
+                                  </Link>
+                                </div>
+                                <div className="ip-links-supervision-card__client">{link.clientName}</div>
+                              </div>
+                              {renderHealthBadge(link)}
+                            </div>
+
+                            <div className="ip-links-supervision-card__meta">
+                              <div>
+                                <span>Collecte</span>
+                                <strong>{link.collecteOperator || "-"}</strong>
+                              </div>
+                              <div>
+                                <span>Type</span>
+                                <strong>{link.type}</strong>
+                              </div>
+                              <div>
+                                <span>Débit max</span>
+                                <strong>{link.maxBandwidth || "-"}</strong>
+                              </div>
+                            </div>
+
+                            <div className="ip-links-supervision-card__flags">
+                              <div>
+                                <span>Backup 4G</span>
+                                {renderYesNoBadge(link.backup4g)}
+                              </div>
+                              <div>
+                                <span>Firewall</span>
+                                {renderYesNoBadge(link.firewall)}
+                              </div>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ) : null
               )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </div>
+          )}
+        </section>
+      )}
       </div>
     </ResponsivePage>
   );

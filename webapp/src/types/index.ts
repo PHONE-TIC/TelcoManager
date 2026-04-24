@@ -223,11 +223,13 @@ export interface InterventionsListResponse {
 
 export interface IpLink {
   id: number;
+  atlasLinkId?: number;
   reference: string;
   clientName: string;
   type: string;
   maxBandwidth: string;
   gtr?: string | null;
+  routerUptime?: string | null;
   backup4g: boolean;
   firewall: boolean;
   collecteOperator?: string | null;
@@ -246,5 +248,19 @@ export interface IpLinksStats {
 
 export interface IpLinksSnapshot {
   items: IpLink[];
+  stats: IpLinksStats;
+}
+
+export interface GlobalSearchResults {
+  clients: Client[];
+  interventions: Intervention[];
+  stock: Stock[];
+  techniciens: Technicien[];
+  ipLinks: IpLink[];
+  totalResults: number;
+}
+
+export interface IpLinkDetailResponse {
+  item: IpLink;
   stats: IpLinksStats;
 }

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import StockTransferModal from "../components/StockTransferModal";
 import StockLocationModal from "../components/StockLocationModal";
+import { AppIcon } from "../components/AppIcon";
 import {
   getMovementMeta,
   getStockQuantityBadgeConfig,
@@ -81,12 +82,12 @@ function StockDetail() {
         <div className="harmonized-card">
           <button
             onClick={() => navigate("/stock")}
-            className="btn btn-secondary mb-4"
+            className="harmonized-back-button"
           >
             ← Retour au stock
           </button>
           <div className="text-center py-12">
-            <div className="text-4xl mb-4">❌</div>
+            <div className="text-4xl mb-4" style={{ display: "flex", justifyContent: "center" }}><AppIcon name="x-circle" size={40} /></div>
             <h3 className="text-lg font-medium text-gray-900">
               {error || "Article non trouvé"}
             </h3>
@@ -102,26 +103,14 @@ function StockDetail() {
       <div className="harmonized-detail-header">
         <button
           onClick={() => navigate("/stock")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "16px",
-            padding: "8px 16px",
-            borderRadius: "8px",
-            border: "1.5px solid rgba(255,255,255,0.3)",
-            backgroundColor: "rgba(255,255,255,0.05)",
-            color: "var(--text-primary)",
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
+          className="harmonized-back-button"
         >
           ← Retour au stock
         </button>
         <div className="mobile-inline-pairs">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3 flex-wrap">
-              📦 {item.nomMateriel}
+              <AppIcon name="stock" size={28} /> {item.nomMateriel}
               {(() => {
                 const statusBadge = getStockStatusBadgeConfig(item.statut);
                 return (
@@ -156,7 +145,7 @@ function StockDetail() {
                 fontSize: "0.85rem",
               }}
             >
-              ✏️ Modifier
+              <AppIcon name="edit" size={16} /> Modifier
             </button>
             {item.statut === "courant" && item.quantite > 0 && (
               <button
@@ -176,7 +165,7 @@ function StockDetail() {
                   gap: "6px",
                 }}
               >
-                🚚 Transférer
+                <AppIcon name="vehicle" size={16} /> Transférer
               </button>
             )}
             <button
@@ -197,7 +186,7 @@ function StockDetail() {
                 transition: "all 0.2s ease",
               }}
             >
-              🏷️ Imprimer étiquette
+              <AppIcon name="label" size={16} /> Imprimer étiquette
             </button>
             {item.statut === "courant" && (
               <button
@@ -208,7 +197,7 @@ function StockDetail() {
                   fontSize: "0.85rem",
                 }}
               >
-                ⚠️ Mettre HS
+                <AppIcon name="warning" size={16} /> Mettre HS
               </button>
             )}
           </div>
@@ -220,10 +209,10 @@ function StockDetail() {
         {/* Main Info */}
         <div className="harmonized-card">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-            📋 Informations
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={20} /> Informations</span>
           </h2>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
               <div>
                 <label className="text-xs text-gray-500 uppercase block mb-1">
                   Nom
@@ -261,7 +250,7 @@ function StockDetail() {
         {/* Category & Quantity */}
         <div className="harmonized-card">
           <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-            📊 Stock
+            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="stock" size={20} /> Stock</span>
           </h2>
           <div className="space-y-4">
             {/* Catégorie */}
@@ -285,7 +274,7 @@ function StockDetail() {
                   border: "1px solid rgba(255,255,255,0.2)",
                 }}
               >
-                📁 {item.categorie}
+                <AppIcon name="label" size={16} /> {item.categorie}
               </span>
             </div>
 
@@ -397,7 +386,7 @@ function StockDetail() {
                       onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
                       onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
                     >
-                      ✏️
+                      <AppIcon name="edit" size={16} />
                     </button>
                   </div>
                 );
@@ -410,7 +399,7 @@ function StockDetail() {
       {/* Notes & History */}
       <div className="harmonized-card">
         <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-          📝 Notes & Historique
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={20} /> Notes & Historique</span>
         </h2>
 
         {item.notes ? (
@@ -432,7 +421,7 @@ function StockDetail() {
           <p className="text-gray-500 italic mb-6">Aucune note</p>
         )}
 
-        <div className="grid grid-cols-2 gap-4 text-sm text-gray-500 pt-4 border-t">
+        <div className="grid gap-4 text-sm text-gray-500 pt-4 border-t" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
           <div>
             <span className="font-medium">Créé le:</span>{" "}
             {new Date(item.createdAt).toLocaleDateString("fr-FR", {
@@ -459,7 +448,7 @@ function StockDetail() {
       {/* Movement History Timeline */}
       <div className="harmonized-card">
         <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
-          📊 Historique des Mouvements
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="history" size={20} /> Historique des Mouvements</span>
         </h2>
 
         {movementsLoading ? (
@@ -484,21 +473,25 @@ function StockDetail() {
                 }}
               >
                 {/* Icon */}
+                {(() => {
+                  const movementMeta = getMovementMeta(movement.type);
+                  return (
                 <div
                   style={{
                     width: "40px",
                     height: "40px",
                     borderRadius: "50%",
-                    backgroundColor: getMovementMeta(movement.type).color,
+                    backgroundColor: movementMeta.color,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "1.2rem",
                     flexShrink: 0,
                   }}
                 >
-                  {getMovementMeta(movement.type).icon}
+                  <AppIcon name={movementMeta.iconName} size={20} />
                 </div>
+                  );
+                })()}
 
                 {/* Content */}
                 <div style={{ flex: 1 }}>

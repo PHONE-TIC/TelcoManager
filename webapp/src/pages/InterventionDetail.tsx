@@ -4,6 +4,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
 import { formatDateTimeLocal } from "../utils/dateUtils";
+import { AppIcon, type AppIconName } from "../components/AppIcon";
 import InterventionLocation from "../components/InterventionLocation";
 import PhotoCapture from "../components/PhotoCapture";
 import InterventionWorkflow from "../components/InterventionWorkflow";
@@ -276,6 +277,14 @@ const InterventionDetail: React.FC = () => {
     return <span className={`badge ${badge.className} `}>{badge.label}</span>;
   };
 
+  const getAttachmentIconName = (fileName: string): AppIconName => {
+    if (fileName.endsWith(".pdf")) return "document";
+    if (fileName.match(/\.(jpg|jpeg|png|gif)$/i)) return "image";
+    if (fileName.match(/\.(doc|docx)$/i)) return "comment";
+    if (fileName.match(/\.(xls|xlsx)$/i)) return "reports";
+    return "attachment";
+  };
+
   if (loading) {
     return (
       <div className="page-container harmonized-shell">
@@ -288,7 +297,7 @@ const InterventionDetail: React.FC = () => {
     return (
       <div className="page-container">
         <div className="error-message">Intervention non trouvée</div>
-        <button onClick={handleGoBack} className="btn btn-secondary">
+        <button onClick={handleGoBack} className="harmonized-back-button">
           ← Retour à la liste
         </button>
       </div>
@@ -300,7 +309,7 @@ const InterventionDetail: React.FC = () => {
       {/* En-tête */}
       <div className="harmonized-header detail-header">
         <div className="header-info">
-          <button onClick={handleGoBack} className="btn btn-back">
+          <button onClick={handleGoBack} className="harmonized-back-button">
             ← Retour
           </button>
           <div className="title-row">
@@ -328,7 +337,7 @@ const InterventionDetail: React.FC = () => {
                   }}
                   className="btn btn-secondary btn-export-pdf"
                 >
-                  📄 {reportUrl ? "Voir le rapport" : "Télécharger PDF"}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> {reportUrl ? "Voir le rapport" : "Télécharger PDF"}</span>
                 </button>
               )}
               {/* Bouton Prendre en charge pour techniciens (en haut à droite) */}
@@ -355,7 +364,7 @@ const InterventionDetail: React.FC = () => {
                           border: "none",
                         }}
                       >
-                        ▶️ Démarrer
+                        Démarrer
                       </button>
                     )}
                     {intervention.statut === "en_cours" && (
@@ -368,7 +377,7 @@ const InterventionDetail: React.FC = () => {
                           border: "none",
                         }}
                       >
-                        ✓ Terminer
+                        Terminer
                       </button>
                     )}
                     {(intervention.statut as string) !== "annulee" && (
@@ -389,7 +398,7 @@ const InterventionDetail: React.FC = () => {
                           border: "none",
                         }}
                       >
-                        ✕ Annuler
+                        Annuler
                       </button>
                     )}
                   </div>
@@ -400,11 +409,11 @@ const InterventionDetail: React.FC = () => {
                   onClick={() => setIsEditing(true)}
                   className="btn btn-primary"
                 >
-                  ✏️ Modifier
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="edit" size={18} /> Modifier</span>
                 </button>
               )}
               {isClosedIntervention(intervention.statut) && (
-                <span className="badge badge-info">🔒 Lecture seule</span>
+                <span className="badge badge-info"><span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="ban" size={14} /> Lecture seule</span></span>
               )}
             </>
           ) : (
@@ -421,7 +430,7 @@ const InterventionDetail: React.FC = () => {
                 className="btn btn-success"
                 disabled={saving}
               >
-                {saving ? "Enregistrement..." : "💾 Enregistrer"}
+                {saving ? "Enregistrement..." : "Enregistrer"}
               </button>
             </>
           )}
@@ -443,7 +452,7 @@ const InterventionDetail: React.FC = () => {
 
       {/* Carte Informations Générales */}
       <div className="info-card harmonized-card">
-        <h3>📋 Informations générales</h3>
+        <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> Informations générales</h3>
         <div className="info-grid">
           <div className="info-item">
             <label>Client</label>
@@ -499,7 +508,8 @@ const InterventionDetail: React.FC = () => {
                     onChange={(e) => handleQuickReassign(e.target.value)}
                     className="input"
                     style={{
-                      maxWidth: "280px",
+                      width: "100%",
+                      maxWidth: "min(320px, 100%)",
                       padding: "10px 14px",
                       border: "2px solid var(--primary-color)",
                       borderRadius: "8px",
@@ -508,12 +518,12 @@ const InterventionDetail: React.FC = () => {
                       cursor: "pointer",
                     }}
                   >
-                    <option value="">🔄 Non assigné</option>
+                    <option value="">Non assigné</option>
                     {techniciens
                       .filter((t) => t.role !== "admin")
                       .map((tech) => (
                         <option key={tech.id} value={tech.id}>
-                          👤 {tech.nom} (@{tech.username})
+                          {tech.nom} (@{tech.username})
                         </option>
                       ))}
                   </select>
@@ -529,7 +539,7 @@ const InterventionDetail: React.FC = () => {
                     <strong>{intervention.technicienNom}</strong>
                     <br />
                     <small style={{ color: "#ef4444" }}>
-                      👤 Utilisateur supprimé
+                      Utilisateur supprimé
                     </small>
                   </>
                 ) : (
@@ -586,10 +596,10 @@ const InterventionDetail: React.FC = () => {
                 }
                 className="edit-input"
               >
-                <option value="planifiee">🔵 Planifiée</option>
-                <option value="en_cours">🟠 En cours</option>
-                <option value="terminee">🟢 Terminée</option>
-                <option value="annulee">🔴 Annulée</option>
+                <option value="planifiee">Planifiée</option>
+                <option value="en_cours">En cours</option>
+                <option value="terminee">Terminée</option>
+                <option value="annulee">Annulée</option>
               </select>
             )}
           </div>
@@ -616,7 +626,7 @@ const InterventionDetail: React.FC = () => {
 
       {/* Carte Description */}
       <div className="info-card harmonized-card">
-        <h3>📝 Description</h3>
+        <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Description</h3>
         {!isEditing ? (
           <div className="description-content">
             {intervention.description || (
@@ -638,7 +648,7 @@ const InterventionDetail: React.FC = () => {
 
       {/* Carte Commentaires */}
       <div className="info-card comment-section harmonized-card">
-        <h3>💬 Commentaires / Notes</h3>
+        <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Commentaires / Notes</h3>
         {!isEditing ? (
           <div className="description-content">
             {intervention.notes || (
@@ -663,7 +673,7 @@ const InterventionDetail: React.FC = () => {
         className="info-card harmonized-card"
         style={{ borderLeft: "4px solid var(--success-color, #10b981)" }}
       >
-        <h3>📄 Rapport d'Intervention (Technicien)</h3>
+        <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> Rapport d'Intervention (Technicien)</h3>
         <div className="description-content">
           {intervention.commentaireTechnicien ? (
             <div style={{ whiteSpace: "pre-wrap" }}>
@@ -681,7 +691,7 @@ const InterventionDetail: React.FC = () => {
           className="info-card harmonized-card"
           style={{ borderLeft: "4px solid var(--primary-color, #3b82f6)" }}
         >
-          <h3>📜 Historique</h3>
+          <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="history" size={18} /> Historique</h3>
           <div className="mobile-stack-list">
             {/* Création */}
             <div className="mobile-history-item">
@@ -851,7 +861,7 @@ const InterventionDetail: React.FC = () => {
       {/* Future: Carte Équipements */}
       {intervention.equipements && intervention.equipements.length > 0 && (
         <div className="info-card harmonized-card">
-          <h3>🔧 Équipements utilisés</h3>
+          <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="technician" size={18} /> Équipements utilisés</h3>
           <div className="equipments-list">
             {intervention.equipements.map((eq) => (
               <div key={eq.id} className="equipment-item">
@@ -888,7 +898,7 @@ const InterventionDetail: React.FC = () => {
         {loadedAttachments.length > 0 && (
           <div className="info-card harmonized-card" style={{ height: "100%", margin: 0 }}>
             <h3 style={{ marginBottom: "10px", color: "var(--primary-color)" }}>
-              📎 Fichiers joints ({loadedAttachments.length})
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="attachment" size={18} /> Fichiers joints ({loadedAttachments.length})</span>
             </h3>
             <div>
               {loadedAttachments.map((file, index) => (
@@ -902,16 +912,8 @@ const InterventionDetail: React.FC = () => {
                       minWidth: 0,
                     }}
                   >
-                    <span style={{ fontSize: "20px" }}>
-                      {file.name.endsWith(".pdf")
-                        ? "📄"
-                        : file.name.match(/\.(jpg|jpeg|png|gif)$/i)
-                        ? "🖼️"
-                        : file.name.match(/\.(doc|docx)$/i)
-                        ? "📝"
-                        : file.name.match(/\.(xls|xlsx)$/i)
-                        ? "📊"
-                        : "📁"}
+                    <span style={{ fontSize: "20px", display: "inline-flex" }}>
+                      <AppIcon name={getAttachmentIconName(file.name)} size={20} />
                     </span>
                     <span
                       style={{
@@ -935,7 +937,7 @@ const InterventionDetail: React.FC = () => {
                       marginLeft: "10px",
                     }}
                   >
-                    ⬇️
+                    <AppIcon name="download" size={14} />
                   </a>
                 </div>
               ))}

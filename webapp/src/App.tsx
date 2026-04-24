@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -29,6 +29,7 @@ const Inventaire = lazy(() => import("./pages/Inventaire"));
 const TechnicianStock = lazy(() => import("./pages/TechnicianStock"));
 const Reports = lazy(() => import("./pages/Reports"));
 const IpLinksSupervision = lazy(() => import("./pages/IpLinksSupervision"));
+const IpLinkDetail = lazy(() => import("./pages/IpLinkDetail"));
 const PwaInstallButton = lazy(() =>
   import("./components/PwaInstall").then((module) => ({
     default: module.PwaInstallButton,
@@ -43,20 +44,25 @@ const ReloadPrompt = lazy(() => import("./components/ReloadPrompt"));
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./contexts/useAuth";
-import { useTheme } from "./contexts/useTheme";
 import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
 import { NotificationToastOverlay } from "./components/NotificationToastOverlay";
 import { SearchAndNotifications } from "./components/SearchAndNotifications";
+import { IpLinksNotificationWatcher } from "./components/IpLinksNotificationWatcher";
 import { useNotifications } from "./hooks/useNotifications";
 import { NotificationCenterProvider } from "./contexts/NotificationCenterContext";
+import { AppIcon } from "./components/AppIcon";
 
-import logo from "./assets/logo.png";
 
-function Navigation() {
+function Navigation({
+  sidebarCollapsed,
+  setSidebarCollapsed,
+}: {
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const location = useLocation();
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const { isSupported, isEnabled, requestPermission } = useNotifications();
 
   const isActive = (path: string) => {
@@ -72,50 +78,55 @@ function Navigation() {
   const navItems = [
     {
       path: "/",
-      icon: "📊",
+      icon: <AppIcon name="dashboard" />,
       label: "Tableau de bord",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/interventions",
-      icon: "📅",
+      icon: <AppIcon name="interventions" />,
       label: "Interventions",
       roles: ["admin", "gestionnaire", "technicien"],
     },
     {
       path: "/clients",
-      icon: "👥",
+      icon: <AppIcon name="clients" />,
       label: "Clients",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/techniciens",
-      icon: "🛡️",
+      icon: <AppIcon name="users" />,
       label: "Utilisateurs",
       roles: ["admin"],
     },
     {
       path: "/stock",
-      icon: "📦",
+      icon: <AppIcon name="stock" />,
       label: "Stock",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/inventaire",
-      icon: "🔍",
+      icon: <AppIcon name="inventory" />,
       label: "Inventaire",
       roles: ["admin", "gestionnaire"],
     },
-    { path: "/rapports", icon: "📈", label: "Rapports", roles: ["admin"] },
+    {
+      path: "/rapports",
+      icon: <AppIcon name="reports" />,
+      label: "Rapports",
+      roles: ["admin"],
+    },
     {
       path: "/supervision-liens-ip",
-      icon: "🟢",
-      label: "Supervision de liens IP",
+      icon: <AppIcon name="ip-links" />,
+      label: "Liens IP",
       roles: ["admin", "gestionnaire"],
     },
     {
       path: "/mon-stock",
-      icon: "🚗",
+      icon: <AppIcon name="vehicle" />,
       label: "Mon Stock",
       roles: ["technicien"],
     },
@@ -129,77 +140,32 @@ function Navigation() {
   });
 
   return (
-    <div className="sidebar">
-      <div
-        className="sidebar-logo-container"
-        style={{
-          textAlign: "center",
-          marginBottom: "30px",
-          paddingBottom: "20px",
-          borderBottom: "1px solid var(--border-color)",
-        }}
-      >
-        <img
-          src={logo}
-          alt="Phone & Tic"
-          style={{ maxWidth: "180px", height: "auto" }}
-        />
-        <div
-          style={{
-            marginTop: "12px",
-            fontSize: "1.25rem",
-            fontWeight: "bold",
-            color: "var(--primary-color)",
-            letterSpacing: "-0.5px",
-          }}
-        >
-          TelcoManager
-        </div>
-        <div
-          style={{
-            fontSize: "0.75rem",
-            color: "var(--text-secondary)",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-            marginTop: "4px",
-          }}
-        >
-          Gestion Stock & Terrain
-        </div>
-      </div>
-      {(user.role === "admin" || user.role === "gestionnaire") && (
-        <div style={{ padding: "0 16px", marginBottom: "20px" }}>
-          <SearchAndNotifications />
-        </div>
-      )}
-      <div
-        style={{
-          marginBottom: "20px",
-          fontSize: "0.875rem",
-          color: "var(--text-secondary)",
-          paddingLeft: "16px",
-        }}
-      >
-        {user.nom} ({user.role})
-      </div>
-      <nav>
+    <div className={`sidebar ${sidebarCollapsed ? "sidebar--collapsed" : ""}`}>
+      <nav className="sidebar-nav-shell">
         <ul className="nav-menu">
           {filteredNavItems.map((item) => (
             <li className="nav-item" key={item.path}>
               <Link
                 to={item.path}
                 className={`nav-link ${isActive(item.path)}`}
+                title={item.label}
+                aria-label={item.label}
               >
-                {item.icon} {item.label}
+                <span className="nav-link-content">
+                  <span className="nav-link-icon" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  {!sidebarCollapsed ? <span className="nav-link-label">{item.label}</span> : null}
+                </span>
               </Link>
             </li>
           ))}
         </ul>
       </nav>
-      <div style={{ marginTop: "auto", paddingTop: "20px" }}>
+      <div className="sidebar-footer">
         {/* PWA Install button for desktop */}
         <Suspense fallback={null}>
-          <div style={{ marginBottom: "10px" }}>
+          <div className="sidebar-footer__block">
             <PwaInstallButton />
           </div>
         </Suspense>
@@ -220,19 +186,13 @@ function Navigation() {
           </button>
         )}
         <button
-          onClick={toggleTheme}
-          className="btn app-theme-toggle"
-          style={{ width: "100%", marginBottom: "10px" }}
+          type="button"
+          className="sidebar-collapse-toggle sidebar-collapse-toggle--footer"
+          onClick={() => setSidebarCollapsed((prev) => !prev)}
+          aria-label={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
+          title={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
         >
-          <span className="theme-icon" aria-hidden="true">{theme === "dark" ? "☀️" : "🌙"}</span>
-          <span className="app-action-label">{theme === "dark" ? "Mode clair" : "Mode sombre"}</span>
-        </button>
-        <button
-          onClick={logout}
-          className="btn btn-danger app-logout-button"
-          style={{ width: "100%" }}
-        >
-          <span className="app-action-label">Déconnexion</span>
+          {sidebarCollapsed ? "»" : "«"}
         </button>
       </div>
     </div>
@@ -298,19 +258,37 @@ function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
   const pageTransitionKey = `${location.pathname}${location.search}${location.hash}`;
+  const hasDesktopTopbar = !!user;
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("sidebar-collapsed") === "true";
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed);
+    window.localStorage.setItem("sidebar-collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${hasDesktopTopbar ? "app-container--with-topbar" : ""}`}>
       {user && (
         <>
           <MobileNav />
           <MobileHeader />
-          <Navigation />
+          <Navigation sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
+          <IpLinksNotificationWatcher />
           <NotificationToastOverlay />
         </>
       )}
-      <div className="main-content">
-        <div key={pageTransitionKey} className="fade-in">
+      <div className={`main-content ${hasDesktopTopbar ? "main-content--with-topbar" : ""}`}>
+        {hasDesktopTopbar ? (
+          <div className="app-topbar">
+            <div className="app-topbar__inner">
+              <SearchAndNotifications />
+            </div>
+          </div>
+        ) : null}
+        <div key={pageTransitionKey} className="fade-in app-route-shell">
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
             <Route path="/login" element={<Login />} />
@@ -471,6 +449,14 @@ function AppContent() {
               element={
                 <ManagerRoute>
                   <IpLinksSupervision />
+                </ManagerRoute>
+              }
+            />
+            <Route
+              path="/supervision-liens-ip/:reference"
+              element={
+                <ManagerRoute>
+                  <IpLinkDetail />
                 </ManagerRoute>
               }
             />

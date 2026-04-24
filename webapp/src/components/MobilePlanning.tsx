@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
+import { AppIcon } from './AppIcon';
 import './MobilePlanning.css';
 
 interface Intervention {
@@ -232,13 +233,13 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
                                             )}
                                             <div className="intervention-card-footer">
                                                 {intervention.client && (
-                                                    <span className="intervention-client">
-                                                        👤 {intervention.client.nom}
+                                                    <span className="intervention-client" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                                        <AppIcon name="user" size={14} /> {intervention.client.nom}
                                                     </span>
                                                 )}
                                                 {intervention.technicien && (
-                                                    <span className="intervention-tech">
-                                                        🔧 {intervention.technicien.nom}
+                                                    <span className="intervention-tech" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                                        <AppIcon name="technician" size={14} /> {intervention.technicien.nom}
                                                     </span>
                                                 )}
                                             </div>
@@ -250,7 +251,7 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
                     ))
                 ) : (
                     <div className="empty-state">
-                        <p>📅 Aucune intervention pour cette période</p>
+                        <p style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><AppIcon name="interventions" size={16} /> Aucune intervention pour cette période</p>
                         <small>Sélectionnez une autre période ou créez une nouvelle intervention</small>
                     </div>
                 )}

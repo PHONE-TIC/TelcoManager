@@ -474,6 +474,16 @@ class ApiService {
     return response.data;
   }
 
+  async getIpLinkByReference(reference: string) {
+    const response = await this.api.get(`/ip-links/by-reference/${encodeURIComponent(reference)}`);
+    return response.data;
+  }
+
+  async getIpLinkUptime(id: number) {
+    const response = await this.api.get(`/ip-links/${id}/uptime`);
+    return response.data;
+  }
+
   async syncIpLinks() {
     const response = await this.api.post("/ip-links/sync");
     return response.data;
