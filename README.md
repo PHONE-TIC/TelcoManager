@@ -139,7 +139,7 @@ Optimisations et simplifications importantes, sans modification fonctionnelle vo
 - intégration de la supervision des liens IP directement dans le tableau de bord avec KPI dédiés et panneau des liens KO
 - ajout d’un centre de notifications in-app avec cloche dans le header partagé, badge non lu, marquage lu, suppression et lien direct vers la fiche concernée
 - ajout d’un watcher global de supervision des liens IP pour déclencher les notifications même hors de la page dédiée
-- ajout de toasts in-app pour les changements d’état des liens IP, affichés en bas à droite pendant 5 secondes, avec navigation directe vers la fiche du lien
+- ajout de toasts in-app pour les changements d’état des liens IP, affichés sous la topbar en haut à droite avec animations d’entrée/sortie, barre de progression visuelle et navigation directe vers la fiche du lien
 - ajout d’une page détail par lien IP (`/supervision-liens-ip/:reference`)
 - remplacement global des émojis d’interface par des icônes SVG homogènes via le composant partagé `AppIcon`
 - repositionnement de la recherche globale et de la cloche dans une barre commune, avec comportement modal cohérent pour la recherche et les notifications
