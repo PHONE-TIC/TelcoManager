@@ -10,6 +10,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${DB_USER:-postgres} -d $${DB_NAME:-stock_intervention}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - app_network
     restart: always
@@ -44,7 +49,8 @@ services:
     ports:
       - "8081:3000"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - app_network
     volumes:
@@ -63,7 +69,7 @@ services:
       DOMAIN: ${DOMAIN:-localhost}
       DUCKDNS_TOKEN: ${DUCKDNS_TOKEN:-}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - /opt/phonetic_telco-manager/Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
