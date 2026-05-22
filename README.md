@@ -20,22 +20,42 @@ TelcoManager est une application web de gestion pour le suivi des stocks, des in
 
 ## Architecture
 
-L’application tourne localement avec :
-
-- un backend Node.js / Express / Prisma,
-- un frontend React / Vite,
-- une base PostgreSQL,
-- un déploiement Docker unifié.
+L'application est structurée selon une architecture moderne de conteneurs unifiés et sécurisés. Elle repose sur trois couches logiques principales orchestrées localement et en production par Docker Compose :
 
 ```text
 telcomanager/
 ├── backend/              # API Node.js + Express + Prisma
-├── webapp/               # Frontend React
-├── postgres/             # Scripts PostgreSQL
-├── docker-compose.yml    # Orchestration locale
-├── Dockerfile.combined   # Build unifié app + API
-└── publish-docker.sh     # Publication Docker Hub
+├── webapp/               # Frontend React (PWA)
+├── postgres/             # Scripts d'initialisation PostgreSQL
+├── Caddyfile             # Configuration du serveur web inverse (HTTPS/TLS)
+├── Dockerfile.caddy      # Build personnalisé de Caddy (avec plugin DNS)
+├── Dockerfile.combined   # Build de production unifié de l'application
+├── docker-compose.yml    # Fichier d'orchestration multi-services
+└── publish-docker.sh     # Script utilitaire de publication Docker Hub
 ```
+
+### Détails Techniques & Fonctionnement
+
+1. **Build de Production Unifié (`Dockerfile.combined`)** :
+   - L'image finale de production est construite en plusieurs étapes (multi-stage build) pour garantir une légèreté maximale.
+   - **Frontend (React / Vite)** : Compilé en amont en fichiers statiques optimisés dans un dossier client (`/app/client`).
+   - **Backend (Node.js / Express)** : Conçu pour héberger les API REST/SSE tout en servant de manière transparente et sécurisée les ressources statiques du frontend.
+   - Aucun fichier de test, script de débogage ou dépendance de développement n'est embarqué dans l'image finale, assurant une sécurité et une efficacité accrues.
+
+2. **Accès aux Données & Base de Données (PostgreSQL / Prisma)** :
+   - Les données transactionnelles sont stockées dans une base de données PostgreSQL robuste (version 15).
+   - Les interactions avec la base de données sont gérées via l'ORM **Prisma**, garantissant un typage statique de bout en bout de l'application et la synchronisation automatisée du schéma via des migrations au démarrage du conteneur (`npx prisma db push` piloté par le script `start.sh`).
+
+3. **Serveur Inverse & Sécurisation TLS (`Caddy` / `Dockerfile.caddy`)** :
+   - Un conteneur **Caddy** dédié est configuré comme serveur web inverse de production en amont de l'application.
+   - **SSL/TLS Automatique** : Caddy gère nativement le provisionnement et le renouvellement automatique des certificats SSL/TLS gratuits Let's Encrypt / ZeroSSL.
+   - **Support DuckDNS (`Dockerfile.caddy`)** : Caddy est compilé sur mesure avec le module DuckDNS pour résoudre les défis Let's Encrypt par la méthode `DNS-01`. Cela permet l'obtention de certificats SSL de confiance même lorsque le conteneur n'est pas directement exposé aux ports publics 80/443.
+   - **Renforcement de Sécurité (Headers HTTP)** : Application stricte des meilleures pratiques en matière d'en-têtes HTTP de sécurité :
+     - *HSTS (Strict-Transport-Security)* : Force les communications chiffrées en HTTPS sur l'intégralité du domaine et sous-domaines.
+     - *Anti-Clickjacking (X-Frame-Options)* : Bloque l'intégration de l'application dans des Iframe externes.
+     - *Anti-MIME Sniffing (X-Content-Type-Options)* : Empêche le navigateur de deviner le type MIME des ressources envoyées.
+     - *Protection XSS (X-XSS-Protection)* : Active le filtre de blocage XSS par défaut.
+   - **Optimisations de Performance** : Compression dynamique des flux de données à l'aide des algorithmes de pointe Gzip et Zstd.
 
 ## Démarrage rapide
 
