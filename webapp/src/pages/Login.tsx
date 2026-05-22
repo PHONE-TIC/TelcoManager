@@ -2,9 +2,7 @@ import { useState } from "react";
 import type { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
-import { useTheme } from "../contexts/useTheme";
 import logo from "../assets/logo.png";
-import { AppIcon } from "../components/AppIcon";
 
 interface ApiErrorResponse {
   error?: string;
@@ -16,7 +14,6 @@ function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +22,8 @@ function Login() {
     setLoading(true);
 
     try {
-      await login(username, password);
+      // Trim username input to accept spaces gracefully (e.g. from password manager copy-paste)
+      await login(username.trim(), password);
       navigate("/");
     } catch (err: unknown) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
@@ -37,17 +35,6 @@ function Login() {
 
   return (
     <div className="login-page">
-      <button
-        onClick={toggleTheme}
-        className="theme-toggle-login"
-        title="Changer le thème"
-      >
-        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-          <AppIcon name={theme === "dark" ? "sun" : "moon"} size={18} />
-          {theme === "dark" ? "Mode Clair" : "Mode Sombre"}
-        </span>
-      </button>
-
       <div className="login-card">
         <div className="login-header">
           <img src={logo} alt="Logo" className="login-logo" />
@@ -60,8 +47,10 @@ function Login() {
         {error && <div className="error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">Identifiant</label>
+          <div className="form-group" style={{ marginBottom: "20px" }}>
+            <label className="form-label" style={{ fontWeight: 600, fontSize: "0.9rem", marginBottom: "8px", display: "block" }}>
+              Identifiant
+            </label>
             <input
               type="text"
               className="login-input"
@@ -73,22 +62,24 @@ function Login() {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Mot de passe</label>
+          <div className="form-group" style={{ marginBottom: "24px" }}>
+            <label className="form-label" style={{ fontWeight: 600, fontSize: "0.9rem", marginBottom: "8px", display: "block" }}>
+              Mot de passe
+            </label>
             <input
               type="password"
               className="login-input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mot de passe"
+              placeholder="Entrez votre mot de passe"
               required
             />
           </div>
 
           <button
             type="submit"
-            className="btn btn-primary"
-            style={{ width: "100%", marginTop: "10px", padding: "12px" }}
+            className="btn btn-primary login-btn-submit"
+            style={{ width: "100%", padding: "14px", border: "none" }}
             disabled={loading}
           >
             {loading ? "Connexion en cours..." : "Se connecter"}

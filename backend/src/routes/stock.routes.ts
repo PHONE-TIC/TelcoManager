@@ -18,6 +18,9 @@ router.use(authenticate);
 // Obtenir tout le stock avec filtres
 router.get("/", stockController.getAllStock);
 
+// Autocomplétion pour marque et modèle
+router.get("/autocomplete", stockController.getStockAutocomplete);
+
 // Obtenir un article de stock par ID
 router.get("/:id", param("id").isUUID(), stockController.getStockById);
 

@@ -210,6 +210,12 @@ class ApiService {
       etat?: "ok" | "hs";
       notes?: string;
       serialNumber?: string;
+      marque?: string;
+      modele?: string;
+      reference?: string;
+      categorie?: string;
+      fournisseur?: string;
+      dryRun?: boolean;
     }
   ) {
     const response = await this.api.post(
@@ -239,6 +245,13 @@ class ApiService {
     const response = await this.api.get(
       `/stock/serial/${encodeURIComponent(numeroSerie)}`
     );
+    return response.data;
+  }
+
+  async getStockAutocomplete(marque?: string) {
+    const response = await this.api.get("/stock/autocomplete", {
+      params: marque ? { marque } : {},
+    });
     return response.data;
   }
 
@@ -486,6 +499,27 @@ class ApiService {
 
   async syncIpLinks() {
     const response = await this.api.post("/ip-links/sync");
+    return response.data;
+  }
+
+  // Notifications
+  async getNotifications() {
+    const response = await this.api.get("/notifications");
+    return response.data;
+  }
+
+  async markNotificationAsRead(id: string) {
+    const response = await this.api.patch(`/notifications/${id}/read`);
+    return response.data;
+  }
+
+  async markAllNotificationsAsRead() {
+    const response = await this.api.post("/notifications/mark-all-read");
+    return response.data;
+  }
+
+  async clearAllNotifications() {
+    const response = await this.api.delete("/notifications");
     return response.data;
   }
 }

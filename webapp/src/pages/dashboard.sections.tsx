@@ -30,7 +30,7 @@ export function DashboardHeader({ stats }: { stats: DashboardStats | null }) {
       <div className="dashboard-header-top">
         <div className="dashboard-header-copy">
           <span className="dashboard-eyebrow">Pilotage opérationnel</span>
-          <h1 className="dashboard-title"><AppIcon name="dashboard" size={22} /> Tableau de bord</h1>
+          <h1 className="dashboard-title">Tableau de bord</h1>
           <p className="dashboard-subtitle">
             Vue rapide des interventions, du stock et des points d'attention.
           </p>

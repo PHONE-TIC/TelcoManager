@@ -12,6 +12,9 @@ RUN npm run build
 FROM node:20-alpine AS backend-builder
 WORKDIR /app/backend
 
+# Install OpenSSL before npm ci so @prisma/engines downloads linux-musl-openssl-3.0.x binaries
+RUN apk add --no-cache openssl
+
 COPY backend/package*.json ./
 COPY backend/prisma ./prisma/
 

@@ -4,6 +4,7 @@ import SignaturePad from "./SignaturePad";
 import BarcodeScanner from "./BarcodeScanner";
 import { AppIcon } from "./AppIcon";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
+import { queueOfflineClosure, blobToDataUrl } from "../utils/offlineSync";
 import type { Intervention } from "../types";
 import "./InterventionWorkflow.css";
 
@@ -233,12 +234,6 @@ export default function InterventionWorkflow({
         });
       }
 
-      // Update Status
-      await apiService.updateInterventionStatus(interventionId, {
-        statut: "terminee",
-        commentaireTechnicien: commentaire,
-      });
-
       // --- ARTIFACT UPLOAD ---
       const formData = new FormData();
 
@@ -289,27 +284,99 @@ export default function InterventionWorkflow({
       }
 
       if (photos.length > 0 || pdfBlob) {
-        showMessage("Envoi des fichiers...");
+        showMessage("Envoi du rapport et des photos...");
         await apiService.uploadInterventionArtifacts(interventionId, formData);
       }
 
-      showMessage("Intervention clôturée avec succès !");
+      // Update Status
+      showMessage("Cloture de l'intervention...");
+      await apiService.updateInterventionStatus(interventionId, {
+        statut: "terminee",
+        commentaireTechnicien: commentaire,
+      });
+
+      showMessage("Intervention cloturee avec succes !");
       onStatusChange();
     } catch (err: unknown) {
-      showMessage(getErrorMessage(err, "Erreur de clôture"), true);
+      console.error("Error closing intervention:", err);
+      
+      const errMsg = getErrorMessage(err, "Erreur de clôture");
+      const isOfflineError = !navigator.onLine || 
+        (err && typeof err === 'object' && ('message' in err) && (err as any).message === 'Network Error') ||
+        errMsg.includes("network") || errMsg.includes("Network Error");
+
+      if (isOfflineError) {
+        try {
+          setLoading(true);
+          const latestIntervention = {
+            ...intervention,
+            heureArrivee: isoHeureArrivee,
+            heureDepart: isoHeureDepart,
+            commentaireTechnicien: commentaire,
+            signature,
+            signatureTechnicien: signatureTechnicien || undefined,
+            statut: "terminee" as const,
+          } as Intervention;
+
+          const extraData = {
+            billing,
+            systemType,
+            clientRemarks,
+            clientSigner,
+          };
+
+          const pdfBlob = await generateInterventionPDF(
+            latestIntervention,
+            true,
+            photos,
+            extraData
+          );
+
+          let pdfDataUrl = "";
+          if (pdfBlob && pdfBlob instanceof Blob) {
+            pdfDataUrl = await blobToDataUrl(pdfBlob);
+          }
+
+          queueOfflineClosure({
+            interventionId,
+            numero: intervention?.numero || "Intervention",
+            heureArrivee: isoHeureArrivee,
+            heureDepart: isoHeureDepart,
+            commentaireTechnicien: commentaire,
+            signatureTechnicien: signatureTechnicien || undefined,
+            signatureClient: signature || undefined,
+            photos: photos.map(p => ({ dataUrl: p.dataUrl, type: p.type })),
+            attachedFiles: [],
+            pdfDataUrl
+          });
+
+          showMessage("Intervention enregistrée hors-ligne ! Elle sera synchronisée dès le retour du réseau.");
+          onStatusChange();
+          return;
+        } catch (queueErr) {
+          console.error("Failed to queue offline:", queueErr);
+          showMessage("Impossible de finaliser l'intervention, même hors-ligne.", true);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      showMessage(errMsg, true);
     } finally {
       setLoading(false);
     }
   };
 
   // === EQUIPMENT HANDLERS ===
-  const handleBarcodeScan = async (barcode: string) => {
-    setShowScanner(false);
+  const handleBarcodeScan = async (barcode: string, keepOpen?: boolean) => {
+    if (!keepOpen) {
+      setShowScanner(false);
+    }
     try {
       const stockItem = await apiService.getStockByBarcode(barcode);
       if (stockItem) {
-        setEquipments([
-          ...equipments,
+        setEquipments((prev) => [
+          ...prev,
           {
             stockId: stockItem.id,
             nom: stockItem.nomMateriel,
@@ -345,8 +412,9 @@ export default function InterventionWorkflow({
       }
       showMessage("Matériel enregistré");
       setEquipments([]);
-    } catch {
-      showMessage("Erreur save matériel", true);
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.error || err?.message || "Erreur lors de l'enregistrement du matériel";
+      showMessage(errMsg, true);
     } finally {
       setLoading(false);
     }

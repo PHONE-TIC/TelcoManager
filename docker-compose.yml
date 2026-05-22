@@ -51,6 +51,27 @@ services:
       - uploads_data:/app/uploads
     restart: always
 
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    container_name: telcomanager_caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - app_network
+    restart: always
+
 networks:
   app_network:
     driver: bridge
@@ -58,3 +79,5 @@ networks:
 volumes:
   postgres_data:
   uploads_data:
+  caddy_data:
+  caddy_config:

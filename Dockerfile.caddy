@@ -1,0 +1,11 @@
+# Build custom de Caddy avec le module DuckDNS
+FROM caddy:builder AS builder
+
+# Installe le plugin DNS DuckDNS pour résoudre les défis Let's Encrypt sans ouvrir de ports
+RUN xcaddy build --with github.com/caddy-dns/duckdns
+
+# Image finale légère
+FROM caddy:latest
+
+# Copie le binaire Caddy compilé sur mesure
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy

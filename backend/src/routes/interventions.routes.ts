@@ -16,6 +16,9 @@ router.use(authenticate);
 // Obtenir toutes les interventions avec filtres
 router.get("/", interventionController.getAllInterventions);
 
+// Stream temps réel des verrous d'interventions
+router.get("/locks/stream", interventionController.locksStream);
+
 // Obtenir une intervention par ID
 router.get(
   "/:id",
@@ -109,11 +112,19 @@ router.post(
   requireTechnicienOrAdmin,
   [
     param("id").isUUID(),
-    body("stockId").isUUID().withMessage("Stock ID requis"),
+    body("stockId").optional().isUUID().withMessage("Stock ID invalide"),
     body("action").isIn(["install", "retrait"]), // Simplified actions
     body("etat").optional().isIn(["ok", "hs"]), // For removal
     body("quantite").optional().isInt({ min: 1 }),
     body("notes").optional(),
+    body("nom").optional().isString(),
+    body("marque").optional().isString(),
+    body("modele").optional().isString(),
+    body("serialNumber").optional().isString(),
+    body("reference").optional().isString(),
+    body("categorie").optional().isString(),
+    body("fournisseur").optional().isString(),
+    body("dryRun").optional().isBoolean(),
   ],
   interventionController.manageEquipement
 );

@@ -103,4 +103,19 @@
   .harmonized-form-actions > * {
     width: 100%;
   }
+
+  .detail-cards-wrapper.is-technicien .description-card-wrapper {
+    order: -1;
+  }
+
+  /* Admin detail cards maintain their rounded style and spacing on mobile */
+  .detail-cards-wrapper {
+    gap: 1rem;
+  }
+}
+
+.detail-cards-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }

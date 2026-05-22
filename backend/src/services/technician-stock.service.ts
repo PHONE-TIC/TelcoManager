@@ -88,6 +88,27 @@ export async function assignTechnicianStockToClient(input: {
     return { status: 404 as const, body: { error: "Client non trouvé" } };
   }
 
+  const stock = await prisma.stock.findUnique({ where: { id: input.stockId } });
+  if (!stock) {
+    return { status: 404 as const, body: { error: "Matériel non trouvé" } };
+  }
+
+  if (stock.statut === "hs") {
+    return {
+      status: 400 as const,
+      body: { error: "Impossible d'assigner : ce matériel est noté Hors Service (HS)." },
+    };
+  }
+
+  if (stock.statut === "courant") {
+    return {
+      status: 400 as const,
+      body: {
+        error: "Impossible d'assigner : ce matériel est toujours dans le stock courant de l'entrepôt. Vous devez d'abord le transférer dans votre véhicule.",
+      },
+    };
+  }
+
   const updated = await prisma.technicianStock.update({
     where: getTechnicianStockWhere(input.technicienId, input.stockId),
     data: {

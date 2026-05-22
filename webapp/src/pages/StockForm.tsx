@@ -4,6 +4,11 @@ import { apiService } from "../services/api.service";
 import AutocompleteInput from "../components/AutocompleteInput";
 import { AppIcon } from "../components/AppIcon";
 import type { Stock, StockListResponse } from "../types";
+import {
+  STOCK_CATEGORIES,
+  STOCK_SUPPLIERS,
+  generateReferencePreview,
+} from "../constants/stock.constants";
 import "./detail-form-harmonization.css";
 
 interface StockModelOption {
@@ -99,23 +104,7 @@ function StockForm() {
     }
   }, [formData.marque, allModels]);
 
-  // Génération de la prévisualisation de la référence
-  const generateReferencePreview = (
-    marque: string,
-    categorie: string
-  ): string => {
-    if (!marque || !categorie) return "";
-    const cleanStr = (str: string): string => {
-      return str
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Supprimer les accents
-        .replace(/[^a-zA-Z]/g, "") // Garder uniquement les lettres
-        .toUpperCase()
-        .substring(0, 3)
-        .padEnd(3, "X");
-    };
-    return `${cleanStr(marque)}${cleanStr(categorie)}XXXXX`;
-  };
+  // Reference preview uses the shared generateReferencePreview utility
 
   // Parse serial numbers from comma or newline separated input
   const parseSerialNumbers = (input: string): string[] => {
@@ -329,7 +318,8 @@ function StockForm() {
   }
 
   return (
-    <div className="space-y-6 mobile-form-shell harmonized-shell">
+    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+      <div className="space-y-6 mobile-form-shell harmonized-shell" style={{ maxWidth: '800px', width: '100%' }}>
       {/* Header */}
       <div className="harmonized-detail-header">
         <button
@@ -526,28 +516,7 @@ function StockForm() {
                 }}
               >
                 <option value="">Sélectionner une catégorie</option>
-                {[
-                  "Téléphone IP",
-                  "Téléphone analogique",
-                  "Téléphone DECT",
-                  "Borne DECT IP",
-                  "Borne DECT Analogique",
-                  "Téléphone IP DECT",
-                  "Accessoires DECT",
-                  "Accessoires Téléphone Fixe",
-                  "Répéteur DECT",
-                  "PBX Analogique",
-                  "PBX IP",
-                  "Accessoires PBX",
-                  "Routeur",
-                  "Accessoires routeur",
-                  "Onduleur",
-                  "Accessoires Onduleur",
-                  "SBC-PC",
-                  "Cartes SIM",
-                  "Casque",
-                  "Switch",
-                ].map((cat) => (
+                {STOCK_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
                   </option>
@@ -571,22 +540,7 @@ function StockForm() {
                 }}
               >
                 <option value="">Sélectionner un fournisseur</option>
-                {[
-                  "Amazon",
-                  "CDiscount",
-                  "Effiprod",
-                  "EMG",
-                  "Francofa",
-                  "Initio",
-                  "IP&Go",
-                  "Itancia",
-                  "Networth Télécom",
-                  "Office Easy",
-                  "OneDirect",
-                  "Rexel",
-                  "Unyc",
-                  "Zicom",
-                ].map((s) => (
+                {STOCK_SUPPLIERS.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>
@@ -686,6 +640,7 @@ function StockForm() {
             </button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );

@@ -7,13 +7,17 @@ interface InterventionLocationProps {
     clientCity: string;
     clientPostalCode: string;
     onLocationCapture?: (lat: number, lng: number) => void;
+    hideNavigationButtons?: boolean;
+    travelTime?: string | null;
 }
 
 export default function InterventionLocation({
     clientAddress,
     clientCity,
     clientPostalCode,
-    onLocationCapture
+    onLocationCapture,
+    hideNavigationButtons,
+    travelTime
 }: InterventionLocationProps) {
     const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
     const [loading, setLoading] = useState(false);
@@ -78,13 +82,14 @@ export default function InterventionLocation({
             </div>
 
             <div className="client-address-info">
-                <div className="address-line">
-                    <span className="address-icon"><AppIcon name="home" size={18} /></span>
-                    <span>{clientAddress}</span>
-                </div>
-                <div className="address-line">
-                    <span className="address-icon"><AppIcon name="mailbox" size={18} /></span>
-                    <span>{clientPostalCode} {clientCity}</span>
+                <div className="address-line" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center' }}>
+                    <span className="address-icon" style={{ flexShrink: 0 }}><AppIcon name="home" size={18} /></span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{clientAddress}, {clientPostalCode} {clientCity}</span>
+                    {travelTime && (
+                        <span style={{ marginLeft: '10px', flexShrink: 0, backgroundColor: '#e0f2fe', color: '#0369a1', padding: '4px 8px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            🚗 {travelTime}
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -95,21 +100,25 @@ export default function InterventionLocation({
             )}
 
             <div className="location-actions">
-                <button
-                    className="location-btn navigate-btn"
-                    onClick={openNavigation}
-                >
-                    <span className="btn-icon"><AppIcon name="navigation" size={18} /></span>
-                    <span className="btn-text">Naviguer</span>
-                </button>
+                {!hideNavigationButtons && (
+                    <>
+                        <button
+                            className="location-btn navigate-btn"
+                            onClick={openNavigation}
+                        >
+                            <span className="btn-icon"><AppIcon name="navigation" size={18} /></span>
+                            <span className="btn-text">Naviguer</span>
+                        </button>
 
-                <button
-                    className="location-btn map-btn"
-                    onClick={openInMaps}
-                >
-                    <span className="btn-icon"><AppIcon name="map" size={18} /></span>
-                    <span className="btn-text">Voir carte</span>
-                </button>
+                        <button
+                            className="location-btn map-btn"
+                            onClick={openInMaps}
+                        >
+                            <span className="btn-icon"><AppIcon name="map" size={18} /></span>
+                            <span className="btn-text">Voir carte</span>
+                        </button>
+                    </>
+                )}
 
                 <button
                     className="location-btn position-btn"

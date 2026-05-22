@@ -16,6 +16,7 @@ import pushRoutes from "./routes/push.routes";
 import stockMovementsRoutes from "./routes/stockMovements.routes";
 import unycRoutes from "./routes/unyc.routes";
 import ipLinksRoutes from "./routes/ip-links.routes";
+import notificationsRoutes from "./routes/notifications.routes";
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -62,6 +63,7 @@ app.use("/api/push", pushRoutes);
 app.use("/api", stockMovementsRoutes);
 app.use("/api/unyc", unycRoutes);
 app.use("/api/ip-links", ipLinksRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 // Servir les fichiers uploadés (photos, pdfs)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

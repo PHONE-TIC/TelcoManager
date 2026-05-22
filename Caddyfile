@@ -1,0 +1,35 @@
+# Fichier de configuration Caddy pour TelcoManager
+
+# Charge les variables DOMAIN et DUCKDNS_TOKEN depuis l'environnement Docker
+{$DOMAIN} {
+    # =========================================================================
+    # OPTION 1 : Défi HTTP (Recommandée si les ports 80/443 sont ouverts)
+    # Décommentez la ligne ci-dessous si vous utilisez l'Option 1 :
+    # =========================================================================
+    # (Pas de configuration spécifique requise, Caddy gère tout nativement !)
+
+    # =========================================================================
+    # OPTION 2 : Défi DNS DuckDNS (Si les ports 80/443 sont bloqués)
+    # Décommentez le bloc 'tls' ci-dessous si vous utilisez l'Option 2 :
+    # =========================================================================
+    tls {
+        dns duckdns {$DUCKDNS_TOKEN}
+    }
+
+    # Sécurité supplémentaire : Compression et en-têtes recommandés
+    encode gzip zstd
+    
+    header {
+        # Active HSTS pour forcer HTTPS pendant 1 an
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Empêche l'affichage dans un iframe (protection Clickjacking)
+        X-Frame-Options "SAMEORIGIN"
+        # Empêche le reniflage de type MIME
+        X-Content-Type-Options "nosniff"
+        # Protection XSS de base
+        X-XSS-Protection "1; mode=block"
+    }
+
+    # Redirection transparente vers le conteneur Node.js (TelcoManager App)
+    reverse_proxy app:3000
+}

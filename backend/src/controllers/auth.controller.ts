@@ -11,7 +11,8 @@ export const login = async (req: AuthRequest, res: Response) => {
             return respondValidationError(res, errors.array());
         }
 
-        const result = await authenticateUser(req.body.username, req.body.password);
+        const username = typeof req.body.username === 'string' ? req.body.username.trim() : req.body.username;
+        const result = await authenticateUser(username, req.body.password);
         return res.status(result.status).json(result.body);
     } catch (error) {
         console.error('Erreur lors de la connexion:', error);

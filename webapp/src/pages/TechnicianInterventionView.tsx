@@ -3,6 +3,8 @@ import type { AxiosError } from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { generateInterventionPDF } from "../utils/pdfGenerator";
+import { queueOfflineClosure, blobToDataUrl } from "../utils/offlineSync";
+
 // formatDateTimeLocal not currently used
 import { getTravelEstimate } from "../services/geolocation.service";
 import type { TravelEstimate } from "../services/geolocation.service";
@@ -10,8 +12,11 @@ import PhotoCapture from "../components/PhotoCapture";
 import SignaturePad from "../components/SignaturePad";
 import BarcodeScanner from "../components/BarcodeScanner";
 import { AppIcon, type AppIconName } from "../components/AppIcon";
+import { InterventionHeader } from "../components/Intervention/InterventionHeader";
+import { InterventionDescription } from "../components/Intervention/InterventionDescription";
 import { useAuth } from "../contexts/useAuth";
 import PhotoZoomModal from "./PhotoZoomModal";
+import RetraitSerialModal from "../components/RetraitSerialModal";
 import "./TechnicianInterventionView.css";
 import "./detail-form-harmonization.css";
 import "./screen-harmonization.css";
@@ -40,6 +45,13 @@ interface Equipment {
   action: "install" | "retrait";
   etat?: "ok" | "hs";
   quantite: number;
+  marque?: string;
+  modele?: string;
+  serialNumber?: string;
+  notes?: string;
+  reference?: string;
+  categorie?: string;
+  fournisseur?: string;
 }
 
 type ApiErrorResponse = {
@@ -76,6 +88,8 @@ interface VehicleStockItem {
 }
 
 
+const DRAFT_KEY = (interventionId: string) => `closure_draft_${interventionId}`;
+
 const TechnicianInterventionView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -110,7 +124,6 @@ const TechnicianInterventionView: React.FC = () => {
   const [travelEstimate, setTravelEstimate] = useState<TravelEstimate | null>(
     null
   );
-  const [loadingTravel, setLoadingTravel] = useState(false);
   const [modalPhoto, setModalPhoto] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   // New fields for Wizard Flow
@@ -138,6 +151,7 @@ const TechnicianInterventionView: React.FC = () => {
     useState<VehicleStockItem | null>(null);
   const [showRetrieveConditionModal, setShowRetrieveConditionModal] =
     useState(false);
+  const [showRetraitSerialModal, setShowRetraitSerialModal] = useState(false);
   const [loadingVehicleStock, setLoadingVehicleStock] = useState(false);
 
   const initialPinchDistance = useRef<number | null>(null);
@@ -218,11 +232,30 @@ const TechnicianInterventionView: React.FC = () => {
         }
       }
 
-      // Determine starting step based on status
+      // Determine starting step — check localStorage draft first
       if (data.statut === "planifiee") {
-        setCurrentStep(0); // Start at info
+        setCurrentStep(0);
       } else if (data.statut === "en_cours") {
-        setCurrentStep(1); // Start at heures
+        const draftRaw = id ? localStorage.getItem(DRAFT_KEY(id)) : null;
+        if (draftRaw) {
+          try {
+            const draft = JSON.parse(draftRaw);
+            if (draft.step !== undefined) setCurrentStep(draft.step);
+            if (draft.timeArrivee) setTimeArrivee(draft.timeArrivee);
+            if (draft.timeDepart) setTimeDepart(draft.timeDepart);
+            if (draft.commentaire) setCommentaire(draft.commentaire);
+            if (draft.billing) setBilling(draft.billing);
+            if (draft.systemType) setSystemType(draft.systemType);
+            if (draft.clientRemarks) setClientRemarks(draft.clientRemarks);
+            if (draft.clientSigner) setClientSigner(draft.clientSigner);
+            if (draft.signatureTechnicien) setSignatureTechnicien(draft.signatureTechnicien);
+            if (draft.signatureClient) setSignatureClient(draft.signatureClient);
+          } catch {
+            setCurrentStep(1);
+          }
+        } else {
+          setCurrentStep(1);
+        }
       }
     } catch {
       setError("Erreur lors du chargement");
@@ -239,6 +272,15 @@ const TechnicianInterventionView: React.FC = () => {
       stopAllCameras();
     };
   }, [id, loadIntervention]);
+
+  useEffect(() => {
+    if (intervention && intervention.statut !== "terminee" && intervention.statut !== "annulee" && intervention.client?.rue) {
+      const address = `${intervention.client.rue}, ${intervention.client.codePostal || ""} ${intervention.client.ville || ""}`;
+      getTravelEstimate(address)
+        .then((estimate) => setTravelEstimate(estimate))
+        .catch((err) => console.error("Could not get travel estimate:", err));
+    }
+  }, [intervention]);
 
   const closePhotoModal = () => {
     setModalPhoto(null);
@@ -316,13 +358,15 @@ const TechnicianInterventionView: React.FC = () => {
     }
   };
 
-  const handleBarcodeScan = async (barcode: string) => {
-    setShowScanner(false);
+  const handleBarcodeScan = async (barcode: string, keepOpen?: boolean) => {
+    if (!keepOpen) {
+      setShowScanner(false);
+    }
     try {
       const stockItem = await apiService.getStockByBarcode(barcode);
       if (stockItem) {
-        setEquipments([
-          ...equipments,
+        setEquipments((prev) => [
+          ...prev,
           {
             stockId: stockItem.id,
             nom: stockItem.nomMateriel,
@@ -359,12 +403,11 @@ const TechnicianInterventionView: React.FC = () => {
 
   // Load technician's vehicle stock
   const loadVehicleStock = async () => {
-    if (!intervention?.technicien?.id) return;
+    const technicienId = intervention?.technicienId || intervention?.technicien?.id;
+    if (!technicienId) return;
     setLoadingVehicleStock(true);
     try {
-      const data = await apiService.getTechnicianStock(
-        intervention.technicien.id
-      );
+      const data = await apiService.getTechnicianStock(technicienId);
       setVehicleStock(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Erreur chargement stock véhicule:", error);
@@ -383,19 +426,22 @@ const TechnicianInterventionView: React.FC = () => {
 
   // Open modal for retrieval (getting material back from client)
   const handleOpenRetraitModal = () => {
-    setVehicleStockAction("retrait");
-    loadVehicleStock();
-    setShowVehicleStockModal(true);
+    setShowRetraitSerialModal(true);
   };
 
   // Handle installation: assign item to client
   const handleInstallItem = async (item: VehicleStockItem) => {
-    if (!intervention?.technicien?.id || !intervention?.client?.id) return;
+    const technicienId = intervention?.technicienId || intervention?.technicien?.id;
+    const clientId = intervention?.clientId || intervention?.client?.id;
+    if (!technicienId || !clientId) {
+      showMessage("Impossible d'installer : ID du technicien ou du client manquant.", true);
+      return;
+    }
     try {
       await apiService.assignToClient(
-        intervention.technicien.id,
+        technicienId,
         item.stockId,
-        intervention.client.id
+        clientId
       );
       // Add to local equipments list for display
       setEquipments([
@@ -409,7 +455,7 @@ const TechnicianInterventionView: React.FC = () => {
       ]);
       setShowVehicleStockModal(false);
       showMessage(
-        `${item.stock.nomMateriel} installé chez ${intervention.client.nom}`
+        `${item.stock.nomMateriel} installé chez ${intervention?.client?.nom || "le client"}`
       );
       loadVehicleStock(); // Refresh vehicle stock
     } catch (error: unknown) {
@@ -431,10 +477,14 @@ const TechnicianInterventionView: React.FC = () => {
 
   // Handle retrieval with condition (OK/HS)
   const handleRetrieveItem = async (etat: "ok" | "hs") => {
-    if (!intervention?.technicien?.id || !selectedVehicleItem) return;
+    const technicienId = intervention?.technicienId || intervention?.technicien?.id;
+    if (!technicienId || !selectedVehicleItem) {
+      showMessage("Impossible de reprendre : ID du technicien ou article sélectionné manquant.", true);
+      return;
+    }
     try {
       await apiService.retrieveFromClient(
-        intervention.technicien.id,
+        technicienId,
         selectedVehicleItem.stockId,
         etat
       );
@@ -452,8 +502,7 @@ const TechnicianInterventionView: React.FC = () => {
       setShowRetrieveConditionModal(false);
       setSelectedVehicleItem(null);
       showMessage(
-        `${selectedVehicleItem.stock.nomMateriel
-        } repris (${etat.toUpperCase()})`
+        `${selectedVehicleItem.stock.nomMateriel} repris (${etat.toUpperCase()})`
       );
       loadVehicleStock(); // Refresh vehicle stock
     } catch (error: unknown) {
@@ -469,7 +518,8 @@ const TechnicianInterventionView: React.FC = () => {
   // Handle removing equipment from the list - reverses the action
   const handleRemoveEquipment = async (index: number) => {
     const eq = equipments[index];
-    if (!eq.stockId || !intervention?.technicien?.id) {
+    const technicienId = intervention?.technicienId || intervention?.technicien?.id;
+    if (!eq.stockId || !technicienId) {
       // No stockId - just remove from local list
       setEquipments(equipments.filter((_, idx) => idx !== index));
       return;
@@ -479,19 +529,11 @@ const TechnicianInterventionView: React.FC = () => {
       if (eq.action === "install") {
         // Was installed (assigned to client) - retrieve back to technician stock
         await apiService.retrieveFromClient(
-          intervention.technicien.id,
+          technicienId,
           eq.stockId,
           "ok" // Return as OK since we're canceling the assignment
         );
         showMessage(`${eq.nom} retiré et remis dans votre stock`);
-      } else if (eq.action === "retrait" && intervention?.client?.id) {
-        // Was retrieved from client - reassign back to client
-        await apiService.assignToClient(
-          intervention.technicien.id,
-          eq.stockId,
-          intervention.client.id
-        );
-        showMessage(`${eq.nom} réassigné au client`);
       }
 
       // Remove from local list
@@ -622,17 +664,195 @@ const TechnicianInterventionView: React.FC = () => {
         await apiService.uploadInterventionArtifacts(id, formData);
       }
 
+      if (id) localStorage.removeItem(DRAFT_KEY(id));
       alert("Intervention clôturée avec succès !");
       navigate("/interventions");
     } catch (err: unknown) {
-      const axiosError = err as AxiosError<ApiErrorResponse>;
       console.error("Error closing intervention:", err);
+      
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      const isOfflineError = !navigator.onLine || 
+        (err && typeof err === 'object' && ('message' in err) && (err as any).message === 'Network Error') ||
+        axiosError.code === 'ERR_NETWORK';
+
+      if (isOfflineError) {
+        try {
+          setLoading(true);
+          const today = new Date();
+          const [hArr, mArr] = timeArrivee.split(":").map(Number);
+          const dateArr = new Date(today);
+          dateArr.setHours(hArr, mArr, 0, 0);
+
+          const [hDep, mDep] = timeDepart.split(":").map(Number);
+          const dateDep = new Date(today);
+          dateDep.setHours(hDep, mDep, 0, 0);
+
+          const pdfIntervention = {
+            ...intervention,
+            heureArrivee: dateArr.toISOString(),
+            heureDepart: dateDep.toISOString(),
+            commentaireTechnicien: commentaire,
+            signature: signatureClient,
+            signatureTechnicien: signatureTechnicien || undefined,
+            statut: "terminee" as const,
+          };
+
+          const extraData = {
+            billing,
+            systemType,
+            clientRemarks,
+            clientSigner,
+          };
+
+          const pdfBlob = await generateInterventionPDF(
+            pdfIntervention,
+            true,
+            photos,
+            extraData
+          );
+
+          let pdfDataUrl = "";
+          if (pdfBlob && pdfBlob instanceof Blob) {
+            pdfDataUrl = await blobToDataUrl(pdfBlob);
+          }
+
+          const serializedAttachedFiles = await Promise.all(
+            attachedFiles.map(async (file) => {
+              const dataUrl = await blobToDataUrl(file);
+              return { name: file.name, dataUrl };
+            })
+          );
+
+          queueOfflineClosure({
+            interventionId: id || "",
+            numero: intervention?.numero || "Intervention",
+            heureArrivee: dateArr.toISOString(),
+            heureDepart: dateDep.toISOString(),
+            commentaireTechnicien: commentaire,
+            signatureTechnicien: signatureTechnicien || undefined,
+            signatureClient: signatureClient || undefined,
+            photos: photos.map(p => ({ dataUrl: p.dataUrl, type: p.type })),
+            attachedFiles: serializedAttachedFiles,
+            pdfDataUrl
+          });
+
+          if (id) localStorage.removeItem(DRAFT_KEY(id));
+          alert("Intervention enregistrée hors-ligne ! Elle sera synchronisée automatiquement dès le retour du réseau.");
+          navigate("/interventions");
+          return;
+        } catch (queueErr) {
+          console.error("Failed to queue offline:", queueErr);
+          alert("Impossible de finaliser l'intervention, même hors-ligne. Veuillez vérifier vos données.");
+        } finally {
+          setLoading(false);
+        }
+      }
+
       setLoading(false);
       alert(
         "Erreur: " +
         (axiosError.response?.data?.error ||
           axiosError.message ||
           "Erreur lors de la clôture")
+      );
+    }
+  };
+
+  const handleTabClick = async (index: number) => {
+    // Going backwards or staying on the same step is always allowed
+    if (index <= currentStep) {
+      setCurrentStep(index);
+      if (id) {
+        localStorage.setItem(
+          DRAFT_KEY(id),
+          JSON.stringify({
+            step: index,
+            timeArrivee,
+            timeDepart,
+            commentaire,
+            billing,
+            systemType,
+            clientRemarks,
+            clientSigner,
+            signatureTechnicien,
+            signatureClient,
+          })
+        );
+      }
+      return;
+    }
+
+    // Moving forward: validate each step from currentStep up to index - 1
+    for (let s = currentStep; s < index; s++) {
+      if (s === 0) {
+        // Step 0 (Infos): No validation needed
+        continue;
+      }
+      if (s === 1) {
+        // Step 1 (Heures): Must have hours saved
+        const saved = await handleSaveHours();
+        if (!saved) {
+          // Block and remain at Heures step
+          setCurrentStep(1);
+          return;
+        }
+      }
+      if (s === 2) {
+        // Step 2 (Matériel): No block on empty, but let's let them go forward
+        continue;
+      }
+      if (s === 3) {
+        // Step 3 (Rapport): Validate report comments and billing
+        const isValid = validateTechnicianReportStep({
+          commentaire,
+          billing,
+          systemType,
+          onCommentMissing: () => {
+            const textarea = document.querySelector(
+              ".form-textarea"
+            ) as HTMLTextAreaElement;
+            if (textarea) {
+              textarea.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
+              setTimeout(() => textarea.focus(), 300);
+            }
+          },
+        });
+        if (!isValid) {
+          // Block and remain at Rapport step
+          setCurrentStep(3);
+          return;
+        }
+      }
+      if (s === 4) {
+        // Step 4 (Signature Technicien): Validate signature
+        if (!signatureTechnicien) {
+          alert("Veuillez signer avant de continuer");
+          setCurrentStep(4);
+          return;
+        }
+      }
+    }
+
+    // All validations passed, move to target step
+    setCurrentStep(index);
+    if (id) {
+      localStorage.setItem(
+        DRAFT_KEY(id),
+        JSON.stringify({
+          step: index,
+          timeArrivee,
+          timeDepart,
+          commentaire,
+          billing,
+          systemType,
+          clientRemarks,
+          clientSigner,
+          signatureTechnicien,
+          signatureClient,
+        })
       );
     }
   };
@@ -693,21 +913,12 @@ const TechnicianInterventionView: React.FC = () => {
 
     return (
       <div className="page-container technician-view harmonized-shell">
-        <div className="report-summary harmonized-card" style={{ padding: 0, overflow: "hidden" }}>
-          <div className="tech-header harmonized-header" style={{ border: "none", borderRadius: 0, margin: 0 }}>
-            <button
-              onClick={() => navigate("/interventions")}
-              className="harmonized-back-button"
-            >
-              ← Retour
-            </button>
-            <div className="title-row">
-              <h1>
-                <span className="intervention-number">{intervention.numero}</span>
-                {intervention.titre}
-              </h1>
-              {getStatusBadge(intervention.statut)}
-            </div>
+        <InterventionHeader
+          numero={intervention.numero || ""}
+          titre={intervention.titre}
+          statutBadge={getStatusBadge(intervention.statut)}
+          onBack={() => navigate("/interventions")}
+          actionButton={
             <button
               onClick={() => {
                 if (reportUrl) {
@@ -722,16 +933,23 @@ const TechnicianInterventionView: React.FC = () => {
                 }
               }}
               className="btn btn-primary"
+              style={{ width: '100%', height: '100%', margin: 0, padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
             >
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> {reportUrl ? "Voir le rapport" : "Télécharger PDF"}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> {reportUrl ? "Rapport" : "Télécharger PDF"}</span>
             </button>
-          </div>
+          }
+        />
 
+        <div className="report-summary harmonized-card" style={{ padding: 0, overflow: "hidden" }}>
         {/* Compte-rendu complet */}
-        <div className="report-summary" style={{ padding: "0 20px 20px" }}>
+        <div className="report-summary" style={{ padding: "0 20px 20px", marginTop: "20px" }}>
+          {/* Description en premier */}
+          <InterventionDescription description={intervention.description} notes={intervention.notes} style={{ marginTop: "20px" }} />
+
           <h2
             style={{
               marginBottom: "20px",
+              marginTop: "20px",
               borderBottom: "2px solid var(--primary-color)",
               paddingBottom: "10px",
             }}
@@ -789,19 +1007,7 @@ const TechnicianInterventionView: React.FC = () => {
             </p>
           </div>
 
-          {/* Description */}
-          {intervention.description && (
-            <div className="info-card harmonized-card" style={{ marginBottom: "15px" }}>
-              <h3
-                style={{ marginBottom: "10px", color: "var(--primary-color)" }}
-              >
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Description</span>
-              </h3>
-              <p style={{ whiteSpace: "pre-wrap" }}>
-                {intervention.description}
-              </p>
-            </div>
-          )}
+
 
           {/* Équipements */}
           {intervention.equipements && intervention.equipements.length > 0 && (
@@ -1060,61 +1266,66 @@ const TechnicianInterventionView: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="page-container technician-view harmonized-shell">
-      {/* Header */}
-      <div className="tech-header harmonized-header">
-        <button
-          onClick={() => navigate("/interventions")}
-          className="harmonized-back-button"
-        >
-          ← Retour
-        </button>
-        <div className="title-row">
-          <h1>
-            <span className="intervention-number">{intervention.numero}</span>
-            {intervention.titre}
-          </h1>
-          {getStatusBadge(intervention.statut)}
-        </div>
-        {isPlanifiee && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "5px",
-              alignItems: "flex-end",
-            }}
-          >
+      <InterventionHeader
+        numero={intervention.numero || ""}
+        titre={intervention.titre}
+        statutBadge={getStatusBadge(intervention.statut)}
+        onBack={() => navigate("/interventions")}
+        actionButton={
+          isPlanifiee ? (
             <button
               onClick={handleTakeCharge}
-              className={`btn ${isScheduledForToday ? "btn-success" : "btn-secondary"
-                }`}
+              className={`btn ${isScheduledForToday ? "btn-success" : "btn-secondary"}`}
               disabled={!isScheduledForToday}
-              style={
-                !isScheduledForToday
-                  ? { opacity: 0.6, cursor: "not-allowed" }
-                  : {}
-              }
+              style={{ width: '100%', height: '100%', margin: 0, padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', ...( !isScheduledForToday ? { opacity: 0.6, cursor: "not-allowed" } : {} ) }}
             >
-              {isScheduledForToday
-                ? "Prendre en charge"
-                : "Non disponible"}
+              {isScheduledForToday ? "Prendre en charge" : "Non disponible"}
             </button>
-            {!isScheduledForToday && (
-              <span
-                style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}
-              >
-                Intervention prévue le{" "}
-                {new Date(intervention.datePlanifiee).toLocaleDateString(
-                  "fr-FR"
-                )}
-              </span>
-            )}
+          ) : undefined
+        }
+      />
+
+      {/* Navigation Buttons (Waze/Maps) as a separate rounded card */}
+      {!isClosed && intervention.client?.rue && (
+        <div className="info-card harmonized-card" style={{ padding: "16px", marginBottom: "15px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            <button
+              className="btn btn-primary"
+              style={{ padding: "12px" }}
+              onClick={() => {
+                const addr = encodeURIComponent(
+                  `${intervention.client?.rue}, ${intervention.client?.codePostal || ""} ${intervention.client?.ville || ""}`
+                );
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
+              }}
+            >
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="map" size={16} /> Google Maps</span>
+            </button>
+            <button
+              className="btn btn-secondary"
+              style={{
+                backgroundColor: "#33ccff",
+                borderColor: "#33ccff",
+                color: "#000",
+                padding: "12px"
+              }}
+              onClick={() => {
+                const addr = encodeURIComponent(
+                  `${intervention.client?.rue}, ${intervention.client?.codePostal || ""} ${intervention.client?.ville || ""}`
+                );
+                window.open(`https://waze.com/ul?q=${addr}&navigate=yes`, "_blank");
+              }}
+            >
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="vehicle" size={16} /> Waze</span>
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Description block moved up here, just after header */}
+      <InterventionDescription description={intervention.description} notes={intervention.notes} />
 
       {/* Messages */}
       {error && <div className="message error">{error}</div>}
@@ -1128,32 +1339,12 @@ const TechnicianInterventionView: React.FC = () => {
               key={step.id}
               className={`step-tab ${currentStep === index ? "active" : ""} ${index < currentStep ? "completed" : ""
                 }`}
-              onClick={() => {
-                if (currentStep === 3 && index > 3) {
-                  const isValid = validateTechnicianReportStep({
-                    commentaire,
-                    billing,
-                    systemType,
-                    onCommentMissing: () => {
-                      const textarea = document.querySelector(
-                        ".form-textarea"
-                      ) as HTMLTextAreaElement;
-                      if (textarea) {
-                        textarea.scrollIntoView({
-                          behavior: "smooth",
-                          block: "center",
-                        });
-                        setTimeout(() => textarea.focus(), 300);
-                      }
-                    },
-                  });
-                  if (!isValid) return;
-                }
-                setCurrentStep(index);
-              }}
+              onClick={() => handleTabClick(index)}
             >
-              <span className="step-icon">{step.icon}</span>
-              <span className="step-label">{step.label.split(" ")[1]}</span>
+              <span className="step-icon">
+                <AppIcon name={step.icon} size={22} />
+              </span>
+              <span className="step-label">{step.label}</span>
             </button>
           ))}
         </div>
@@ -1191,6 +1382,19 @@ const TechnicianInterventionView: React.FC = () => {
                   </div>
                 </div>
                 <div className="info-item">
+                  <label>Adresse</label>
+                  <div className="info-value" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                    <span>
+                      {[intervention.client?.rue, intervention.client?.codePostal, intervention.client?.ville].filter(Boolean).join(", ") || "Non renseignée"}
+                    </span>
+                    {travelEstimate && (
+                      <span style={{ backgroundColor: "#e0f2fe", color: "#0369a1", padding: "2px 8px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: "bold", whiteSpace: "nowrap" }}>
+                        🚗 {travelEstimate.formattedTime} ({travelEstimate.formattedDistance})
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="info-item">
                   <label>Date planifiée</label>
                   <div className="info-value">
                     {new Date(intervention.datePlanifiee).toLocaleString(
@@ -1201,114 +1405,6 @@ const TechnicianInterventionView: React.FC = () => {
               </div>
             </div>
 
-            <div className="info-card harmonized-card">
-              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="location" size={18} /> Localisation client</h3>
-              <div className="address-info">
-                <div className="address-line">
-                  <AppIcon name="home" size={16} /> {intervention.client?.rue || "Adresse non renseignée"}
-                </div>
-                <div className="address-line">
-                  <AppIcon name="mailbox" size={16} /> {intervention.client?.codePostal}{" "}
-                  {intervention.client?.ville}
-                </div>
-              </div>
-
-              {/* Travel time estimation */}
-              {travelEstimate && (
-                <div
-                  style={{
-                    marginTop: "10px",
-                    padding: "10px",
-                    backgroundColor: "var(--bg-secondary)",
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "15px",
-                  }}
-                >
-                  <span style={{ fontSize: "1.5rem", display: "inline-flex" }}><AppIcon name="clock" size={22} /></span>
-                  <div>
-                    <div style={{ fontWeight: "bold" }}>
-                      {travelEstimate.formattedTime}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.85rem",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      {travelEstimate.formattedDistance} (estimation)
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
-                <button
-                  className="btn btn-primary"
-                  style={{ flex: 1 }}
-                  onClick={() => {
-                    const addr = encodeURIComponent(
-                      `${intervention.client?.rue}, ${intervention.client?.codePostal} ${intervention.client?.ville}`
-                    );
-                    window.open(
-                      `https://www.google.com/maps/dir/?api=1&destination=${addr}`,
-                      "_blank"
-                    );
-                  }}
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="map" size={16} /> Google Maps</span>
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  style={{
-                    flex: 1,
-                    backgroundColor: "#33ccff",
-                    borderColor: "#33ccff",
-                    color: "#000",
-                  }}
-                  onClick={() => {
-                    const addr = encodeURIComponent(
-                      `${intervention.client?.rue}, ${intervention.client?.codePostal} ${intervention.client?.ville}`
-                    );
-                    window.open(
-                      `https://waze.com/ul?q=${addr}&navigate=yes`,
-                      "_blank"
-                    );
-                  }}
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="vehicle" size={16} /> Waze</span>
-                </button>
-              </div>
-
-              {/* Calculate travel time button */}
-              <button
-                className="btn btn-secondary"
-                style={{ width: "100%", marginTop: "10px" }}
-                disabled={loadingTravel}
-                onClick={async () => {
-                  setLoadingTravel(true);
-                  try {
-                    const address = `${intervention.client?.rue}, ${intervention.client?.codePostal} ${intervention.client?.ville}`;
-                    const estimate = await getTravelEstimate(address);
-                    setTravelEstimate(estimate);
-                  } catch (err) {
-                    console.error("Could not get travel estimate:", err);
-                  } finally {
-                    setLoadingTravel(false);
-                  }
-                }}
-              >
-                {loadingTravel
-                  ? "Calcul en cours..."
-                  : "Estimer le temps de trajet"}
-              </button>
-            </div>
-
-            <div className="info-card harmonized-card">
-              <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> Description</h3>
-              <p>{intervention.description || "Aucune description"}</p>
-            </div>
 
             {intervention.notes && (
               <div className="info-card harmonized-card">
@@ -1392,7 +1488,11 @@ const TechnicianInterventionView: React.FC = () => {
             {isEnCours && (
               <button
                 className="btn btn-primary btn-block"
-                onClick={() => setCurrentStep(1)}
+                onClick={() => {
+                  const step = 1;
+                  setCurrentStep(step);
+                  if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
+                }}
               >
                 Suivant
               </button>
@@ -1438,7 +1538,11 @@ const TechnicianInterventionView: React.FC = () => {
                 className="btn btn-primary"
                 onClick={async () => {
                   const saved = await handleSaveHours();
-                  if (saved) setCurrentStep(2);
+                  if (saved) {
+                    const step = 2;
+                    setCurrentStep(step);
+                    if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
+                  }
                 }}
               >
                 Suivant
@@ -1522,6 +1626,7 @@ const TechnicianInterventionView: React.FC = () => {
 
               {intervention.equipements &&
                 intervention.equipements.length > 0 && (
+
                   <div className="saved-equipment">
                     {/* Installed Equipment Section */}
                     {intervention.equipements.filter(
@@ -1542,7 +1647,7 @@ const TechnicianInterventionView: React.FC = () => {
                           {intervention.equipements
                             .filter(
                               (eq: InterventionEquipment) =>
-                                eq.action === "install"
+                                eq.action === "install" || eq.action === "installe"
                             )
                             .map((eq: InterventionEquipment) => (
                               <div
@@ -1583,7 +1688,7 @@ const TechnicianInterventionView: React.FC = () => {
 
                     {/* Retrieved Equipment Section */}
                     {intervention.equipements.filter(
-                      (eq: InterventionEquipment) => eq.action === "retrait"
+                      (eq: InterventionEquipment) => eq.action.startsWith("retrait")
                     ).length > 0 && (
                         <div>
                           <h4
@@ -1600,7 +1705,7 @@ const TechnicianInterventionView: React.FC = () => {
                           {intervention.equipements
                             .filter(
                               (eq: InterventionEquipment) =>
-                                eq.action === "retrait"
+                                eq.action.startsWith("retrait")
                             )
                             .map((eq: InterventionEquipment) => (
                               <div
@@ -1684,7 +1789,11 @@ const TechnicianInterventionView: React.FC = () => {
               </button>
               <button
                 className="btn btn-primary"
-                onClick={() => setCurrentStep(3)}
+                onClick={() => {
+                  const step = 3;
+                  setCurrentStep(step);
+                  if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
+                }}
               >
                 Suivant
               </button>
@@ -1868,7 +1977,9 @@ const TechnicianInterventionView: React.FC = () => {
                     },
                   });
                   if (!isValid) return;
-                  setCurrentStep(4);
+                  const step = 4;
+                  setCurrentStep(step);
+                  if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
                 }}
               >
                 Suivant
@@ -1907,7 +2018,9 @@ const TechnicianInterventionView: React.FC = () => {
                     alert("Veuillez signer avant de continuer");
                     return;
                   }
-                  setCurrentStep(5);
+                  const step = 5;
+                  setCurrentStep(step);
+                  if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
                 }}
               >
                 Suivant
@@ -2001,6 +2114,34 @@ const TechnicianInterventionView: React.FC = () => {
         zoomLevel={zoomLevel}
         onClose={closePhotoModal}
         onZoomChange={setZoomLevel}
+      />
+
+      {/* RetraitSerialModal */}
+      <RetraitSerialModal
+        isOpen={showRetraitSerialModal}
+        onClose={() => setShowRetraitSerialModal(false)}
+        interventionId={id}
+        onConfirm={(eq) => {
+          setEquipments([
+            ...equipments,
+            {
+              stockId: eq.stockId,
+              nom: eq.nom,
+              action: "retrait",
+              etat: eq.etat,
+              quantite: 1,
+              marque: eq.marque,
+              modele: eq.modele,
+              serialNumber: eq.serialNumber,
+              notes: eq.notes,
+              reference: eq.reference,
+              categorie: eq.categorie,
+              fournisseur: eq.fournisseur,
+            },
+          ]);
+          showMessage(`${eq.nom} ajouté pour retrait (${eq.etat.toUpperCase()})`);
+        }}
+        clientName={intervention?.client?.nom}
       />
 
       {/* Vehicle Stock Selection Modal */}

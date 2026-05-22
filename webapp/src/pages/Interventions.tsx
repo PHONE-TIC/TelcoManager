@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/useAuth";
 import MobilePlanning from "../components/MobilePlanning";
 import ConfirmConflictModal from "../components/ConfirmConflictModal";
 import { useOffline } from "../hooks/useOffline";
+import { useLocks } from "../contexts/LockContext";
 import { useReminders } from "../hooks/useReminders";
 import { useResponsive } from "../hooks/useResponsive";
 import { AppIcon } from "../components/AppIcon";
@@ -18,7 +19,6 @@ import {
   filterClientsForSelection,
   filterTechniciansForSelection,
   findInterventionConflict,
-  validateInterventionStep,
 } from "./interventions-form.utils";
 import {
   getOverdueInterventionsCount,
@@ -32,6 +32,9 @@ import {
   getInterventionProgressLine,
   getTechnicianAvatar,
 } from "./interventions-ui.utils";
+
+import { QuickCreateClientModal } from "../components/QuickCreateClientModal";
+import SkeletonLoader from "../components/SkeletonLoader";
 
 import type { Client, Intervention, Technicien } from "../types";
 import type { CalendarEvent } from "./InterventionsCalendar";
@@ -47,6 +50,7 @@ function Interventions() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { locks } = useLocks();
   const {
     isOnline,
     cacheInterventionsList,
@@ -96,7 +100,11 @@ function Interventions() {
     description: "",
     statut: "planifiee",
     type: "SAV",
+    duree: 120, // default duration in minutes
   });
+
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showQuickClientModal, setShowQuickClientModal] = useState(false);
 
   const timeInputRef = useRef<HTMLInputElement>(null);
   const nextButtonRef = useRef<HTMLButtonElement>(null);
@@ -191,16 +199,37 @@ function Interventions() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const validateStep = (step: number) => validateInterventionStep(step, formData);
+  const validateForm = (step: number): boolean => {
+    const errors: Record<string, string> = {};
+    if (step === 1) {
+      if (!formData.clientId) {
+        errors.clientId = "Veuillez selectionner un client.";
+      }
+    } else if (step === 2) {
+      if (!formData.titre || !formData.titre.trim()) {
+        errors.titre = "Le titre est obligatoire.";
+      }
+      if (!formData.description || !formData.description.trim()) {
+        errors.description = "La description est obligatoire.";
+      }
+    } else if (step === 3) {
+      if (!formData.technicienId) {
+        errors.technicienId = "Veuillez selectionner un technicien.";
+      }
+      if (!formData.datePlanifiee) {
+        errors.datePlanifiee = "La date et l'heure sont obligatoires.";
+      }
+    }
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleNextStep = async () => {
     if (currentStep === 3) {
       await handleCheckConflictAndSubmit();
     } else {
-      if (validateStep(currentStep)) {
+      if (validateForm(currentStep)) {
         setCurrentStep((prev) => prev + 1);
-      } else {
-        alert("Veuillez remplir tous les champs obligatoires");
       }
     }
   };
@@ -213,8 +242,7 @@ function Interventions() {
     findInterventionConflict(interventions, techId, date);
 
   const handleCheckConflictAndSubmit = async () => {
-    if (!validateStep(3)) {
-      alert("Veuillez sélectionner un technicien et une date");
+    if (!validateForm(3)) {
       return;
     }
 
@@ -234,7 +262,10 @@ function Interventions() {
   const submitForm = async () => {
     try {
       // Create a copy of data and convert date to ISO string (UTC)
-      const dataToSubmit = { ...formData };
+      const dataToSubmit = {
+        ...formData,
+        description: `${formData.description}\n__duree_mins:${formData.duree}__`,
+      };
       if (dataToSubmit.datePlanifiee) {
         dataToSubmit.datePlanifiee = new Date(
           dataToSubmit.datePlanifiee
@@ -255,6 +286,7 @@ function Interventions() {
     setCurrentStep(1);
     setShowConflictModal(false);
     setConflictingIntervention(null);
+    setValidationErrors({});
     setFormData({
       clientId: "",
       technicienId: "",
@@ -263,6 +295,7 @@ function Interventions() {
       datePlanifiee: "",
       statut: "planifiee",
       type: "SAV",
+      duree: 120,
     });
   };
 
@@ -448,21 +481,36 @@ function Interventions() {
     setCalendarKey((prev) => prev + 1);
   };
 
-  // Calendar events mapping - use local time (moment without UTC)
   const calendarEvents = useMemo(
     () =>
-      interventions.map((intervention) => ({
-        id: intervention.id,
-        title: buildCalendarEventTitle(intervention),
-        start: new Date(intervention.datePlanifiee),
-        end: new Date(
-          new Date(intervention.datePlanifiee).getTime() + 2 * 60 * 60 * 1000
-        ),
-        resource: intervention,
-      })),
+      interventions.map((intervention) => {
+        const dureeMins = (() => {
+          if (!intervention.description) return 120;
+          const match = intervention.description.match(/__duree_mins:(\d+)__/);
+          return match ? parseInt(match[1], 10) : 120;
+        })();
+        return {
+          id: intervention.id,
+          title: buildCalendarEventTitle(intervention),
+          start: new Date(intervention.datePlanifiee),
+          end: new Date(
+            new Date(intervention.datePlanifiee).getTime() + dureeMins * 60 * 1000
+          ),
+          resource: intervention,
+        };
+      }),
     [interventions]
   );
-
+  const techDayInterventions = useMemo(() => {
+    if (!formData.technicienId || !formData.datePlanifiee) return [];
+    const selectedDateStr = formData.datePlanifiee.split("T")[0];
+    return interventions.filter(
+      (inter) =>
+        inter.technicienId === formData.technicienId &&
+        inter.datePlanifiee.split("T")[0] === selectedDateStr &&
+        inter.statut !== "annulee"
+    ).sort((a, b) => new Date(a.datePlanifiee).getTime() - new Date(b.datePlanifiee).getTime());
+  }, [interventions, formData.technicienId, formData.datePlanifiee]);
   const eventStyleGetter = (event: CalendarEvent) => {
     let backgroundColor = "#3174ad"; // Default blue
     const status = event.resource.statut;
@@ -514,8 +562,14 @@ function Interventions() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="space-y-6 interventions-page harmonized-page" style={{ padding: '24px' }}>
+        <div className="interventions-header harmonized-header" style={{ marginBottom: '24px' }}>
+          <div className="interventions-header-copy harmonized-header-copy">
+            <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Interventions</h1>
+            <p style={{ color: "var(--text-secondary)" }}>Chargement du planning en cours...</p>
+          </div>
+        </div>
+        <SkeletonLoader type="table" rows={6} columns={user?.role === "admin" ? 6 : 5} />
       </div>
     );
   }
@@ -727,9 +781,11 @@ function Interventions() {
                             <td>{new Date(intervention.datePlanifiee).toLocaleString("fr-FR")}</td>
                             <td>
                               <span
-                                className={`px-2 py-1 rounded text-xs font-semibold ${intervention.type === "Installation"
-                                  ? "bg-purple-100 text-purple-800"
-                                  : "bg-indigo-100 text-indigo-800"
+                                className={`px-2 py-1 rounded-full text-xs font-semibold ${intervention.type === "Installation"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : intervention.type === "SAV"
+                                    ? "bg-orange-100 text-orange-800"
+                                    : "bg-gray-100 text-gray-800"
                                   }`}
                               >
                                 {intervention.type || "SAV"}
@@ -765,6 +821,22 @@ function Interventions() {
                               >
                                 {getInterventionProgressLine(intervention.statut)}
                                 {getStatusBadge(intervention.statut)}
+                                {locks[intervention.id] && (
+                                   <span
+                                     className="px-2 py-1 rounded text-xs font-semibold"
+                                     style={{
+                                       display: "inline-flex",
+                                       alignItems: "center",
+                                       gap: 4,
+                                       backgroundColor: "rgba(249, 115, 22, 0.15)",
+                                       color: "#ea580c",
+                                       border: "1px solid rgba(249, 115, 22, 0.3)",
+                                     }}
+                                     title={`Verrouillé par ${locks[intervention.id].lockedBy}`}
+                                   >
+                                     🔒 {locks[intervention.id].lockedBy}
+                                   </span>
+                                 )}
                               </div>
                             </td>
                           </tr>
@@ -839,7 +911,7 @@ function Interventions() {
                 {allInterventions.length !== 1 ? "s" : ""}
               </span>
             </div>
-            <div className="desktop-table-only interventions-mobile-list">
+            <div className="mobile-list interventions-mobile-list">
               <div className="interventions-mobile-summary">
                 <span>Vue filtrée</span>
                 <strong>{sortedAllInterventions.length} intervention{sortedAllInterventions.length > 1 ? "s" : ""}</strong>
@@ -943,6 +1015,22 @@ function Interventions() {
                           >
                             {getInterventionProgressLine(intervention.statut)}
                             {getStatusBadge(intervention.statut)}
+                            {locks[intervention.id] && (
+                              <span
+                                className="px-2 py-1 rounded text-xs font-semibold"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  backgroundColor: "rgba(249, 115, 22, 0.15)",
+                                  color: "#ea580c",
+                                  border: "1px solid rgba(249, 115, 22, 0.3)",
+                                }}
+                                title={`Verrouillé par ${locks[intervention.id].lockedBy}`}
+                              >
+                                🔒 {locks[intervention.id].lockedBy}
+                              </span>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -970,7 +1058,7 @@ function Interventions() {
 
         {/* Mobile Planning View - Only show in calendar mode */}
         {user?.role !== "technicien" && viewMode === "calendar" && !showForm && (
-          <div className="desktop-table-only">
+          <div className="mobile-only">
             <MobilePlanning interventions={mobilePlanningInterventions} />
           </div>
         )}
@@ -1016,15 +1104,34 @@ function Interventions() {
               </div>
             </div>
           )}
-          {showForm && (
-            <div className="fade-in" style={{ padding: "0 20px" }}>
+        </div>
+
+        {showForm && (
+          <div
+            className="fade-in"
+            style={{
+              padding: isMobile ? "0" : "0 20px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <div style={{ width: "100%", maxWidth: "800px" }}>
               <div style={{ marginBottom: "30px" }}>
                 <button className="btn btn-secondary" onClick={closeForm}>
                   ← Annuler la création
                 </button>
               </div>
 
-              <div className="stepper-container">
+              <div
+                className="stepper-container"
+                style={{
+                  maxWidth: "100%",
+                  margin: "0 auto 30px auto",
+                  padding: "0 10px",
+                }}
+              >
                 <div className="stepper-header">
                   <div
                     className={`step-item ${currentStep === 1 ? "active" : ""
@@ -1059,14 +1166,14 @@ function Interventions() {
               <div
                 style={{
                   width: "100%",
-                  maxWidth: "min(1100px, 100%)",
-                  margin: 0,
-                  backgroundColor: "var(--bg-color)",
-                  padding: "30px",
-                  borderRadius: "8px",
+                  backgroundColor: "var(--card-bg)",
+                  padding: isMobile ? "20px 15px" : "30px",
+                  borderRadius: "16px",
+                  boxShadow: "var(--shadow-lg)",
+                  border: "1px solid var(--border-color)",
                 }}
               >
-                {currentStep === 1 && (
+              {currentStep === 1 && (
                   <div className="fade-in">
                     <h3 style={{ marginBottom: "20px" }}>
                       Étape 1 : Sélection du Client
@@ -1086,8 +1193,23 @@ function Interventions() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Liste des clients *</label>
-                      <div className="selection-list">
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                        <label className="form-label" style={{ margin: 0 }}>Liste des clients *</label>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ padding: "6px 12px", fontSize: "0.875rem", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", border: "1px solid var(--border-color)" }}
+                          onClick={() => setShowQuickClientModal(true)}
+                        >
+                          <AppIcon name="user" size={14} /> + Nouveau Client
+                        </button>
+                      </div>
+                      {validationErrors.clientId && (
+                        <div style={{ color: "#ef4444", fontSize: "0.875rem", marginBottom: "8px", fontWeight: "600" }}>
+                          {validationErrors.clientId}
+                        </div>
+                      )}
+                      <div className="selection-list" style={validationErrors.clientId ? { border: "2px solid #ef4444", borderRadius: "8px" } : undefined}>
                         {filteredClients.map((client) => (
                             <div
                               key={client.id}
@@ -1095,12 +1217,19 @@ function Interventions() {
                                 ? "selected"
                                 : ""
                                 }`}
-                              onClick={() =>
+                              onClick={() => {
                                 setFormData({
                                   ...formData,
                                   clientId: client.id,
-                                })
-                              }
+                                });
+                                if (validationErrors.clientId) {
+                                  setValidationErrors((prev) => {
+                                    const copy = { ...prev };
+                                    delete copy.clientId;
+                                    return copy;
+                                  });
+                                }
+                              }}
                             >
                               <div className="selection-item-info">
                                 <span className="selection-item-title">
@@ -1142,12 +1271,25 @@ function Interventions() {
                       <input
                         type="text"
                         className="form-input"
+                        style={validationErrors.titre ? { borderColor: "#ef4444" } : undefined}
                         value={formData.titre}
-                        onChange={(e) =>
-                          setFormData({ ...formData, titre: e.target.value })
-                        }
+                        onChange={(e) => {
+                          setFormData({ ...formData, titre: e.target.value });
+                          if (validationErrors.titre) {
+                            setValidationErrors((prev) => {
+                              const copy = { ...prev };
+                              delete copy.titre;
+                              return copy;
+                            });
+                          }
+                        }}
                         placeholder="Ex: Installation Fibre Optique"
                       />
+                      {validationErrors.titre && (
+                        <div style={{ color: "#ef4444", fontSize: "0.875rem", marginTop: "4px", fontWeight: "600" }}>
+                          {validationErrors.titre}
+                        </div>
+                      )}
                     </div>
                     <div className="form-group">
                       <label className="form-label">
@@ -1205,13 +1347,21 @@ function Interventions() {
                       <textarea
                         className="form-textarea"
                         rows={5}
+                        style={validationErrors.description ? { borderColor: "#ef4444" } : undefined}
                         value={formData.description}
-                        onChange={(e) =>
+                        onChange={(e) => {
                           setFormData({
                             ...formData,
                             description: e.target.value,
-                          })
-                        }
+                          });
+                          if (validationErrors.description) {
+                            setValidationErrors((prev) => {
+                              const copy = { ...prev };
+                              delete copy.description;
+                              return copy;
+                            });
+                          }
+                        }}
                         placeholder="Détails de l'intervention..."
                         onKeyDown={(e) => {
                           if (e.key === "Tab" && !e.shiftKey) {
@@ -1220,6 +1370,11 @@ function Interventions() {
                           }
                         }}
                       />
+                      {validationErrors.description && (
+                        <div style={{ color: "#ef4444", fontSize: "0.875rem", marginTop: "4px", fontWeight: "600" }}>
+                          {validationErrors.description}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1233,6 +1388,11 @@ function Interventions() {
                       <label className="form-label">
                         Choix du Technicien *
                       </label>
+                      {validationErrors.technicienId && (
+                        <div style={{ color: "#ef4444", fontSize: "0.875rem", marginBottom: "8px", fontWeight: "600" }}>
+                          {validationErrors.technicienId}
+                        </div>
+                      )}
 
                       <div className="selection-search">
                         <div className="search-container">
@@ -1249,7 +1409,7 @@ function Interventions() {
                         </div>
                       </div>
 
-                      <div className="selection-list">
+                      <div className="selection-list" style={validationErrors.technicienId ? { border: "2px solid #ef4444", borderRadius: "8px" } : undefined}>
                         {filteredTechnicians.map((tech) => (
                             <div
                               key={tech.id}
@@ -1257,12 +1417,19 @@ function Interventions() {
                                 ? "selected"
                                 : ""
                                 }`}
-                              onClick={() =>
+                              onClick={() => {
                                 setFormData({
                                   ...formData,
                                   technicienId: tech.id,
-                                })
-                              }
+                                });
+                                if (validationErrors.technicienId) {
+                                  setValidationErrors((prev) => {
+                                    const copy = { ...prev };
+                                    delete copy.technicienId;
+                                    return copy;
+                                  });
+                                }
+                              }}
                             >
                               <div className="selection-item-info">
                                 <span className="selection-item-title">
@@ -1292,6 +1459,11 @@ function Interventions() {
                       <label className="form-label">
                         Date et Heure de début *
                       </label>
+                      {validationErrors.datePlanifiee && (
+                        <div style={{ color: "#ef4444", fontSize: "0.875rem", marginBottom: "8px", fontWeight: "600" }}>
+                          {validationErrors.datePlanifiee}
+                        </div>
+                      )}
                       <div
                         style={{
                           display: "grid",
@@ -1313,6 +1485,7 @@ function Interventions() {
                           <input
                             type="date"
                             className="form-input"
+                            style={validationErrors.datePlanifiee ? { borderColor: "#ef4444" } : undefined}
                             value={
                               formData.datePlanifiee
                                 ? formData.datePlanifiee.split("T")[0]
@@ -1330,6 +1503,13 @@ function Interventions() {
                                 });
                               } else {
                                 setFormData({ ...formData, datePlanifiee: "" });
+                              }
+                              if (validationErrors.datePlanifiee) {
+                                setValidationErrors((prev) => {
+                                  const copy = { ...prev };
+                                  delete copy.datePlanifiee;
+                                  return copy;
+                                });
                               }
                             }}
                             onKeyDown={(e) => {
@@ -1355,6 +1535,7 @@ function Interventions() {
                             ref={timeInputRef}
                             type="time"
                             className="form-input"
+                            style={validationErrors.datePlanifiee ? { borderColor: "#ef4444" } : undefined}
                             value={
                               formData.datePlanifiee
                                 ? (
@@ -1373,6 +1554,13 @@ function Interventions() {
                                   datePlanifiee: `${date}T${time}`,
                                 });
                               }
+                              if (validationErrors.datePlanifiee) {
+                                setValidationErrors((prev) => {
+                                  const copy = { ...prev };
+                                  delete copy.datePlanifiee;
+                                  return copy;
+                                });
+                              }
                             }}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
@@ -1383,13 +1571,66 @@ function Interventions() {
                           />
                         </div>
                       </div>
-                      <p
-                        className="text-muted"
-                        style={{ marginTop: "10px", fontSize: "0.875rem" }}
-                      >
-                        Durée estimée par défaut : 2 heures
-                      </p>
                     </div>
+
+                    <div className="form-group" style={{ marginTop: "20px" }}>
+                      <label className="form-label">Durée estimée *</label>
+                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "5px" }}>
+                        {[
+                          { label: "30 min", value: 30 },
+                          { label: "1h", value: 60 },
+                          { label: "2h (défaut)", value: 120 },
+                          { label: "4h", value: 240 },
+                          { label: "Journée (8h)", value: 480 },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            className={`btn ${formData.duree === opt.value ? "btn-primary" : "btn-secondary"}`}
+                            style={{ padding: "8px 16px", fontSize: "0.875rem", border: "1px solid var(--border-color)" }}
+                            onClick={() => setFormData({ ...formData, duree: opt.value })}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {formData.technicienId && formData.datePlanifiee && (
+                      <div className="fade-in" style={{ marginTop: "25px", padding: "20px", backgroundColor: "var(--bg-secondary)", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
+                        <h4 style={{ fontSize: "1rem", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px", fontWeight: "600" }}>
+                          <AppIcon name="clock" size={16} /> Agenda de la journée pour le technicien
+                        </h4>
+                        {techDayInterventions.length === 0 ? (
+                          <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", margin: 0 }}>
+                            Aucune intervention planifiée pour cette journée. Ce technicien est disponible.
+                          </p>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            {techDayInterventions.map((inter) => {
+                              const time = new Date(inter.datePlanifiee).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                              const duree = (() => {
+                                if (!inter.description) return 120;
+                                const match = inter.description.match(/__duree_mins:(\d+)__/);
+                                return match ? parseInt(match[1], 10) : 120;
+                              })();
+                              const endHour = new Date(new Date(inter.datePlanifiee).getTime() + duree * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                              return (
+                                <div key={inter.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 15px", backgroundColor: "var(--bg-color)", borderRadius: "6px", borderLeft: "4px solid var(--primary-color)" }}>
+                                  <span style={{ fontSize: "0.875rem", fontWeight: "600", color: "var(--primary-color)", minWidth: "95px" }}>
+                                    {time} - {endHour}
+                                  </span>
+                                  <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                                    <span style={{ fontSize: "0.875rem", fontWeight: "600" }}>{inter.titre}</span>
+                                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Client : {inter.clientNom || inter.client?.nom}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1420,8 +1661,8 @@ function Interventions() {
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {showConflictModal && conflictingIntervention && (
@@ -1433,6 +1674,26 @@ function Interventions() {
           newDate={formData.datePlanifiee}
         />
       )}
+
+      <QuickCreateClientModal
+        isOpen={showQuickClientModal}
+        onClose={() => setShowQuickClientModal(false)}
+        onSuccess={(newClient) => {
+          setClients((prev) => [newClient, ...prev]);
+          setFormData((prev) => ({
+            ...prev,
+            clientId: newClient.id,
+          }));
+          if (validationErrors.clientId) {
+            setValidationErrors((prev) => {
+              const copy = { ...prev };
+              delete copy.clientId;
+              return copy;
+            });
+          }
+          loadData(true);
+        }}
+      />
     </div>
   );
 }

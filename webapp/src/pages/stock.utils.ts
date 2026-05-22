@@ -3,6 +3,7 @@ import type { TechnicianStock, Stock as StockType } from "../types";
 export type StockWithRelations = StockType & {
   originalStockId?: string;
   technicianStockId?: string;
+  etat?: "ok" | "hs";
 };
 
 export function parseSerialNumbers(input: string): string[] {

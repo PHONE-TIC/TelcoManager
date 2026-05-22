@@ -367,3 +367,42 @@ export const getStockStats = async (req: AuthRequest, res: Response) => {
       .json({ error: "Erreur lors de la récupération des statistiques" });
   }
 };
+
+export const getStockAutocomplete = async (req: AuthRequest, res: Response) => {
+  try {
+    const { marque } = req.query;
+
+    const brands = await prisma.stock.findMany({
+      select: { marque: true },
+      distinct: ['marque'],
+      where: {
+        marque: { not: null }
+      }
+    });
+
+    const uniqueBrands = brands
+      .map(b => b.marque)
+      .filter((b): b is string => !!b && b.trim() !== "");
+
+    const models = await prisma.stock.findMany({
+      select: { modele: true },
+      distinct: ['modele'],
+      where: {
+        modele: { not: null },
+        ...(marque ? { marque: { equals: marque as string, mode: "insensitive" } } : {})
+      }
+    });
+
+    const uniqueModels = models
+      .map(m => m.modele)
+      .filter((m): m is string => !!m && m.trim() !== "");
+
+    return res.json({
+      marques: Array.from(new Set(uniqueBrands)),
+      modeles: Array.from(new Set(uniqueModels))
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération de l'autocomplétion du stock:", error);
+    return res.status(500).json({ error: "Erreur lors de la récupération des suggestions" });
+  }
+};

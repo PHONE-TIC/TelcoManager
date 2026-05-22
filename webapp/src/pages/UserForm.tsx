@@ -136,7 +136,8 @@ function UserForm() {
     }
 
     return (
-        <div className="page-container mobile-form-shell harmonized-shell">
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <div className="page-container mobile-form-shell harmonized-shell" style={{ maxWidth: '800px', width: '100%' }}>
             {/* Header */}
             <div className="harmonized-detail-header">
                 <button onClick={() => navigate('/techniciens')} className="harmonized-back-button">
@@ -304,6 +305,7 @@ function UserForm() {
                 </form>
             </div>
         </div>
+    </div>
     );
 }
 

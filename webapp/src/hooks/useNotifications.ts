@@ -87,10 +87,45 @@ export const useNotifications = (): UseNotificationsReturn => {
                 },
                 body: JSON.stringify({ subscription: subscription.toJSON() }),
             });
+            console.log('Successfully registered to push notifications');
         } catch (error) {
             console.error('Failed to subscribe to push notifications:', error);
         }
     }, []);
+
+    // Silent auto-resubscription/sync on mount/login
+    useEffect(() => {
+        const autoResubscribe = async () => {
+            if (!isSupported || permission !== 'granted') return;
+            const token = sessionStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const activeSubscription = await registration.pushManager.getSubscription();
+
+                if (!activeSubscription) {
+                    console.log('No active subscription found despite granted permission, subscribing silently...');
+                    await subscribeToServerPush();
+                } else {
+                    // Subscription exists, silently sync it with the backend to ensure it's up to date
+                    console.log('Active push subscription found, silently syncing with backend...');
+                    await fetch('/api/push/subscribe', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ subscription: activeSubscription.toJSON() }),
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to auto-resubscribe or sync push notification:', error);
+            }
+        };
+
+        autoResubscribe();
+    }, [isSupported, permission, subscribeToServerPush]);
 
     const requestPermission = useCallback(async (): Promise<boolean> => {
         const result = await requestNotificationPermission();

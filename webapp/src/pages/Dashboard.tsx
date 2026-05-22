@@ -20,6 +20,8 @@ import "./Dashboard.css";
 
 const DashboardInterventionChart = lazy(() => import("./DashboardInterventionChart"));
 
+import SkeletonLoader from "../components/SkeletonLoader";
+
 function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,8 +67,28 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="dashboard-container" style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div style={{ display: "flex", gap: "20px", width: "100%", flexWrap: "wrap" }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div 
+              key={i} 
+              className="shimmer" 
+              style={{ 
+                flex: "1 1 200px", 
+                height: "100px", 
+                backgroundColor: "var(--card-bg, #ffffff)", 
+                borderRadius: "16px", 
+                border: "1px solid var(--border-color, rgba(0,0,0,0.05))",
+                position: "relative",
+                overflow: "hidden"
+              }} 
+            />
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "24px", width: "100%" }}>
+          <SkeletonLoader type="form" rows={3} />
+          <SkeletonLoader type="card" rows={2} />
+        </div>
       </div>
     );
   }

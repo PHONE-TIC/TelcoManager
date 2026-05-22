@@ -87,7 +87,7 @@ function Techniciens() {
           onClick={() => navigate("/techniciens/new")}
           className="harmonized-primary-action"
         >
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="plus" size={16} /> Nouvel utilisateur</span>
+          + Nouvel Utilisateur
         </button>
       </div>
 
@@ -175,14 +175,17 @@ function Techniciens() {
             {
               key: "interventions",
               label: "Activité",
-              render: (tech) => (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-600 font-medium">
-                    {tech._count?.interventions || 0}
-                  </span>
-                  <span className="text-xs text-gray-400">interventions</span>
-                </div>
-              ),
+              render: (tech) =>
+                tech.role === "technicien" ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 font-medium">
+                      {tech._count?.interventions || 0}
+                    </span>
+                    <span className="text-xs text-gray-400">interventions</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-400">—</span>
+                ),
             },
           ]}
           actions={(tech) => (

@@ -43,7 +43,9 @@ function drawFooter(
   pageWidth: number,
   pageHeight: number,
   margin: number,
-  photos: Photo[]
+  photos: Photo[],
+  pageNum?: number,
+  totalPages?: number
 ) {
   const footerY = pageHeight - FOOTER_HEIGHT;
 
@@ -78,12 +80,23 @@ function drawFooter(
     pageWidth / 2 + 10,
     footerY + 8
   );
-  doc.text("www.phone-tic.fr", pageWidth - margin, footerY + 6, {
-    align: "right",
-  });
+  // Page number in the right corner
+  if (pageNum !== undefined && totalPages !== undefined && totalPages > 1) {
+    doc.text(`Page ${pageNum} / ${totalPages}`, pageWidth - margin, footerY + 6, {
+      align: "right",
+    });
+  } else {
+    doc.text("www.phone-tic.fr", pageWidth - margin, footerY + 6, {
+      align: "right",
+    });
+  }
 }
 
-function buildEquipmentRows(intervention: Intervention): EquipmentRow[] {
+function buildEquipmentRows(
+  doc: jsPDF,
+  intervention: Intervention,
+  maxTextWidth: number
+): EquipmentRow[] {
   const rows: EquipmentRow[] = [];
 
   if (!intervention.equipements || intervention.equipements.length === 0) {
@@ -101,15 +114,33 @@ function buildEquipmentRows(intervention: Intervention): EquipmentRow[] {
     if (!items.length) return;
     rows.push({ text: title, bold: true });
     items.forEach((eq) => {
-      const name = eq.stock?.nomMateriel || eq.nom || "Matériel";
+      let name = "";
+      if (eq.nom) {
+        name = eq.nom;
+      } else if (eq.marque || eq.modele) {
+        name = [eq.marque, eq.modele].filter(Boolean).join(" ");
+      } else {
+        name = eq.stock?.nomMateriel || "Matériel";
+      }
+
       const serialNumber = eq.stock?.numeroSerie || eq.serialNumber;
       const etat = eq.etat ? ` (${eq.etat.toUpperCase()})` : "";
-      rows.push({
-        text: `${name}${etat}`,
-        quantity: String(eq.quantite || 1),
+      const fullText = `${name}${etat}`;
+
+      const nameLines = doc.splitTextToSize(fullText, maxTextWidth);
+      nameLines.forEach((line: string, idx: number) => {
+        rows.push({
+          text: line,
+          quantity: idx === 0 ? String(eq.quantite || 1) : "",
+        });
       });
+
       if (serialNumber) {
-        rows.push({ text: `S/N: ${serialNumber}`, italic: true });
+        const snText = `S/N: ${serialNumber}`;
+        const snLines = doc.splitTextToSize(snText, maxTextWidth);
+        snLines.forEach((line: string) => {
+          rows.push({ text: line, italic: true });
+        });
       }
       rows.push({ text: "" });
     });
@@ -137,6 +168,7 @@ function drawPairedContentPages(
     leftLines: string[];
     rightRows: EquipmentRow[];
     photos: Photo[];
+    fixedHeight?: number; // when set: draw at this exact height (no pagination)
   }
 ): number {
   const {
@@ -149,6 +181,7 @@ function drawPairedContentPages(
     leftLines,
     rightRows,
     photos,
+    fixedHeight,
   } = options;
 
   const leftWidth = 115;
@@ -160,15 +193,95 @@ function drawPairedContentPages(
   const maxBottomY = pageHeight - FOOTER_HEIGHT - BOTTOM_RESERVED;
 
   let y = startY;
+
+  // ── Single-page mode: draw at a fixed, content-sized height ──────────────
+  if (fixedHeight !== undefined) {
+    const boxHeight = fixedHeight - headerHeight;
+
+    doc.setFillColor(LIGHT_ORANGE[0], LIGHT_ORANGE[1], LIGHT_ORANGE[2]);
+    doc.setDrawColor(ORANGE[0], ORANGE[1], ORANGE[2]);
+    doc.setLineWidth(0.3);
+    doc.rect(margin, y, leftWidth, headerHeight, "FD");
+    doc.rect(rightX, y, rightWidth, headerHeight, "FD");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(BLACK[0], BLACK[1], BLACK[2]);
+    doc.text(leftTitle, margin + 2, y + 4);
+    doc.text(rightTitle, rightX + 2, y + 4);
+
+    const contentY = y + headerHeight;
+    doc.setFillColor(255, 255, 255);
+    doc.rect(margin, contentY, leftWidth, boxHeight, "D");
+    doc.rect(rightX, contentY, rightWidth, boxHeight, "D");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text("Quantité", rightX + rightWidth - 18, contentY + 4);
+    doc.line(
+      rightX + rightWidth - 22,
+      contentY,
+      rightX + rightWidth - 22,
+      contentY + boxHeight
+    );
+
+    doc.setFontSize(8);
+
+    // Left column: content + dashed lines for all rows
+    const maxRows = Math.floor((boxHeight - innerTop) / lineHeight);
+    for (let i = 0; i < maxRows; i++) {
+      const lineY = contentY + innerTop + i * lineHeight;
+      if (i < leftLines.length) {
+        doc.setFont("helvetica", "normal");
+        doc.text(leftLines[i], margin + 2, lineY);
+      }
+      doc.setLineDashPattern([0.5, 1], 0);
+      doc.line(margin + 2, lineY + 1, margin + leftWidth - 6, lineY + 1);
+      doc.setLineDashPattern([], 0);
+    }
+
+    // Right column: content rows
+    const quantityX = rightX + rightWidth - 12;
+    let rightY = contentY + innerTop;
+    for (const row of rightRows) {
+      if (rightY > contentY + boxHeight - 1) break;
+      if (row.bold) doc.setFont("helvetica", "bold");
+      else if (row.italic) doc.setFont("helvetica", "italic");
+      else doc.setFont("helvetica", "normal");
+      doc.text(row.text, rightX + 4, rightY);
+      if (row.quantity) {
+        doc.setFont("helvetica", "normal");
+        doc.text(row.quantity, quantityX, rightY);
+      }
+      rightY += lineHeight;
+    }
+
+    return contentY + boxHeight + 5;
+  }
+
+  // ── Pagination mode: fill available space, add pages as needed ───────────
   let leftIndex = 0;
   let rightIndex = 0;
   let firstPage = true;
 
   while (firstPage || leftIndex < leftLines.length || rightIndex < rightRows.length) {
     firstPage = false;
+
+    if (y > maxBottomY - 25) {
+      drawFooter(doc, pageWidth, pageHeight, margin, photos);
+      doc.addPage();
+      y = 15;
+    }
+
     const availableHeight = maxBottomY - y - headerHeight;
-    const rowsPerPage = Math.max(1, Math.floor((availableHeight - innerTop) / lineHeight));
-    const boxHeight = innerTop + rowsPerPage * lineHeight;
+    const maxRows = Math.max(1, Math.floor((availableHeight - innerTop) / lineHeight));
+
+    // Calculate how many rows are actually needed for the remaining content
+    const remainingLeft = leftLines.length - leftIndex;
+    const remainingRight = rightRows.length - rightIndex;
+    const rowsNeeded = Math.max(remainingLeft, remainingRight);
+
+    // Keep at least 3 rows by default to maintain the nice visual structure, but do not exceed maximum capacity
+    const actualRows = Math.min(maxRows, Math.max(rowsNeeded, 3));
+    const boxHeight = innerTop + actualRows * lineHeight;
 
     doc.setFillColor(LIGHT_ORANGE[0], LIGHT_ORANGE[1], LIGHT_ORANGE[2]);
     doc.setDrawColor(ORANGE[0], ORANGE[1], ORANGE[2]);
@@ -197,7 +310,7 @@ function drawPairedContentPages(
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
 
-    for (let i = 0; i < rowsPerPage; i += 1) {
+    for (let i = 0; i < actualRows; i += 1) {
       const currentLineY = contentY + innerTop + i * lineHeight;
       if (leftIndex < leftLines.length) {
         doc.text(leftLines[leftIndex], margin + 2, currentLineY);
@@ -444,13 +557,28 @@ export const generateInterventionPDF = async (
     y = ((doc as JsPdfWithAutoTable).lastAutoTable?.finalY ?? y) + 5;
 
     // ==========================================
-    // OBJET & MATERIEL (Side by side with pagination)
+    // OBJET & MATERIEL (Side by side, single-page by default)
     // ==========================================
     const objetLines = doc.splitTextToSize(
       intervention.commentaireTechnicien || "",
       109
     );
-    const equipmentRows = buildEquipmentRows(intervention);
+    const leftWidth = 115;
+    const rightWidth = pageWidth - margin * 2 - leftWidth - 2;
+    const equipmentRows = buildEquipmentRows(doc, intervention, rightWidth - 26);
+
+    // Compute minimum height for content (at least 3 blank rows when empty)
+    const pairHeaderH = 6;
+    const pairInnerTop = 5;
+    const pairLineH = 5;
+    const minContentRows = Math.max(objetLines.length, equipmentRows.length, 3);
+    const minPairHeight = pairHeaderH + pairInnerTop + minContentRows * pairLineH;
+
+    // Signatures block needs ~68 mm + a small gap
+    const sigBlockH = 68;
+    const pairGap = 5;
+    const maxContentBottom = pageHeight - FOOTER_HEIGHT - 5; // 280 mm
+    const fitsOnOnePage = (y + minPairHeight + pairGap + sigBlockH) <= maxContentBottom;
 
     y = drawPairedContentPages(doc, {
       startY: y,
@@ -462,6 +590,7 @@ export const generateInterventionPDF = async (
       leftLines: objetLines,
       rightRows: equipmentRows,
       photos,
+      fixedHeight: fitsOnOnePage ? minPairHeight : undefined,
     });
 
     // ==========================================
@@ -470,6 +599,12 @@ export const generateInterventionPDF = async (
     const remarquesWidth = 115;
     const signatureWidth = pageWidth - margin * 2 - remarquesWidth - 2;
     const bottomHeight = 40;
+
+    if (y + sigBlockH > maxContentBottom) {
+      drawFooter(doc, pageWidth, pageHeight, margin, photos);
+      doc.addPage();
+      y = 15;
+    }
 
     // Remarques section
     doc.setFillColor(LIGHT_ORANGE[0], LIGHT_ORANGE[1], LIGHT_ORANGE[2]);
@@ -593,9 +728,29 @@ export const generateInterventionPDF = async (
     doc.text("générales de vente figurant au verso.", sigX + 2, y + 63);
 
     // ==========================================
-    // FOOTER
+    // FOOTER + PAGE NUMBERS (post-pass on all pages)
     // ==========================================
-    drawFooter(doc, pageWidth, pageHeight, margin, photos);
+    const totalPages = doc.getNumberOfPages();
+    // Draw footer on last page first (it may already be drawn on intermediate pages)
+    drawFooter(doc, pageWidth, pageHeight, margin, photos, totalPages, totalPages);
+    // Now go back and stamp page numbers on all pages
+    if (totalPages > 1) {
+      for (let p = 1; p < totalPages; p++) {
+        doc.setPage(p);
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(255, 255, 255);
+        const footerY = pageHeight - FOOTER_HEIGHT;
+        doc.text(
+          `Page ${p} / ${totalPages}`,
+          pageWidth - margin,
+          footerY + 6,
+          { align: "right" }
+        );
+      }
+      // Return to last page to save correctly
+      doc.setPage(totalPages);
+    }
 
     // ==========================================
     // SAVE

@@ -8,7 +8,11 @@ import { AppIcon, type AppIconName } from "../components/AppIcon";
 import InterventionLocation from "../components/InterventionLocation";
 import PhotoCapture from "../components/PhotoCapture";
 import InterventionWorkflow from "../components/InterventionWorkflow";
+import { InterventionHeader } from "../components/Intervention/InterventionHeader";
+import { InterventionDescription } from "../components/Intervention/InterventionDescription";
 import { useAuth } from "../contexts/useAuth";
+import { useLocks } from "../contexts/LockContext";
+import SkeletonLoader from "../components/SkeletonLoader";
 import {
   canEditInterventionByRole,
   findDetailArtifactReport,
@@ -48,7 +52,7 @@ const InterventionDetail: React.FC = () => {
 
   // Determine if user can edit based on role and intervention status
   const canEdit = (statut: string) =>
-    canEditInterventionByRole(user?.role, statut);
+    !lockedByUsername && canEditInterventionByRole(user?.role, statut);
 
   const isClosedIntervention = (statut: string) =>
     isInterventionClosed(statut);
@@ -63,6 +67,15 @@ const InterventionDetail: React.FC = () => {
     Array<{ name: string; url: string; type: string }>
   >([]);
   const [reportUrl, setReportUrl] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const { locks } = useLocks();
+  const [lockedByDb, setLockedByDb] = useState<string | null>(null);
+
+  // Derived lockedByUsername from real-time lock stream and mounting database check
+  const currentLock = id ? locks[id] : null;
+  const lockedByUsername = currentLock
+    ? (currentLock.lockedBy !== user?.nom ? currentLock.lockedBy : null)
+    : lockedByDb;
 
   // Form data
   const [formData, setFormData] = useState({
@@ -78,6 +91,11 @@ const InterventionDetail: React.FC = () => {
   // Liste des clients et techniciens pour les sélecteurs
   const [clients, setClients] = useState<Client[]>([]);
   const [techniciens, setTechniciens] = useState<Technicien[]>([]);
+
+  const cleanDescriptionText = (text?: string | null) => {
+    if (!text) return "";
+    return text.replace(/\n?__duree_mins:\d+__/, "").trim();
+  };
 
   const loadIntervention = useCallback(async (silent = false) => {
     try {
@@ -103,7 +121,7 @@ const InterventionDetail: React.FC = () => {
       if (!isEditing) {
         setFormData({
           titre: data.titre,
-          description: data.description || "",
+          description: cleanDescriptionText(data.description),
           datePlanifiee: data.datePlanifiee
             ? formatDateTimeLocal(data.datePlanifiee)
             : "",
@@ -136,32 +154,69 @@ const InterventionDetail: React.FC = () => {
     }
   }, []);
 
+  const handleRetryUpload = async () => {
+    if (!id || !intervention) return;
+    setIsRetrying(true);
+    setError("");
+    try {
+      const pdfBlob = await generateInterventionPDF(
+        intervention,
+        true,
+        photos,
+        {}
+      );
+
+      if (pdfBlob && pdfBlob instanceof Blob) {
+        const formData = new FormData();
+        formData.append(
+          "files",
+          pdfBlob,
+          `Rapport_${intervention.numero || "Intervention"}.pdf`
+        );
+
+        await apiService.uploadInterventionArtifacts(id, formData);
+        await loadIntervention();
+        alert("Le rapport d'intervention a été généré et transmis avec succès !");
+      } else {
+        throw new Error("La génération du PDF a renvoyé un document vide.");
+      }
+    } catch (err: any) {
+      console.error("Erreur lors de la tentative de ré-upload du rapport :", err);
+      setError(
+        err.response?.data?.error ||
+        err.message ||
+        "Impossible de générer ou de transmettre le rapport PDF."
+      );
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   useEffect(() => {
     loadIntervention();
     loadClientsAndTechniciens();
 
-    // Lock logic
-    const lock = async () => {
+    // Lock logic on mount
+    const acquireLock = async () => {
       if (!id) return;
       try {
         await apiService.lockIntervention(id);
+        setLockedByDb(null);
       } catch (e: unknown) {
         const axiosError = e as AxiosError<ApiErrorResponse>;
         if (axiosError.response?.status === 409) {
-          alert(
-            `ATTENTION: Cette intervention est actuellement modifiée par ${
-              axiosError.response.data?.lockedBy || "un autre utilisateur"
-            }.`
+          setLockedByDb(
+            axiosError.response.data?.lockedBy || "Un autre utilisateur"
           );
         }
       }
     };
-    lock();
+    acquireLock();
 
-    // Polling (Auto-Refresh)
+    // Auto-Refresh of intervention details (no need to poll lock state manually anymore)
     const interval = setInterval(() => {
       loadIntervention(true); // Silent reload
-    }, 10000); // 10 seconds
+    }, 15000); // 15 seconds
 
     return () => {
       clearInterval(interval);
@@ -183,9 +238,12 @@ const InterventionDetail: React.FC = () => {
       setSaving(true);
       setError("");
 
+      const originalDureeMatch = intervention?.description?.match(/__duree_mins:\d+__/);
+      const dureeSuffix = originalDureeMatch ? `\n${originalDureeMatch[0]}` : "";
+
       const updateData = {
         titre: formData.titre,
-        description: formData.description,
+        description: `${formData.description}${dureeSuffix}`,
         datePlanifiee: new Date(formData.datePlanifiee).toISOString(),
         statut: formData.statut,
         notes: formData.notes,
@@ -284,11 +342,67 @@ const InterventionDetail: React.FC = () => {
     if (fileName.match(/\.(xls|xlsx)$/i)) return "reports";
     return "attachment";
   };
+  const [travelTime, setTravelTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only calculate for technicians when intervention is planned or in progress
+    if (user?.role === "technicien" && intervention && intervention.client && !isClosedIntervention(intervention.statut)) {
+      const calculateTravelTime = async () => {
+        if (!navigator.geolocation) return;
+        
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const clientAddress = `${intervention.client!.rue}, ${intervention.client!.codePostal} ${intervention.client!.ville}`;
+            
+            // 1. Geocode client address via Nominatim
+            const geocodeRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(clientAddress)}`);
+            const geocodeData = await geocodeRes.json();
+            
+            if (geocodeData && geocodeData.length > 0) {
+              const destLat = geocodeData[0].lat;
+              const destLon = geocodeData[0].lon;
+              
+              // 2. Route via OSRM
+              const routeRes = await fetch(`https://router.project-osrm.org/route/v1/driving/${longitude},${latitude};${destLon},${destLat}?overview=false`);
+              const routeData = await routeRes.json();
+              
+              if (routeData.routes && routeData.routes.length > 0) {
+                const durationSeconds = routeData.routes[0].duration;
+                const minutes = Math.round(durationSeconds / 60);
+                if (minutes > 60) {
+                    const hours = Math.floor(minutes / 60);
+                    const mins = minutes % 60;
+                    setTravelTime(`${hours}h${mins > 0 ? mins.toString().padStart(2, '0') : ''}`);
+                } else {
+                    setTravelTime(`${minutes} min`);
+                }
+              }
+            }
+          } catch (e) {
+            console.error("Erreur calcul temps de trajet", e);
+          }
+        }, () => {}, { timeout: 10000 });
+      };
+      
+      calculateTravelTime();
+    }
+  }, [intervention, user]);
 
   if (loading) {
     return (
-      <div className="page-container harmonized-shell">
-        <div className="loading">Chargement...</div>
+      <div className="page-container intervention-detail harmonized-shell" style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+          <button onClick={handleGoBack} className="harmonized-back-button" style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.25rem' }}>←</button>
+          <div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Détails de l'intervention</h2>
+            <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.85rem' }}>Récupération des informations...</p>
+          </div>
+        </div>
+        <div className="skeleton-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+          <SkeletonLoader type="form" rows={3} />
+          <SkeletonLoader type="card" rows={2} />
+        </div>
       </div>
     );
   }
@@ -306,138 +420,101 @@ const InterventionDetail: React.FC = () => {
 
   return (
     <div className="page-container intervention-detail harmonized-shell">
-      {/* En-tête */}
-      <div className="harmonized-header detail-header">
-        <div className="header-info">
-          <button onClick={handleGoBack} className="harmonized-back-button">
-            ← Retour
-          </button>
-          <div className="title-row">
-            <h1>
-              <span className="intervention-number">
-                {intervention.numero || "------"}
-              </span>
-              {intervention.titre}
-            </h1>
-            {!isEditing && getStatusBadge(intervention.statut)}
-          </div>
+      {lockedByUsername && (
+        <div className="harmonized-error-box" style={{ display: "flex", alignItems: "center", gap: "10px", border: "2px solid #ef4444", backgroundColor: "#fef2f2", padding: "12px 16px", borderRadius: "8px", margin: "0 0 16px 0", color: "#b91c1c", fontWeight: "bold" }}>
+          <AppIcon name="ban" size={20} />
+          <span>Cette intervention est actuellement modifiee par {lockedByUsername}. Les modifications sont verrouillees.</span>
         </div>
-        <div className="header-actions responsive-stack" style={{ justifyContent: "flex-end" }}>
-          {!isEditing ? (
-            <>
-              {/* PDF uniquement pour interventions terminées */}
-              {isClosedIntervention(intervention.statut) && (
-                <button
-                  onClick={() => {
-                    if (reportUrl) {
-                      window.open(reportUrl, "_blank");
-                    } else {
-                      void generateInterventionPDF(intervention);
-                    }
-                  }}
-                  className="btn btn-secondary btn-export-pdf"
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> {reportUrl ? "Voir le rapport" : "Télécharger PDF"}</span>
-                </button>
+      )}
+      {/* HEADER SECTION */}
+        <InterventionHeader
+          numero={intervention.numero || ""}
+          titre={intervention.titre}
+          statutBadge={!isEditing ? getStatusBadge(intervention.statut) : null}
+          onBack={handleGoBack}
+          subtitle={!isEditing && intervention.createdAt ? `Créée le ${new Date(intervention.createdAt).toLocaleDateString("fr-FR")}` : undefined}
+          actionButton={
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+              {!isEditing ? (
+                <>
+                  {isClosedIntervention(intervention.statut) && (
+                    <button
+                      onClick={() => {
+                        if (reportUrl) window.open(reportUrl, "_blank");
+                        else void generateInterventionPDF(intervention);
+                      }}
+                      className="btn btn-secondary btn-export-pdf"
+                    >
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="document" size={18} /> {reportUrl ? "Voir le rapport" : "Télécharger PDF"}</span>
+                    </button>
+                  )}
+                  {user?.role === "technicien" && intervention.statut === "planifiee" && (
+                    <button onClick={handleTakeCharge} disabled={!!lockedByUsername} className="btn btn-success">
+                      Prendre en charge
+                    </button>
+                  )}
+                  {user?.role === "admin" && !isClosedIntervention(intervention.statut) && (
+                    <>
+                      {intervention.statut === "planifiee" && (
+                        <button onClick={() => handleQuickStatusChange("en_cours")} disabled={!!lockedByUsername} className="btn" style={{ backgroundColor: "#f59e0b", color: "white", border: "none" }}>Démarrer</button>
+                      )}
+                      {intervention.statut === "en_cours" && (
+                        <button onClick={() => handleQuickStatusChange("terminee")} disabled={!!lockedByUsername} className="btn" style={{ backgroundColor: "#10b981", color: "white", border: "none" }}>Terminer</button>
+                      )}
+                      {(intervention.statut as string) !== "annulee" && (
+                        <button onClick={() => { if (confirm("Voulez-vous annuler ?")) handleQuickStatusChange("annulee"); }} disabled={!!lockedByUsername} className="btn" style={{ backgroundColor: "#ef4444", color: "white", border: "none" }}>Annuler</button>
+                      )}
+                    </>
+                  )}
+                  {user?.role === "admin" && canEdit(intervention.statut) && (
+                    <button onClick={() => setIsEditing(true)} className="btn btn-primary">
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="edit" size={18} /> Modifier</span>
+                    </button>
+                  )}
+                  {isClosedIntervention(intervention.statut) && (
+                    <span className="badge badge-info"><span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="ban" size={14} /> Lecture seule</span></span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button onClick={handleCancel} className="btn btn-secondary" disabled={saving}>Annuler</button>
+                  <button onClick={handleSave} className="btn btn-success" disabled={saving}>{saving ? "Enregistrement..." : "Enregistrer"}</button>
+                </>
               )}
-              {/* Bouton Prendre en charge pour techniciens (en haut à droite) */}
-              {user?.role === "technicien" &&
-                intervention.statut === "planifiee" && (
-                  <button
-                    onClick={handleTakeCharge}
-                    className="btn btn-success"
-                  >
-                    ▶️ Prendre en charge
-                  </button>
-                )}
-              {/* Quick status actions for admins */}
-              {user?.role === "admin" &&
-                !isClosedIntervention(intervention.statut) && (
-                  <div className="responsive-stack" style={{ justifyContent: "flex-end" }}>
-                    {intervention.statut === "planifiee" && (
-                      <button
-                        onClick={() => handleQuickStatusChange("en_cours")}
-                        className="btn"
-                        style={{
-                          backgroundColor: "#f59e0b",
-                          color: "white",
-                          border: "none",
-                        }}
-                      >
-                        Démarrer
-                      </button>
-                    )}
-                    {intervention.statut === "en_cours" && (
-                      <button
-                        onClick={() => handleQuickStatusChange("terminee")}
-                        className="btn"
-                        style={{
-                          backgroundColor: "#10b981",
-                          color: "white",
-                          border: "none",
-                        }}
-                      >
-                        Terminer
-                      </button>
-                    )}
-                    {(intervention.statut as string) !== "annulee" && (
-                      <button
-                        onClick={() => {
-                          if (
-                            confirm(
-                              "Voulez-vous vraiment annuler cette intervention ?"
-                            )
-                          ) {
-                            handleQuickStatusChange("annulee");
-                          }
-                        }}
-                        className="btn"
-                        style={{
-                          backgroundColor: "#ef4444",
-                          color: "white",
-                          border: "none",
-                        }}
-                      >
-                        Annuler
-                      </button>
-                    )}
-                  </div>
-                )}
-              {/* Bouton Modifier pour admins uniquement */}
-              {user?.role === "admin" && canEdit(intervention.statut) && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="btn btn-primary"
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="edit" size={18} /> Modifier</span>
-                </button>
-              )}
-              {isClosedIntervention(intervention.statut) && (
-                <span className="badge badge-info"><span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><AppIcon name="ban" size={14} /> Lecture seule</span></span>
-              )}
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleCancel}
-                className="btn btn-secondary"
-                disabled={saving}
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSave}
-                className="btn btn-success"
-                disabled={saving}
-              >
-                {saving ? "Enregistrement..." : "Enregistrer"}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+            </div>
+          }
+        />
 
       {error && <div className="harmonized-error-box">{error}</div>}
+
+      {intervention.statut === "terminee" && !reportUrl && (
+        <div className="harmonized-warning-box" style={{ display: "flex", flexDirection: "column", gap: "12px", border: "2px solid #f59e0b", backgroundColor: "#fffbeb", padding: "16px", borderRadius: "8px", margin: "16px 0", color: "#b45309" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", fontWeight: "bold" }}>
+            <AppIcon name="document" size={20} />
+            <span>Attention : rapport de cloture manquant</span>
+          </div>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#78350f" }}>
+            Cette intervention est cloturee mais le rapport d'intervention PDF n'a pas pu etre transmis au serveur (probleme reseau ou fermeture de l'application lors de la cloture).
+          </p>
+          <button
+            onClick={handleRetryUpload}
+            disabled={isRetrying}
+            className="btn"
+            style={{
+              alignSelf: "flex-start",
+              backgroundColor: "#d97706",
+              color: "white",
+              border: "none",
+              fontWeight: "bold",
+              padding: "8px 16px",
+              borderRadius: "6px",
+              cursor: "pointer"
+            }}
+          >
+            {isRetrying ? "Transmission en cours..." : "Generer et renvoyer le rapport"}
+          </button>
+        </div>
+      )}
 
       {/* === WORKFLOW TECHNICIEN (en haut pour mobile) === */}
       {user?.role === "technicien" &&
@@ -446,9 +523,28 @@ const InterventionDetail: React.FC = () => {
             intervention={intervention} // Pass full object including client data
             photos={photos} // Pass photos for upload
             onStatusChange={loadIntervention}
-            readOnly={isClosedIntervention(intervention.statut)}
+            readOnly={isClosedIntervention(intervention.statut) || !!lockedByUsername}
           />
         )}
+
+      <div className={`detail-cards-wrapper ${user?.role === "technicien" ? "is-technicien" : ""}`}>
+      {/* Carte Description */}
+      {!isEditing ? (
+        <InterventionDescription description={cleanDescriptionText(intervention.description)} />
+      ) : (
+        <div className="info-card harmonized-card description-card-wrapper">
+          <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Description</h3>
+          <textarea
+            value={formData.description}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+            className="edit-input"
+            rows={4}
+            placeholder="Description de l'intervention..."
+          />
+        </div>
+      )}
 
       {/* Carte Informations Générales */}
       <div className="info-card harmonized-card">
@@ -506,6 +602,7 @@ const InterventionDetail: React.FC = () => {
                   <select
                     value={intervention.technicien?.id || ""}
                     onChange={(e) => handleQuickReassign(e.target.value)}
+                    disabled={!!lockedByUsername}
                     className="input"
                     style={{
                       width: "100%",
@@ -621,30 +718,11 @@ const InterventionDetail: React.FC = () => {
           clientAddress={intervention.client?.rue}
           clientCity={intervention.client?.ville || ""}
           clientPostalCode={intervention.client?.codePostal || ""}
+          travelTime={travelTime}
+          hideNavigationButtons={user?.role === "technicien"}
         />
       )}
 
-      {/* Carte Description */}
-      <div className="info-card harmonized-card">
-        <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="comment" size={18} /> Description</h3>
-        {!isEditing ? (
-          <div className="description-content">
-            {intervention.description || (
-              <em className="text-muted">Aucune description</em>
-            )}
-          </div>
-        ) : (
-          <textarea
-            value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
-            className="edit-input"
-            rows={4}
-            placeholder="Description de l'intervention..."
-          />
-        )}
-      </div>
 
       {/* Carte Commentaires */}
       <div className="info-card comment-section harmonized-card">
@@ -694,7 +772,7 @@ const InterventionDetail: React.FC = () => {
           <h3 style={{ display: "flex", alignItems: "center", gap: "8px" }}><AppIcon name="history" size={18} /> Historique</h3>
           <div className="mobile-stack-list">
             {/* Création */}
-            <div className="mobile-history-item">
+            <div className="mobile-history-item timeline-history-item">
               <div
                 style={{
                   width: "10px",
@@ -722,7 +800,7 @@ const InterventionDetail: React.FC = () => {
             </div>
 
             {/* Planification (date prévue du RDV) */}
-            <div className="mobile-history-item">
+            <div className="mobile-history-item timeline-history-item">
               <div
                 style={{
                   width: "10px",
@@ -749,7 +827,7 @@ const InterventionDetail: React.FC = () => {
 
             {/* Arrivée sur site */}
             {intervention.heureArrivee && (
-              <div className="mobile-history-item">
+              <div className="mobile-history-item timeline-history-item">
                 <div
                   style={{
                     width: "10px",
@@ -779,7 +857,7 @@ const InterventionDetail: React.FC = () => {
 
             {/* Départ du site */}
             {intervention.heureDepart && (
-              <div className="mobile-history-item">
+              <div className="mobile-history-item timeline-history-item">
                 <div
                   style={{
                     width: "10px",
@@ -807,7 +885,7 @@ const InterventionDetail: React.FC = () => {
 
             {/* Réalisation */}
             {intervention.dateRealisee && (
-              <div className="mobile-history-item">
+              <div className="mobile-history-item timeline-history-item">
                 <div
                   style={{
                     width: "10px",
@@ -837,7 +915,7 @@ const InterventionDetail: React.FC = () => {
 
             {/* Statut actuel */}
             {intervention.statut === "annulee" && (
-              <div className="mobile-history-item">
+              <div className="mobile-history-item timeline-history-item">
                 <div
                   style={{
                     width: "10px",
@@ -944,6 +1022,7 @@ const InterventionDetail: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

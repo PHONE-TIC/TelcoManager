@@ -71,6 +71,8 @@ export function NotificationCenter() {
           }
           setIsClosing(false);
           setOpen(true);
+          // Marquer toutes les notifications comme lues à l'ouverture du centre de notifications
+          void markAllAsRead();
         }}
         aria-label="Centre de notifications"
       >

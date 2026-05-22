@@ -175,6 +175,27 @@ export const notifyNewIntervention = async (
     });
 };
 
+// Send notification to all admins and gestionnaires
+export const sendNotificationToAdminsAndGestionnaires = async (
+    payload: NotificationPayload
+): Promise<void> => {
+    try {
+        const users = await prisma.technicien.findMany({
+            where: {
+                role: { in: ['admin', 'gestionnaire'] },
+                active: true,
+            },
+            select: { id: true },
+        });
+
+        for (const user of users) {
+            await sendNotificationToTechnician(user.id, payload);
+        }
+    } catch (error) {
+        console.error('Error sending notification to admins and gestionnaires:', error);
+    }
+};
+
 // Get VAPID public key for clients
 export const getVapidPublicKey = (): string => {
     return VAPID_PUBLIC_KEY;

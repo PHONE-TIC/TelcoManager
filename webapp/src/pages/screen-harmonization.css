@@ -307,3 +307,32 @@
     flex: 0 0 auto;
   }
 }
+
+.timeline-history-item {
+  justify-content: flex-start !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+
+@media (max-width: 767px) {
+  .timeline-history-item {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+  .timeline-history-item > *:last-child {
+    align-self: center !important;
+  }
+}
+
+/* Compact & aligned header actions (for Clients & Stock) */
+.compact-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+  min-width: 0;
+}
+
+

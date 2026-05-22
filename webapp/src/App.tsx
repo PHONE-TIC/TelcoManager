@@ -43,6 +43,7 @@ const PwaInstallPopup = lazy(() =>
 const ReloadPrompt = lazy(() => import("./components/ReloadPrompt"));
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { LockProvider } from "./contexts/LockContext";
 import { useAuth } from "./contexts/useAuth";
 import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
@@ -52,6 +53,8 @@ import { IpLinksNotificationWatcher } from "./components/IpLinksNotificationWatc
 import { useNotifications } from "./hooks/useNotifications";
 import { NotificationCenterProvider } from "./contexts/NotificationCenterContext";
 import { AppIcon } from "./components/AppIcon";
+import { useOfflineSync } from "./hooks/useOfflineSync";
+
 
 
 function Navigation({
@@ -155,7 +158,7 @@ function Navigation({
                   <span className="nav-link-icon" aria-hidden="true">
                     {item.icon}
                   </span>
-                  {!sidebarCollapsed ? <span className="nav-link-label">{item.label}</span> : null}
+                  <span className="nav-link-label">{item.label}</span>
                 </span>
               </Link>
             </li>
@@ -264,30 +267,76 @@ function AppContent() {
     return window.localStorage.getItem("sidebar-collapsed") === "true";
   });
 
+  const { syncMessage } = useOfflineSync();
+
   useEffect(() => {
     document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed);
     window.localStorage.setItem("sidebar-collapsed", String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
+  // Clean screen-filling container for the login page when unauthenticated
+  if (!user) {
+    return (
+      <div className="app-container app-container--login" style={{ display: "block", height: "auto", minHeight: "100vh", overflow: "visible" }}>
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Suspense>
+      </div>
+    );
+  }
+
   return (
     <div className={`app-container ${hasDesktopTopbar ? "app-container--with-topbar" : ""}`}>
+      {syncMessage && (
+        <div 
+          style={{
+            position: "fixed",
+            top: "24px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            backgroundColor: "rgba(249, 115, 22, 0.85)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            color: "#ffffff",
+            padding: "12px 24px",
+            borderRadius: "50px",
+            boxShadow: "0 10px 25px -5px rgba(249, 115, 22, 0.4), 0 8px 10px -6px rgba(249, 115, 22, 0.4)",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            fontWeight: 500,
+            fontSize: "14px",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            animation: "pulse 2s infinite"
+          }}
+        >
+          <span style={{ display: "inline-block" }}>🔄</span>
+          <span>{syncMessage}</span>
+        </div>
+      )}
       {user && (
         <>
           <MobileNav />
           <MobileHeader />
-          <Navigation sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
           <IpLinksNotificationWatcher />
           <NotificationToastOverlay />
         </>
       )}
-      <div className={`main-content ${hasDesktopTopbar ? "main-content--with-topbar" : ""}`}>
-        {hasDesktopTopbar ? (
-          <div className="app-topbar">
-            <div className="app-topbar__inner">
-              <SearchAndNotifications />
-            </div>
+      {hasDesktopTopbar ? (
+        <div className="app-topbar">
+          <div className="app-topbar__inner">
+            <SearchAndNotifications />
           </div>
-        ) : null}
+        </div>
+      ) : null}
+      {user && (
+        <Navigation sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
+      )}
+      <div className={`main-content ${hasDesktopTopbar ? "main-content--with-topbar" : ""} ${user?.role === "technicien" ? "main-content--technician" : ""}`}>
         <div key={pageTransitionKey} className="fade-in app-route-shell">
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
@@ -482,13 +531,15 @@ function App() {
     <Router>
       <ThemeProvider>
         <AuthProvider>
-          <NotificationCenterProvider>
-            <AppContent />
-            <Suspense fallback={null}>
-              <ReloadPrompt />
-              <PwaInstallPopup />
-            </Suspense>
-          </NotificationCenterProvider>
+          <LockProvider>
+            <NotificationCenterProvider>
+              <AppContent />
+              <Suspense fallback={null}>
+                <ReloadPrompt />
+                <PwaInstallPopup />
+              </Suspense>
+            </NotificationCenterProvider>
+          </LockProvider>
         </AuthProvider>
       </ThemeProvider>
     </Router>

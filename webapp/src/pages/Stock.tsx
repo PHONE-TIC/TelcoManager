@@ -70,6 +70,7 @@ function Stock() {
             quantite: ts.quantite,
             originalStockId: ts.stockId,
             technicianStockId: ts.id,
+            etat: ts.etat,
           }));
           setStock(formatted as StockWithRelations[]);
         })
@@ -271,7 +272,7 @@ function Stock() {
             Gestion du matériel et équipements
           </p>
         </div>
-        <div className="screen-header-actions">
+        <div className="compact-header-actions">
           <button
             onClick={exportToCSV}
             className="harmonized-secondary-action"
@@ -398,13 +399,47 @@ function Stock() {
                   Stock technicien
                 </button>
               )}
+              {/* Category filter - placed on the same line as Vue générale, Stock courant etc. */}
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="harmonized-select"
+                style={{
+                  cursor: "pointer",
+                  borderRadius: "999px",
+                  padding: "9px 28px 9px 14px",
+                  fontSize: "0.92rem",
+                  fontWeight: 600,
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: categoryFilter !== "all" ? "var(--primary-color)" : "var(--bg-secondary)",
+                  color: categoryFilter !== "all" ? "#fff" : "var(--text-secondary)",
+                  borderColor: categoryFilter !== "all" ? "var(--primary-color)" : "var(--border-color)",
+                  boxShadow: categoryFilter !== "all" ? "0 8px 16px rgba(249, 115, 22, 0.18)" : undefined,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${categoryFilter !== 'all' ? 'white' : '%2394a3b8'}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 10px center",
+                  backgroundSize: "14px",
+                  outline: "none",
+                }}
+              >
+                <option value="all" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)" }}>
+                  Toutes catégories
+                </option>
+                {categories.map((cat, i) => (
+                  <option key={i} value={cat} style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)" }}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
           {/* Bottom Row: Dropdowns */}
-          <div className="harmonized-filter-group screen-select-row">
-            {/* Technician Select (Visible only when filter is technician) */}
-            {filter === "technician" && (
+          {filter === "technician" && (
+            <div className="harmonized-filter-group screen-select-row" style={{ marginTop: "12px" }}>
+              {/* Technician Select (Visible only when filter is technician) */}
               <select
                 value={selectedTechnicianId}
                 onChange={(e) => setSelectedTechnicianId(e.target.value)}
@@ -422,23 +457,8 @@ function Stock() {
                   </option>
                 ))}
               </select>
-            )}
-
-            {/* Category filter */}
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="harmonized-select"
-              style={{ cursor: "pointer" }}
-            >
-              <option value="all">Toutes catégories</option>
-              {categories.map((cat, i) => (
-                <option key={i} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Stock Table */}
@@ -490,8 +510,23 @@ function Stock() {
                   <tr key={item.id}>
                     <td>
                       <div className="flex flex-col">
-                        <span className="font-bold text-gray-800">
+                        <span className="font-bold text-gray-800" style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
                           {item.nomMateriel}
+                          {filter === "technician" && item.etat && (
+                            <span
+                              style={{
+                                display: "inline-block",
+                                padding: "2px 8px",
+                                borderRadius: "12px",
+                                fontSize: "0.7rem",
+                                fontWeight: 600,
+                                backgroundColor: item.etat === "ok" ? "#d1fae5" : "#fee2e2",
+                                color: item.etat === "ok" ? "#065f46" : "#991b1b",
+                              }}
+                            >
+                              {item.etat === "ok" ? "OK" : "HS"}
+                            </span>
+                          )}
                         </span>
                         {item.codeBarre && (
                           <span className="text-xs text-gray-500" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
@@ -817,7 +852,24 @@ function Stock() {
                 <div key={item.id} className="mobile-list-card">
                   <div className="mobile-list-header">
                     <div>
-                      <div className="mobile-list-title">{item.nomMateriel}</div>
+                      <div className="mobile-list-title" style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                        {item.nomMateriel}
+                        {filter === "technician" && item.etat && (
+                          <span
+                            style={{
+                              display: "inline-block",
+                              padding: "2px 8px",
+                              borderRadius: "12px",
+                              fontSize: "0.7rem",
+                              fontWeight: 600,
+                              backgroundColor: item.etat === "ok" ? "#d1fae5" : "#fee2e2",
+                              color: item.etat === "ok" ? "#065f46" : "#991b1b",
+                            }}
+                          >
+                            {item.etat === "ok" ? "OK" : "HS"}
+                          </span>
+                        )}
+                      </div>
                       <div className="mobile-list-subtitle">
                         Réf. {item.reference}
                         {item.codeBarre ? ` • Code-barres ${item.codeBarre}` : ""}

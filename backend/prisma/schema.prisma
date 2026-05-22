@@ -283,3 +283,17 @@ model ActivityLog {
 
   @@map("activity_logs")
 }
+
+// Modèle Notification persistante
+model Notification {
+  id         String   @id @default(uuid())
+  type       String   // "ip_link_disconnected" | "ip_link_restored"
+  title      String
+  message    String
+  createdAt  DateTime @default(now()) @map("created_at")
+  read       Boolean  @default(false)
+  link       String?
+  metadata   Json?    // Pour stocker linkId, reference, clientName, etc.
+
+  @@map("notifications")
+}

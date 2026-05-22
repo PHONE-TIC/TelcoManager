@@ -264,7 +264,22 @@ function TechnicianDetail() {
                     return (
                     <div key={item.id} className="vehicle-stock-item">
                       <div className="stock-item-info">
-                        <strong>{item.stock.nomMateriel}</strong>
+                        <strong style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                          {item.stock.nomMateriel}
+                          <span
+                            style={{
+                              display: "inline-block",
+                              padding: "2px 8px",
+                              borderRadius: "12px",
+                              fontSize: "0.7rem",
+                              fontWeight: 600,
+                              backgroundColor: item.etat === "ok" ? "#d1fae5" : "#fee2e2",
+                              color: item.etat === "ok" ? "#065f46" : "#991b1b",
+                            }}
+                          >
+                            {item.etat === "ok" ? "OK" : "HS"}
+                          </span>
+                        </strong>
                         {item.stock.numeroSerie && (
                           <span
                             style={{

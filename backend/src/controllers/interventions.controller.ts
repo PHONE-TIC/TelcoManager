@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import { prisma } from "../db";
 import { AuthRequest } from "../middleware/auth.middleware";
@@ -143,6 +143,46 @@ export const getInterventionById = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const handleInterventionAssignmentNotification = async (
+  technicienId: string,
+  interventionId: string
+) => {
+  try {
+    const intervention = await prisma.intervention.findUnique({
+      where: { id: interventionId },
+      include: { client: true },
+    });
+    if (!intervention) return;
+
+    // Create database notification
+    await prisma.notification.create({
+      data: {
+        type: "new_intervention",
+        title: "📅 Nouvelle intervention assignée",
+        message: `${intervention.numero || ""} - ${intervention.titre} chez ${intervention.client?.nom || ""}`,
+        link: `/interventions/${intervention.id}`,
+        metadata: {
+          technicienId,
+          interventionId,
+        },
+      },
+    });
+
+    // Send web push notification
+    notifyNewIntervention(technicienId, {
+      id: intervention.id,
+      numero: intervention.numero,
+      titre: intervention.titre,
+      datePlanifiee: intervention.datePlanifiee,
+      client: { nom: intervention.client?.nom || "" },
+    }).catch((err) => {
+      console.error("Failed to send push notification:", err);
+    });
+  } catch (err) {
+    console.error("Failed to handle intervention assignment notification:", err);
+  }
+};
+
 export const createIntervention = async (req: AuthRequest, res: Response) => {
   try {
     // Only admins can create interventions
@@ -199,17 +239,9 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
       include: interventionCreateReturnInclude,
     });
 
-    // Send push notification to assigned technician
+    // Send notifications to assigned technician
     if (technicienId) {
-      notifyNewIntervention(technicienId, {
-        id: intervention.id,
-        numero: intervention.numero,
-        titre: intervention.titre,
-        datePlanifiee: intervention.datePlanifiee,
-        client: intervention.client,
-      }).catch((err) => {
-        console.error("Failed to send push notification:", err);
-      });
+      await handleInterventionAssignmentNotification(technicienId, intervention.id);
     }
 
     res.status(201).json(intervention);
@@ -290,6 +322,15 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
       include: interventionCreateReturnInclude,
     });
 
+    // Send notifications if technicienId has changed/newly assigned
+    if (
+      technicienId !== undefined &&
+      technicienId !== null &&
+      technicienId !== existingIntervention.technicienId
+    ) {
+      await handleInterventionAssignmentNotification(technicienId, intervention.id);
+    }
+
     res.json(intervention);
   } catch (error: any) {
     if (error.code === "P2025") {
@@ -351,6 +392,28 @@ export const updateInterventionStatus = async (
         return res.status(400).json({
           error:
             "Impossible de prendre en charge une intervention qui n'est pas prévue pour aujourd'hui",
+        });
+      }
+    }
+
+    // Validate that transition to 'terminee' meets all business requirements
+    if (statut === "terminee") {
+      if (!existingIntervention.heureArrivee || !existingIntervention.heureDepart) {
+        return res.status(400).json({
+          error: "Impossible de cloturer : les heures d'arrivee et de depart doivent etre renseignees.",
+        });
+      }
+
+      if (!existingIntervention.signature || !existingIntervention.signatureTechnicien) {
+        return res.status(400).json({
+          error: "Impossible de cloturer : les signatures du technicien et du client sont obligatoires.",
+        });
+      }
+
+      const comment = commentaireTechnicien || existingIntervention.commentaireTechnicien;
+      if (!comment || comment.trim().length === 0) {
+        return res.status(400).json({
+          error: "Impossible de cloturer : le compte-rendu technique est obligatoire.",
         });
       }
     }
@@ -444,6 +507,10 @@ export const manageEquipement = async (req: AuthRequest, res: Response) => {
       marque: req.body.marque,
       modele: req.body.modele,
       serialNumber: req.body.serialNumber,
+      reference: req.body.reference,
+      categorie: req.body.categorie,
+      fournisseur: req.body.fournisseur,
+      dryRun: req.body.dryRun,
     });
 
     return res.status(result.status).json(result.body);
@@ -455,7 +522,75 @@ export const manageEquipement = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// LOCK MTEHODS
+// LOCK METHODS
+interface SseClient {
+  id: string;
+  res: Response;
+}
+
+let sseClients: SseClient[] = [];
+
+export const broadcastLockUpdate = (update: {
+  interventionId: string;
+  lockedBy: string | null;
+  lockedAt: string | null;
+}) => {
+  const message = JSON.stringify({ type: "update", ...update });
+  sseClients.forEach((client) => {
+    try {
+      client.res.write(`data: ${message}\n\n`);
+    } catch (err) {
+      console.error("Error writing to SSE client:", err);
+    }
+  });
+};
+
+export const locksStream = async (req: Request, res: Response) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  const clientId = Date.now().toString();
+  const newClient = { id: clientId, res };
+  sseClients.push(newClient);
+
+  req.on("close", () => {
+    sseClients = sseClients.filter((c) => c.id !== clientId);
+  });
+
+  try {
+    const activeLocks = await prisma.intervention.findMany({
+      where: {
+        lockedBy: { not: null },
+        lockedAt: { gte: new Date(Date.now() - 5 * 60 * 1000) },
+      },
+      select: {
+        id: true,
+        lockedBy: true,
+        lockedAt: true,
+      },
+    });
+
+    const locksWithNames = await Promise.all(
+      activeLocks.map(async (lock) => {
+        const tech = await prisma.technicien.findUnique({
+          where: { id: lock.lockedBy! },
+          select: { nom: true },
+        });
+        return {
+          interventionId: lock.id,
+          lockedBy: tech?.nom || "Un utilisateur",
+          lockedAt: lock.lockedAt ? lock.lockedAt.toISOString() : null,
+        };
+      })
+    );
+
+    res.write(`data: ${JSON.stringify({ type: "initial", locks: locksWithNames })}\n\n`);
+  } catch (err) {
+    console.error("SSE initial locks error:", err);
+  }
+};
+
 export const lockIntervention = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -477,6 +612,17 @@ export const lockIntervention = async (req: AuthRequest, res: Response) => {
 
     await lockInterventionForUser(id, userId);
 
+    const lockingUser = await prisma.technicien.findUnique({
+      where: { id: userId },
+      select: { nom: true },
+    });
+
+    broadcastLockUpdate({
+      interventionId: id,
+      lockedBy: lockingUser?.nom || "Un utilisateur",
+      lockedAt: new Date().toISOString(),
+    });
+
     res.json({ success: true, message: "Intervention verrouillée" });
   } catch (error) {
     console.error("Erreur lockIntervention:", error);
@@ -487,12 +633,14 @@ export const lockIntervention = async (req: AuthRequest, res: Response) => {
 export const unlockIntervention = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.user?.id;
-
-    // Optional: Only allow unlock if locked by self or admin?
-    // For MVP, just unlock.
 
     await unlockInterventionById(id);
+
+    broadcastLockUpdate({
+      interventionId: id,
+      lockedBy: null,
+      lockedAt: null,
+    });
 
     res.json({ success: true, message: "Intervention déverrouillée" });
   } catch (error) {

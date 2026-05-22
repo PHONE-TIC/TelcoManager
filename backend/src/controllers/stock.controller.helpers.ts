@@ -15,7 +15,12 @@ export async function generateStockReference(
   categorie: string,
   modele?: string | null
 ): Promise<string> {
-  const existingItem = await prisma.stock.findFirst({
+  const prefix = `${normalizeReferenceSegment(marque)}${normalizeReferenceSegment(
+    categorie
+  )}`;
+  const standardRefRegex = new RegExp(`^${prefix}\\d{5}$`);
+
+  const existingItems = await prisma.stock.findMany({
     where: {
       marque: { equals: marque, mode: "insensitive" },
       categorie: { equals: categorie, mode: "insensitive" },
@@ -27,13 +32,13 @@ export async function generateStockReference(
     orderBy: { createdAt: "asc" },
   });
 
-  if (existingItem?.reference) {
-    return existingItem.reference;
-  }
+  const validExistingItem = existingItems.find((item) =>
+    standardRefRegex.test(item.reference)
+  );
 
-  const prefix = `${normalizeReferenceSegment(marque)}${normalizeReferenceSegment(
-    categorie
-  )}`;
+  if (validExistingItem) {
+    return validExistingItem.reference;
+  }
 
   const existingRefs = await prisma.stock.findMany({
     where: {
@@ -43,15 +48,16 @@ export async function generateStockReference(
     },
     select: { reference: true },
     orderBy: { reference: "desc" },
-    take: 100,
   });
 
   let maxNumber = 0;
   for (const item of existingRefs) {
-    const numPart = item.reference.substring(prefix.length);
-    const num = parseInt(numPart, 10);
-    if (!Number.isNaN(num) && num > maxNumber) {
-      maxNumber = num;
+    if (standardRefRegex.test(item.reference)) {
+      const numPart = item.reference.substring(prefix.length);
+      const num = parseInt(numPart, 10);
+      if (!Number.isNaN(num) && num > maxNumber) {
+        maxNumber = num;
+      }
     }
   }
 

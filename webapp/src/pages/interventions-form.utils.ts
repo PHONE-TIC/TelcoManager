@@ -76,7 +76,7 @@ export function filterTechniciansForSelection(
 
   return techniciens.filter(
     (technicien) =>
-      technicien.role !== "admin" &&
+      technicien.role === "technicien" &&
       (technicien.nom.toLowerCase().includes(normalizedSearch) ||
         (technicien.role && technicien.role.toLowerCase().includes(normalizedSearch)))
   );

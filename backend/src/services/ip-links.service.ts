@@ -403,9 +403,87 @@ export async function syncIpLinks(): Promise<IpLinksSnapshot> {
   if (syncInFlight) return syncInFlight;
 
   syncInFlight = (async () => {
+    const previousItems = latestSnapshot.items || [];
+    const isFirstSync = latestSnapshot.stats.lastSyncedAt === null;
+    const previousStatuses = new Map<number, LinkHealthStatus | null>(
+      previousItems.map((item) => [item.id, item.healthStatus])
+    );
+
     const items = await fetchAllAtlasLinks();
     latestSnapshot = buildSnapshot(items);
     await ensureActivityLog();
+
+    if (!isFirstSync) {
+      try {
+        const { sendNotificationToAdminsAndGestionnaires } = require("./push.service");
+
+        for (const link of items) {
+          const prevStatus = previousStatuses.get(link.id);
+          const currStatus = link.healthStatus;
+
+          if (prevStatus && prevStatus !== currStatus) {
+            const linkPath = `/supervision-liens-ip/${encodeURIComponent(link.reference)}`;
+
+            if (currStatus === "disconnected") {
+              const title = "Lien déconnecté";
+              const message = `${link.clientName} • ${link.reference}`;
+
+              // 1. Sauvegarde en BDD
+              await prisma.notification.create({
+                data: {
+                  type: "ip_link_disconnected",
+                  title,
+                  message,
+                  link: linkPath,
+                  metadata: {
+                    linkId: link.id,
+                    reference: link.reference,
+                    clientName: link.clientName,
+                  },
+                },
+              });
+
+              // 2. Web Push notification aux admins/gestionnaires
+              await sendNotificationToAdminsAndGestionnaires({
+                title,
+                body: message,
+                tag: `ip-link-${link.id}`,
+                url: linkPath,
+              });
+            } else if (prevStatus === "disconnected" && currStatus === "connected") {
+              const title = "Lien connecté";
+              const message = `${link.clientName} • ${link.reference}`;
+
+              // 1. Sauvegarde en BDD
+              await prisma.notification.create({
+                data: {
+                  type: "ip_link_restored",
+                  title,
+                  message,
+                  link: linkPath,
+                  metadata: {
+                    linkId: link.id,
+                    reference: link.reference,
+                    clientName: link.clientName,
+                  },
+                },
+              });
+
+              // 2. Web Push notification aux admins/gestionnaires
+              await sendNotificationToAdminsAndGestionnaires({
+                title,
+                body: message,
+                tag: `ip-link-${link.id}`,
+                url: linkPath,
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Erreur lors de la détection de transition de statut IP:", error);
+      }
+    }
+
     return latestSnapshot;
   })();
 

@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNotificationCenter } from "../contexts/NotificationCenterContext";
 
-function getToastMeta(type: "ip_link_disconnected" | "ip_link_restored") {
+function getToastMeta(type: "ip_link_disconnected" | "ip_link_restored" | "new_intervention") {
   return {
-    className: type === "ip_link_restored" ? "notification-toast--success" : "notification-toast--danger",
+    className: type === "ip_link_restored" ? "notification-toast--success" : type === "new_intervention" ? "notification-toast--info" : "notification-toast--danger",
     timeoutMs: 5000,
   };
 }
@@ -16,7 +16,7 @@ type RenderedToast = {
   title: string;
   message: string;
   link?: string;
-  type: "ip_link_disconnected" | "ip_link_restored";
+  type: "ip_link_disconnected" | "ip_link_restored" | "new_intervention";
   timeoutMs: number;
   phase: ToastPhase;
 };
@@ -26,6 +26,7 @@ export function NotificationToastOverlay() {
   const [renderedToasts, setRenderedToasts] = useState<RenderedToast[]>([]);
   const closeTimersRef = useRef<Record<string, number>>({});
   const phaseTimersRef = useRef<Record<string, number>>({});
+  const shownToastIdsRef = useRef<Set<string>>(new Set());
 
   const unreadNotifications = useMemo(
     () => notifications.filter((item) => !item.read).slice(0, 3),
@@ -35,14 +36,23 @@ export function NotificationToastOverlay() {
   useEffect(() => {
     const unreadIds = new Set(unreadNotifications.map((item) => item.id));
 
+    // Nettoyer shownToastIdsRef pour ne conserver que les identifiants qui sont toujours non lus
+    shownToastIdsRef.current = new Set(
+      Array.from(shownToastIdsRef.current).filter((id) => unreadIds.has(id))
+    );
+
     setRenderedToasts((current) => {
       const next = [...current];
 
       unreadNotifications.forEach((item) => {
+        if (shownToastIdsRef.current.has(item.id)) {
+          return;
+        }
         if (next.some((toast) => toast.id === item.id)) {
           return;
         }
 
+        shownToastIdsRef.current.add(item.id);
         const timeoutMs = getToastMeta(item.type).timeoutMs;
 
         next.push({
@@ -69,7 +79,7 @@ export function NotificationToastOverlay() {
           )));
 
           phaseTimersRef.current[item.id] = window.setTimeout(() => {
-            markAsRead(item.id);
+            // Ne pas marquer comme lu automatiquement lors de l'expiration du toast
             setRenderedToasts((latest) => latest.filter((toast) => toast.id !== item.id));
             delete closeTimersRef.current[item.id];
             delete phaseTimersRef.current[item.id];

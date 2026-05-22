@@ -7,6 +7,8 @@ import { useAuth } from "../contexts/useAuth";
 import type { Client, ClientsListResponse } from "../types";
 import "./mobile-refactor.css";
 import "./screen-harmonization.css";
+import SkeletonLoader from "../components/SkeletonLoader";
+
 
 interface ApiErrorResponse {
   error?: string;
@@ -203,8 +205,11 @@ function Clients() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="space-y-6 screen-shell harmonized-page" style={{ padding: "24px" }}>
+        <div className="harmonized-header" style={{ marginBottom: "24px" }}>
+          <div style={{ width: "200px", height: "24px", backgroundColor: "var(--bg-secondary, #f3f4f6)", borderRadius: "4px" }} className="shimmer" />
+        </div>
+        <SkeletonLoader type="table" rows={6} columns={4} />
       </div>
     );
   }
@@ -221,7 +226,7 @@ function Clients() {
             Gestion de la base client
           </p>
         </div>
-        <div className="screen-header-actions">
+        <div className="compact-header-actions">
           <button
             onClick={exportCSV}
             title="Exporter en CSV"
@@ -299,7 +304,7 @@ function Clients() {
       <div className="harmonized-surface">
         {/* Filters Row */}
         <div className="harmonized-toolbar">
-          <div className="harmonized-filter-group screen-select-row">
+          <div className="harmonized-filter-group">
             <span
               style={{
                 fontSize: "13px",
@@ -313,7 +318,7 @@ function Clients() {
               value={cityFilter}
               onChange={(e) => setCityFilter(e.target.value)}
               className="harmonized-select"
-              style={{ cursor: "pointer", padding: "6px 12px" }}
+              style={{ cursor: "pointer", padding: "6px 12px", width: "auto", minWidth: "160px" }}
             >
               <option value="">Toutes</option>
               {uniqueCities.map((city) => (

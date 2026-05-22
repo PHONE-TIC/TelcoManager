@@ -200,6 +200,16 @@
   border: 1px solid var(--border-color);
   border-radius: 14px;
   background: var(--bg-secondary);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-list-card:hover,
+.dashboard-data-row:hover,
+.dashboard-alert-row:hover {
+  transform: translateY(-1.5px);
+  box-shadow: var(--shadow);
+  border-color: rgba(249, 115, 22, 0.25);
+  background: var(--card-bg);
 }
 
 .dashboard-list-card {

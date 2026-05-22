@@ -185,7 +185,8 @@ function ClientForm() {
   }
 
   return (
-    <div className="page-container mobile-form-shell harmonized-shell">
+    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+      <div className="page-container mobile-form-shell harmonized-shell" style={{ maxWidth: '800px', width: '100%' }}>
       {/* Header */}
       <div className="harmonized-detail-header">
         <button
@@ -377,6 +378,7 @@ function ClientForm() {
         </form>
       </div>
     </div>
+  </div>
   );
 }
 
