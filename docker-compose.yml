@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-stock_intervention}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - /opt/phonetic_telco-manager/data/db:/var/lib/postgresql/data
     ports:
       - "5435:5432"
     healthcheck:
@@ -76,7 +76,6 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
   uploads_data:
   caddy_data:
   caddy_config:
