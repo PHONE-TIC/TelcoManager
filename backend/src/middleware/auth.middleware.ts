@@ -34,17 +34,25 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
             role: string;
         };
 
-        // Vérifier si l'utilisateur existe toujours en base de données
-        // (Important après un seed qui regenère les IDs)
-        const userExists = await prisma.technicien.findUnique({
+        // Vérifier si l'utilisateur existe toujours en base de données et s'il est actif
+        const dbUser = await prisma.technicien.findUnique({
             where: { id: decoded.id }
         });
 
-        if (!userExists) {
+        if (!dbUser) {
             return res.status(401).json({ error: 'Utilisateur introuvable ou session expirée' });
         }
 
-        req.user = decoded;
+        if (!dbUser.active) {
+            return res.status(403).json({ error: 'Compte désactivé. Accès refusé.' });
+        }
+
+        // Réconcilier et utiliser les données réelles de la base (dont le rôle mis à jour)
+        req.user = {
+            id: dbUser.id,
+            username: dbUser.username,
+            role: dbUser.role
+        };
         next();
     } catch (error) {
         console.error('Auth middleware error:', error);

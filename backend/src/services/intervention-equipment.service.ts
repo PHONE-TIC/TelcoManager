@@ -48,7 +48,6 @@ export async function manageInterventionEquipment(input: {
 
   // Si aucun stockId n'est fourni mais qu'on a la marque et le modèle,
   // on recherche si l'équipement existe déjà dans le catalogue (insensible à la casse).
-  // On évite cela si un numéro de série est fourni afin de ne pas fausser le traitement d'un nouvel équipement.
   if (!input.stockId && input.marque && input.modele && !input.serialNumber) {
     const existingStock = await prisma.stock.findFirst({
       where: {
@@ -125,6 +124,9 @@ export async function manageInterventionEquipment(input: {
     }
   }
 
+  // =====================================================
+  // INSTALLATION — stock vehicle decrement, client install
+  // =====================================================
   if (input.action === "install") {
     if (!input.stockId) {
       return {
@@ -161,8 +163,7 @@ export async function manageInterventionEquipment(input: {
       return {
         status: 400 as const,
         body: {
-          error:
-            "Impossible d'installer : aucun technicien assigné à l'intervention.",
+          error: "Impossible d'installer : aucun technicien assigné à l'intervention.",
         },
       };
     }
@@ -176,8 +177,7 @@ export async function manageInterventionEquipment(input: {
         return {
           status: 400 as const,
           body: {
-            error:
-              "Stock insuffisant dans le véhicule du technicien. Veuillez effectuer un transfert depuis l'entrepôt.",
+            error: "Stock insuffisant dans le véhicule du technicien. Veuillez effectuer un transfert depuis l'entrepôt.",
           },
         };
       }
@@ -189,16 +189,44 @@ export async function manageInterventionEquipment(input: {
         };
       }
 
-      if (techStock.quantite - quantite <= 0) {
-        await prisma.technicianStock.delete({
-          where: { id: techStock.id },
+      // Mutation transactionnelle
+      return await prisma.$transaction(async (tx) => {
+        if (techStock.quantite - quantite <= 0) {
+          await tx.technicianStock.delete({
+            where: { id: techStock.id },
+          });
+        } else {
+          await tx.technicianStock.update({
+            where: { id: techStock.id },
+            data: { quantite: { decrement: quantite } },
+          });
+        }
+
+        await tx.clientEquipment.create({
+          data: {
+            clientId: intervention.clientId,
+            stockId: input.stockId!,
+            referenceMateriel: stock.reference,
+            statut: "installe",
+            notes: `Installé (Int #${intervention.numero})`,
+          },
         });
-      } else {
-        await prisma.technicianStock.update({
-          where: { id: techStock.id },
-          data: { quantite: { decrement: quantite } },
+
+        await tx.interventionEquipment.create({
+          data: {
+            interventionId: input.interventionId,
+            stockId: input.stockId,
+            action: input.action,
+            quantite,
+            notes: input.notes,
+          },
         });
-      }
+
+        return {
+          status: 201 as const,
+          body: { success: true },
+        };
+      });
     } catch (error) {
       console.warn("Tech stock update error:", error);
       return {
@@ -206,44 +234,17 @@ export async function manageInterventionEquipment(input: {
         body: { error: "Erreur stock technicien" },
       };
     }
-
-    await prisma.clientEquipment.create({
-      data: {
-        clientId: intervention.clientId,
-        stockId: input.stockId,
-        referenceMateriel: stock.reference,
-        statut: "installe",
-        notes: `Installé (Int #${intervention.numero})`,
-      },
-    });
-
-    await prisma.interventionEquipment.create({
-      data: {
-        interventionId: input.interventionId,
-        stockId: input.stockId,
-        action: input.action,
-        quantite,
-        notes: input.notes,
-      },
-    });
-
-    return {
-      status: 201 as const,
-      body: { success: true },
-    };
   }
 
   // =====================================================
   // RETRAIT — free-text entry (no stockId from catalogue)
   // =====================================================
   if (!input.stockId) {
-    // 1. Create a new Stock entry representing this retrieved item
     const nomMateriel =
       input.nom ||
       [input.marque, input.modele].filter(Boolean).join(" ") ||
       "Matériel récupéré";
 
-    // Auto-generate reference using incremental logic (same as admin stock creation)
     let reference = input.reference;
     if (!reference && input.marque && input.categorie) {
       reference = await generateStockReference(input.marque, input.categorie, input.modele);
@@ -253,120 +254,123 @@ export async function manageInterventionEquipment(input: {
 
     const isHs = input.etat === "hs";
 
-    const newStock = await prisma.stock.create({
-      data: {
-        nomMateriel,
-        marque: input.marque,
-        modele: input.modele,
-        reference,
-        numeroSerie: input.serialNumber || "",
-        categorie: input.categorie || "Retrait technicien",
-        fournisseur: input.fournisseur || null,
-        quantite: 0, // 0 in central stock — held by technician
-        statut: isHs ? "hs" : "courant",
-        notes: `Repris lors de l'intervention #${intervention.numero}${input.notes ? " — " + input.notes : ""}`,
-      },
-    });
-
-    // 2. Enregistre dans le stock véhicule du technicien
-    if (intervention.technicienId) {
-      await prisma.technicianStock.upsert({
-        where: buildTechnicianStockWhere(intervention.technicienId, newStock.id),
-        update: {
-          quantite: { increment: quantite },
-          etat: isHs ? "hs" : "ok",
-        },
-        create: {
-          technicienId: intervention.technicienId,
-          stockId: newStock.id,
-          quantite,
-          etat: isHs ? "hs" : "ok",
+    // Mutation transactionnelle
+    return await prisma.$transaction(async (tx) => {
+      const newStock = await tx.stock.create({
+        data: {
+          nomMateriel,
+          marque: input.marque,
+          modele: input.modele,
+          reference,
+          numeroSerie: input.serialNumber || "",
+          categorie: input.categorie || "Retrait technicien",
+          fournisseur: input.fournisseur || null,
+          quantite: 0,
+          statut: isHs ? "hs" : "courant",
+          notes: `Repris lors de l'intervention #${intervention.numero}${input.notes ? " — " + input.notes : ""}`,
         },
       });
-    }
 
-    // 3. Enregistre le mouvement d'intervention lié au nouveau stock
-    await prisma.interventionEquipment.create({
+      if (intervention.technicienId) {
+        await tx.technicianStock.upsert({
+          where: buildTechnicianStockWhere(intervention.technicienId, newStock.id),
+          update: {
+            quantite: { increment: quantite },
+            etat: isHs ? "hs" : "ok",
+          },
+          create: {
+            technicienId: intervention.technicienId,
+            stockId: newStock.id,
+            quantite,
+            etat: isHs ? "hs" : "ok",
+          },
+        });
+      }
+
+      await tx.interventionEquipment.create({
+        data: {
+          interventionId: input.interventionId,
+          stockId: newStock.id,
+          action: "retrait" + (input.etat ? `_${input.etat}` : ""),
+          quantite,
+          notes: input.notes || `Etat: ${input.etat || "Non spécifié"}`,
+          nom: nomMateriel,
+          marque: input.marque,
+          modele: input.modele,
+          serialNumber: input.serialNumber,
+        },
+      });
+
+      return {
+        status: 201 as const,
+        body: { success: true, newStockId: newStock.id },
+      };
+    });
+  }
+
+  // =====================================================
+  // RETRAIT — known stockId from catalogue
+  // =====================================================
+  return await prisma.$transaction(async (tx) => {
+    await tx.interventionEquipment.create({
       data: {
         interventionId: input.interventionId,
-        stockId: newStock.id,
-        action: "retrait" + (input.etat ? `_${input.etat}` : ""),
+        stockId: input.stockId!,
+        action: input.action + (input.etat ? `_${input.etat}` : ""),
         quantite,
         notes: input.notes || `Etat: ${input.etat || "Non spécifié"}`,
-        nom: nomMateriel,
+        nom: input.nom,
         marque: input.marque,
         modele: input.modele,
         serialNumber: input.serialNumber,
       },
     });
 
+    if (input.stockId) {
+      const clientEq = await tx.clientEquipment.findFirst({
+        where: {
+          clientId: intervention.clientId,
+          stockId: input.stockId,
+          statut: "installe",
+        },
+      });
+
+      if (clientEq) {
+        await tx.clientEquipment.update({
+          where: { id: clientEq.id },
+          data: {
+            statut: input.etat === "hs" ? "hs" : "retire",
+            notes: `Retiré ${input.etat?.toUpperCase()} (Int #${intervention.numero})`,
+          },
+        });
+      }
+
+      if (intervention.technicienId) {
+        await tx.technicianStock.upsert({
+          where: buildTechnicianStockWhere(intervention.technicienId, input.stockId),
+          update: {
+            quantite: { increment: quantite },
+            etat: input.etat === "hs" ? "hs" : "ok",
+          },
+          create: {
+            technicienId: intervention.technicienId,
+            stockId: input.stockId,
+            quantite,
+            etat: input.etat === "hs" ? "hs" : "ok",
+          },
+        });
+      } else if (input.etat === "ok") {
+        console.warn("Retrait sans technicien : retour stock central (fallback)");
+        await tx.stock.update({
+          where: { id: input.stockId },
+          data: { quantite: { increment: quantite } },
+        });
+      }
+    }
+
     return {
       status: 201 as const,
-      body: { success: true, newStockId: newStock.id },
+      body: { success: true },
     };
-  }
-
-  // =====================================================
-  // RETRAIT — known stockId from catalogue
-  // =====================================================
-  await prisma.interventionEquipment.create({
-    data: {
-      interventionId: input.interventionId,
-      stockId: input.stockId,
-      action: input.action + (input.etat ? `_${input.etat}` : ""),
-      quantite,
-      notes: input.notes || `Etat: ${input.etat || "Non spécifié"}`,
-      nom: input.nom,
-      marque: input.marque,
-      modele: input.modele,
-      serialNumber: input.serialNumber,
-    },
   });
-
-  if (input.stockId) {
-    const clientEq = await prisma.clientEquipment.findFirst({
-      where: {
-        clientId: intervention.clientId,
-        stockId: input.stockId,
-        statut: "installe",
-      },
-    });
-
-    if (clientEq) {
-      await prisma.clientEquipment.update({
-        where: { id: clientEq.id },
-        data: {
-          statut: input.etat === "hs" ? "hs" : "retire",
-          notes: `Retiré ${input.etat?.toUpperCase()} (Int #${intervention.numero})`,
-        },
-      });
-    }
-
-    if (intervention.technicienId) {
-      await prisma.technicianStock.upsert({
-        where: buildTechnicianStockWhere(intervention.technicienId, input.stockId),
-        update: {
-          quantite: { increment: quantite },
-          etat: input.etat === "hs" ? "hs" : "ok",
-        },
-        create: {
-          technicienId: intervention.technicienId,
-          stockId: input.stockId,
-          quantite,
-          etat: input.etat === "hs" ? "hs" : "ok",
-        },
-      });
-    } else if (input.etat === "ok") {
-      console.warn("Retrait sans technicien : retour stock central (fallback)");
-      await prisma.stock.update({
-        where: { id: input.stockId },
-        data: { quantite: { increment: quantite } },
-      });
-    }
-  }
-
-  return {
-    status: 201 as const,
-    body: { success: true },
-  };
 }

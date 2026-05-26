@@ -28,7 +28,7 @@ export const refreshToken = async (req: AuthRequest, res: Response) => {
             return res.status(400).json({ error: 'Token requis' });
         }
 
-        const newToken = refreshJwtToken(token);
+        const newToken = await refreshJwtToken(token);
         return res.json({ token: newToken });
     } catch (error) {
         return res.status(401).json({ error: 'Token invalide ou expiré' });

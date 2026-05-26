@@ -1,5 +1,6 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { prisma } from "../db";
+import { AuthRequest } from "../middleware/auth.middleware";
 import { getTechnicianStockWhere } from "./technician-stock.controller.helpers";
 import {
   addTechnicianStockItem,
@@ -9,10 +10,28 @@ import {
   updateTechnicianStockItem,
 } from "../services/technician-stock.service";
 
+/**
+ * Vérifie si l'utilisateur connecté a le droit d'accéder/modifier le stock du technicien spécifié.
+ * Règle : Admin/Gestionnaire peuvent tout faire, un Technicien ne peut gérer que son propre véhicule.
+ */
+const checkTechnicianStockAccess = (req: AuthRequest, res: Response, targetTechnicienId: string): boolean => {
+  if (!req.user) {
+    res.status(401).json({ error: "Non authentifié" });
+    return false;
+  }
+  if (req.user.role !== "admin" && req.user.role !== "gestionnaire" && req.user.id !== targetTechnicienId) {
+    res.status(403).json({ error: "Accès refusé - Vous n'êtes pas autorisé à gérer le stock de ce technicien" });
+    return false;
+  }
+  return true;
+};
+
 // Obtenir le stock du véhicule d'un technicien
-export const getTechnicianStock = async (req: Request, res: Response) => {
+export const getTechnicianStock = async (req: AuthRequest, res: Response) => {
   try {
     const { technicienId } = req.params;
+
+    if (!checkTechnicianStockAccess(req, res, technicienId)) return;
 
     const vehicleStock = await prisma.technicianStock.findMany({
       where: { technicienId },
@@ -34,10 +53,14 @@ export const getTechnicianStock = async (req: Request, res: Response) => {
 };
 
 // Ajouter un matériel au véhicule
-export const addItemToVehicle = async (req: Request, res: Response) => {
+export const addItemToVehicle = async (req: AuthRequest, res: Response) => {
   try {
+    const { technicienId } = req.params;
+
+    if (!checkTechnicianStockAccess(req, res, technicienId)) return;
+
     const result = await addTechnicianStockItem({
-      technicienId: req.params.technicienId,
+      technicienId,
       stockId: req.body.stockId,
       quantite: req.body.quantite,
     });
@@ -52,17 +75,20 @@ export const addItemToVehicle = async (req: Request, res: Response) => {
 };
 
 // Mettre à jour la quantité d'un matériel dans le véhicule
-export const updateItemQuantity = async (req: Request, res: Response) => {
+export const updateItemQuantity = async (req: AuthRequest, res: Response) => {
   try {
+    const { technicienId, stockId } = req.params;
     const { quantite, etat } = req.body;
+
+    if (!checkTechnicianStockAccess(req, res, technicienId)) return;
 
     if (quantite === undefined || quantite === null) {
       return res.status(400).json({ error: "quantite est requis" });
     }
 
     const result = await updateTechnicianStockItem({
-      technicienId: req.params.technicienId,
-      stockId: req.params.stockId,
+      technicienId,
+      stockId,
       quantite,
       etat,
     });
@@ -77,9 +103,11 @@ export const updateItemQuantity = async (req: Request, res: Response) => {
 };
 
 // Retirer un matériel du véhicule
-export const removeItemFromVehicle = async (req: Request, res: Response) => {
+export const removeItemFromVehicle = async (req: AuthRequest, res: Response) => {
   try {
     const { technicienId, stockId } = req.params;
+
+    if (!checkTechnicianStockAccess(req, res, technicienId)) return;
 
     await prisma.technicianStock.delete({
       where: getTechnicianStockWhere(technicienId, stockId),
@@ -93,11 +121,15 @@ export const removeItemFromVehicle = async (req: Request, res: Response) => {
 };
 
 // Assigner un matériel à un client
-export const assignToClient = async (req: Request, res: Response) => {
+export const assignToClient = async (req: AuthRequest, res: Response) => {
   try {
+    const { technicienId, stockId } = req.params;
+
+    if (!checkTechnicianStockAccess(req, res, technicienId)) return;
+
     const result = await assignTechnicianStockToClient({
-      technicienId: req.params.technicienId,
-      stockId: req.params.stockId,
+      technicienId,
+      stockId,
       clientId: req.body.clientId,
     });
 
@@ -109,11 +141,15 @@ export const assignToClient = async (req: Request, res: Response) => {
 };
 
 // Reprendre un matériel d'un client
-export const retrieveFromClient = async (req: Request, res: Response) => {
+export const retrieveFromClient = async (req: AuthRequest, res: Response) => {
   try {
+    const { technicienId, stockId } = req.params;
+
+    if (!checkTechnicianStockAccess(req, res, technicienId)) return;
+
     const result = await retrieveTechnicianStockFromClient({
-      technicienId: req.params.technicienId,
-      stockId: req.params.stockId,
+      technicienId,
+      stockId,
       etat: req.body.etat,
     });
 
@@ -125,11 +161,20 @@ export const retrieveFromClient = async (req: Request, res: Response) => {
 };
 
 // Transférer stock HS technicien vers stock HS général (Admin uniquement)
-export const transferHsToGeneralStock = async (req: Request, res: Response) => {
+export const transferHsToGeneralStock = async (req: AuthRequest, res: Response) => {
   try {
+    const { technicienId, stockId } = req.params;
+
+    // Strictement réservé aux administrateurs
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ error: "Accès refusé - Administrateur requis" });
+    }
+
+    if (!checkTechnicianStockAccess(req, res, technicienId)) return;
+
     const result = await transferHsTechnicianStockToGeneralStock({
-      technicienId: req.params.technicienId,
-      stockId: req.params.stockId,
+      technicienId,
+      stockId,
     });
 
     return res.status(result.status).json(result.body);

@@ -69,14 +69,26 @@ export async function authenticateUser(username: string, password: string) {
   };
 }
 
-export function refreshJwtToken(token: string) {
+export async function refreshJwtToken(token: string): Promise<string> {
   const decoded = jwt.verify(token, getJwtSecret()) as JwtPayload;
+
+  const dbUser = await prisma.technicien.findUnique({
+    where: { id: decoded.id }
+  });
+
+  if (!dbUser) {
+    throw new Error("Utilisateur introuvable");
+  }
+
+  if (!dbUser.active) {
+    throw new Error("Compte désactivé");
+  }
 
   return jwt.sign(
     {
-      id: decoded.id,
-      username: decoded.username,
-      role: decoded.role,
+      id: dbUser.id,
+      username: dbUser.username,
+      role: dbUser.role,
     },
     getJwtSecret(),
     { expiresIn: getJwtExpiresIn() }

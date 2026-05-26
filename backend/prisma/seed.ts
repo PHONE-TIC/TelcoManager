@@ -10,21 +10,14 @@ async function main() {
 
     if (forceReset) {
         console.log('⚠️  Mode RESET activé : Réinitialisation forcée du mot de passe admin.');
-        console.log('🧹 Nettoyage des données existantes...');
-        try {
-            await prisma.intervention.deleteMany({});
-            await prisma.client.deleteMany({});
-            console.log('   ✅ Tables nettoyées');
-        } catch (e) {
-            console.log('   ℹ️  Tables déjà vides ou erreur mineure de nettoyage');
-        }
     } else {
         console.log('ℹ️  Mode STANDARD : Création de l\'admin si inexistant (mot de passe préservé).');
     }
 
     console.log('👨‍🔧 Vérification/Création de l\'administrateur...');
 
-    const adminPassword = await bcrypt.hash('admin123', 10);
+    const rawPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
+    const adminPassword = await bcrypt.hash(rawPassword, 10);
 
     const admin = await prisma.technicien.upsert({
         where: { username: 'admin' },

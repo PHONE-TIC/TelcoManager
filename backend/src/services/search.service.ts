@@ -15,7 +15,8 @@ interface SearchFilters {
 
 export async function runGlobalSearch(
   q: string,
-  filtersParam?: string
+  filtersParam?: string,
+  user?: { id: string; role: string; username: string }
 ) {
   if (!q || q.length === 0) {
     return {
@@ -57,6 +58,14 @@ export async function runGlobalSearch(
           { nom: { contains: searchTerm, mode: "insensitive" } },
           { telephone: { contains: searchTerm } },
         ],
+        // Restriction de cloisonnement technicien
+        ...(user?.role === "technicien" ? {
+          interventions: {
+            some: {
+              technicienId: user.id,
+            },
+          },
+        } : {}),
       },
       take: maxResults,
       orderBy: { nom: "asc" },
@@ -88,9 +97,12 @@ export async function runGlobalSearch(
         ...(parsedFilters.status?.length
           ? { statut: { in: parsedFilters.status } }
           : {}),
-        ...(parsedFilters.technicianId
-          ? { technicienId: parsedFilters.technicianId }
-          : {}),
+        // Restriction de cloisonnement technicien
+        ...(user?.role === "technicien" ? {
+          technicienId: user.id,
+        } : (parsedFilters.technicianId ? {
+          technicienId: parsedFilters.technicianId,
+        } : {})),
       },
       include: {
         client: { select: interventionClientListSelect },
@@ -122,6 +134,10 @@ export async function runGlobalSearch(
           { nom: { contains: searchTerm, mode: "insensitive" } },
           { username: { contains: searchTerm, mode: "insensitive" } },
         ],
+        // Restriction de cloisonnement technicien : ne voir que soi-même
+        ...(user?.role === "technicien" ? {
+          id: user.id,
+        } : {}),
       },
       select: {
         id: true,

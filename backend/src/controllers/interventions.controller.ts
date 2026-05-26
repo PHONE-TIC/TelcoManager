@@ -53,7 +53,14 @@ export const getAllInterventions = async (req: AuthRequest, res: Response) => {
     const where: any = {};
 
     if (clientId) where.clientId = clientId;
-    if (technicienId) where.technicienId = technicienId;
+    
+    // Restriction de cloisonnement technicien
+    if (req.user?.role === "technicien") {
+      where.technicienId = req.user.id;
+    } else if (technicienId) {
+      where.technicienId = technicienId;
+    }
+    
     if (statut) where.statut = statut;
 
     if (startDate && endDate) {
@@ -133,6 +140,11 @@ export const getInterventionById = async (req: AuthRequest, res: Response) => {
 
     if (!intervention) {
       return res.status(404).json({ error: "Intervention non trouvée" });
+    }
+
+    // Restriction de cloisonnement technicien
+    if (req.user?.role === "technicien" && intervention.technicienId !== req.user.id) {
+      return res.status(403).json({ error: "Accès refusé - Vous n'êtes pas assigné à cette intervention" });
     }
 
     res.json(intervention);
@@ -277,6 +289,16 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: "Intervention non trouvée" });
     }
 
+    // Restriction de cloisonnement technicien
+    if (
+      req.user?.role === "technicien" &&
+      existingIntervention.technicienId !== req.user.id
+    ) {
+      return res.status(403).json({
+        error: "Accès refusé - Vous n'êtes pas assigné à cette intervention",
+      });
+    }
+
     // Technicians cannot modify closed interventions
     if (
       req.user?.role === "technicien" &&
@@ -398,6 +420,11 @@ export const updateInterventionStatus = async (
   res: Response
 ) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { id } = req.params;
     const { statut, datePriseEnCharge, commentaireTechnicien } = req.body;
 
@@ -408,6 +435,16 @@ export const updateInterventionStatus = async (
 
     if (!existingIntervention) {
       return res.status(404).json({ error: "Intervention non trouvée" });
+    }
+
+    // Restriction de cloisonnement technicien
+    if (
+      req.user?.role === "technicien" &&
+      existingIntervention.technicienId !== req.user.id
+    ) {
+      return res.status(403).json({
+        error: "Accès refusé - Vous n'êtes pas assigné à cette intervention",
+      });
     }
 
     // Validate that intervention is scheduled for today when starting (en_cours)
@@ -468,6 +505,11 @@ export const updateInterventionStatus = async (
 // Valider les heures (Arrivée / Départ)
 export const validateHours = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { id } = req.params;
     const { heureArrivee, heureDepart } = req.body;
 
@@ -475,6 +517,24 @@ export const validateHours = async (req: AuthRequest, res: Response) => {
       return res
         .status(400)
         .json({ error: "Heures d'arrivée et de départ requises" });
+    }
+
+    const existingIntervention = await prisma.intervention.findUnique({
+      where: { id },
+    });
+
+    if (!existingIntervention) {
+      return res.status(404).json({ error: "Intervention non trouvée" });
+    }
+
+    // Restriction de cloisonnement technicien
+    if (
+      req.user?.role === "technicien" &&
+      existingIntervention.technicienId !== req.user.id
+    ) {
+      return res.status(403).json({
+        error: "Accès refusé - Vous n'êtes pas assigné à cette intervention",
+      });
     }
 
     const intervention = await prisma.intervention.update({
@@ -495,15 +555,36 @@ export const validateHours = async (req: AuthRequest, res: Response) => {
 // Signer l'intervention
 export const signIntervention = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { id } = req.params;
     const { type, signature } = req.body; // type: 'technicien' | 'client'
 
+    const existingIntervention = await prisma.intervention.findUnique({
+      where: { id },
+    });
+
+    if (!existingIntervention) {
+      return res.status(404).json({ error: "Intervention non trouvée" });
+    }
+
+    // Restriction de cloisonnement technicien
+    if (
+      req.user?.role === "technicien" &&
+      existingIntervention.technicienId !== req.user.id
+    ) {
+      return res.status(403).json({
+        error: "Accès refusé - Vous n'êtes pas assigné à cette intervention",
+      });
+    }
+
     const data: any = {};
     if (type === "technicien") {
-
       data.signatureTechnicien = signature;
     } else if (type === "client") {
-
       data.signature = signature;
     } else {
       return res.status(400).json({ error: "Type de signature invalide" });
@@ -524,7 +605,31 @@ export const signIntervention = async (req: AuthRequest, res: Response) => {
 // Gestion du matériel (Installation (depuis stock tech) / Retrait OK / Retrait HS)
 export const manageEquipement = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { id } = req.params;
+
+    const existingIntervention = await prisma.intervention.findUnique({
+      where: { id },
+    });
+
+    if (!existingIntervention) {
+      return res.status(404).json({ error: "Intervention non trouvée" });
+    }
+
+    // Restriction de cloisonnement technicien
+    if (
+      req.user?.role === "technicien" &&
+      existingIntervention.technicienId !== req.user.id
+    ) {
+      return res.status(403).json({
+        error: "Accès refusé - Vous n'êtes pas assigné à cette intervention",
+      });
+    }
+
     const result = await manageInterventionEquipment({
       interventionId: id,
       stockId: req.body.stockId,
@@ -622,6 +727,11 @@ export const locksStream = async (req: Request, res: Response) => {
 
 export const lockIntervention = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { id } = req.params;
     const userId = req.user?.id;
 
@@ -661,7 +771,36 @@ export const lockIntervention = async (req: AuthRequest, res: Response) => {
 
 export const unlockIntervention = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) return res.status(401).json({ error: "Non authentifié" });
+
+    const intervention = await prisma.intervention.findUnique({
+      where: { id },
+      select: { lockedBy: true },
+    });
+
+    if (!intervention) {
+      return res.status(404).json({ error: "Intervention non trouvée" });
+    }
+
+    // Uniquement le propriétaire du verrou, un admin ou un gestionnaire peut déverrouiller
+    if (
+      intervention.lockedBy &&
+      intervention.lockedBy !== userId &&
+      req.user?.role !== "admin" &&
+      req.user?.role !== "gestionnaire"
+    ) {
+      return res.status(403).json({
+        error: "Accès refusé - Vous n'êtes pas le propriétaire du verrou",
+      });
+    }
 
     await unlockInterventionById(id);
 
@@ -681,6 +820,11 @@ export const unlockIntervention = async (req: AuthRequest, res: Response) => {
 // Upload artifacts (Photos + Report)
 export const uploadArtifacts = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { id } = req.params;
     const files = req.files as Express.Multer.File[];
 
@@ -725,6 +869,11 @@ import path from "path";
 
 export const getArtifacts = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { id } = req.params;
     // Use process.cwd() for consistent path resolution
     const uploadDir = path.join(process.cwd(), `uploads/interventions/${id}`);
