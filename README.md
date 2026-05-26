@@ -44,7 +44,7 @@ telcomanager/
 
 2. **Accès aux Données & Base de Données (PostgreSQL / Prisma)** :
    - Les données transactionnelles sont stockées dans une base de données PostgreSQL robuste (version 15).
-   - Les interactions avec la base de données sont gérées via l'ORM **Prisma**, garantissant un typage statique de bout en bout de l'application et la synchronisation automatisée du schéma via des migrations au démarrage du conteneur (`npx prisma db push` piloté par le script `start.sh`).
+   - Les interactions avec la base de données sont gérées via l'ORM **Prisma**, garantissant un typage statique de bout en bout de l'application et la synchronisation automatisée du schéma via des migrations au démarrage du conteneur (`npx prisma migrate deploy` piloté par le script `start.sh`).
 
 3. **Serveur Inverse & Sécurisation TLS (`Caddy` / `Dockerfile.caddy`)** :
    - Un conteneur **Caddy** dédié est configuré comme serveur web inverse de production en amont de l'application.
@@ -174,13 +174,32 @@ npm install
 npm run dev
 ```
 
+### Exécuter les tests (Backend)
+
+```bash
+cd backend
+npm test
+```
+
 ## Mises à jour techniques récentes
 
 ### Mai 2026
 
-Ensemble d'améliorations majeures apportées à la sécurité, à la résilience des stocks, à la synchronisation et à la responsivité mobile :
+Ensemble d'amélioration majeures apportées à la sécurité, à la résilience des stocks, à la synchronisation et à la responsivité mobile :
 
-- **Sécurisation Globale & Audit de Code (Revue de Sécurité)** :
+- **Revue de Sécurité Globale & Audit V3 (Mai 2026)** :
+  * **Persistance & Migrations Versionnées** : Transition définitive de `db push` à des migrations relationnelles PostgreSQL robustes. Baselining de la base de données locale et génération de scripts de migration qui convertissent à chaud et sans perte de données les colonnes `text` existantes en types énumérés PostgreSQL natifs (`Role`, `StatutIntervention` et `StatutStock`).
+  * **Sécurisation Express Globale (Helmet & Rate-Limiter)** : Branchement de `helmet` pour la protection des en-têtes réseau en production et limitation du taux d'appels brute-force avec `express-rate-limit` sur l'authentification (`/api/auth/login`), plafonné à 15 tentatives par 15 minutes.
+  * **Centralisation de la Sécurité JWT** : Création d'un module de configuration JWT unifié (`jwt.ts`) validant les variables d'environnement au boot et crashant l'application en production si le secret d'authentification reste sur le fallback faible par défaut.
+  * **Résolution Totale des Erreurs de Linter ESLint (0 erreur, 0 warning)** :
+    - Stabilisation des cycles de re-rendu infinis causés par `useAuth` dans les contexts React en ciblant la propriété primitive stable `user?.id` à la place de l'objet complet.
+    - Élimination des avertissements de Vite Fast Refresh en isolant contextes et hooks dans des modules d'infrastructures pures (`LockContextCore.ts` et `NotificationCenterContextCore.ts`) sans composants exportés.
+    - Élimination des erreurs `set-state-in-effect` (appels synchrone de `setState` dans les hooks d'effet) en encapsulant les ré-initialisations d'états dans des minuteurs asynchrones `setTimeout`.
+    - Remplacement complet des types `any` résiduels par du typage TypeScript fort (guards sur structures Axios et support webkit audio).
+  * **Suites de Tests Réelles & Couverture de Production (Vitest)** : Suppression des anciens tests bidons et écriture de 12 tests réels pour valider les mouvements de stock transactionnels complexes et les middlewares de restrictions d'accès (`requireInterventionAccess` et `requireAdmin`).
+  * **Hermétisation de la Base de Données (Production)** : Retrait de l'exposition publique du port de base de données `5435` sur l'hôte externe dans le fichier Docker Compose.
+  * **Pipeline CD Gated par CI GitHub Actions** : Ajout d'étapes de typecheck TypeScript (`tsc`), lintage ESLint et tests Vitest automatisés dans le fichier de CI (`ci.yml`), et modification de la CD (`cd.yml`) pour qu'elle ne se déclenche que sur le succès absolu de la CI.
+- **Sécurisation Globale & Audit de Code (Revue de Sécurité V2)** :
   * **Verrous Anti-Fallback de Production** : Blocage immédiat du démarrage du backend en production si `JWT_SECRET` est vide ou égal à la valeur faible par défaut (`your-secret-key`), et blocage de l'exécution du seed en production si `DEFAULT_ADMIN_PASSWORD` est vide ou égal à la valeur faible par défaut (`admin123`).
   * **Middleware Anti-Zombie JWT** : Contrôle d'activité et de rôles en temps réel à chaque requête REST/SSE en base de données, bloquant immédiatement les utilisateurs désactivés ou rétrogradés.
   * **Route d'Accès Sécurisée et Cloisonnée aux Fichiers** : Suppression de l'accès statique public au répertoire `/uploads` et création d'une route d'API authentifiée (`GET /uploads/interventions/:id/:filename`) qui contrôle l'assignation du technicien et prévient le *Directory Traversal* via `path.basename`.
