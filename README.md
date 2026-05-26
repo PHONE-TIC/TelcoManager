@@ -66,13 +66,19 @@ telcomanager/
 
 ### Lancer l’environnement local
 
+Pour compiler les conteneurs localement via les Dockerfiles du dépôt (recommandé lors de modifications de code) :
+```bash
+docker compose build
+```
+
+Pour démarrer l'ensemble des services en arrière-plan :
 ```bash
 docker compose up -d
 ```
 
 Services exposés par défaut :
 
-- application : `http://localhost:8081`
+- application : `https://localhost:8081` (Caddy reverse proxy avec HTTPS)
 - PostgreSQL : `localhost:5435`
 
 ### Identifiants par défaut
@@ -104,6 +110,37 @@ Services exposés par défaut :
 | `ATLAS_USERNAME` | Identifiant d'accès à l'espace Atlas |
 | `ATLAS_PASSWORD` | Mot de passe d'accès à l'espace Atlas |
 | `ATLAS_TOTP_URI` | URI brute TOTP MFA pour générer les jetons d'accès Atlas |
+
+## Configuration de la Synchronisation Outlook (Microsoft Entra ID)
+
+Pour synchroniser automatiquement vos interventions avec un calendrier partagé Microsoft 365, suivez ces étapes pas-à-pas pour inscrire l'application dans votre portail Azure / Microsoft Entra ID :
+
+1. **Enregistrement de l'Application** :
+   - Connectez-vous au [Portail Microsoft Entra ID](https://entra.microsoft.com/) ou au Portail Azure.
+   - Allez dans **Enregistrements d'applications (App registrations)** ➡️ **Nouvel enregistrement (New registration)**.
+   - Donnez un nom à l'application (ex: `TelcoManager Outlook Sync`).
+   - Choisissez le type de compte : *Comptes dans cet annuaire d'organisation uniquement (Single Tenant)*.
+   - Laissez l'URI de redirection vide et cliquez sur **Enregistrer (Register)**.
+
+2. **Configuration des Permissions API (Microsoft Graph)** :
+   - Dans le menu de gauche, allez dans **Autorisations d'API (API permissions)** ➡️ **Ajouter une autorisation (Add a permission)**.
+   - Sélectionnez **Microsoft Graph** puis **Autorisations d'application (Application permissions)**.
+   - Recherchez et cochez la permission **`Calendars.ReadWrite`** (permet d'écrire et de gérer les événements du calendrier).
+   - Cliquez sur **Ajouter des autorisations (Add permissions)**.
+   - **CRITICAL (Étape obligatoire)** : Cliquez sur **Accorder un consentement d'administrateur pour [Votre Société] (Grant admin consent for...)** pour valider l'accès démon sans interaction humaine.
+
+3. **Génération du Secret Client** :
+   - Allez dans **Certificats et secrets (Certificates & secrets)** ➡️ **Nouveau secret client (New client secret)**.
+   - Entrez une description et choisissez une durée d'expiration (ex: 24 mois), puis cliquez sur **Ajouter (Add)**.
+   - **CRITICAL** : Copiez immédiatement la **Valeur (Value)** du secret généré. Elle ne sera plus affichée par la suite. C'est cette valeur qui doit être affectée à `OUTLOOK_CLIENT_SECRET`.
+
+4. **Récupération des Identifiants (IDs)** :
+   - Retournez sur l'onglet **Vue d'ensemble (Overview)** de l'application.
+   - Copiez l'**ID d'application (client)** ➡️ correspond à `OUTLOOK_CLIENT_ID`.
+   - Copiez l'**ID de l'annuaire (locataire)** ➡️ correspond à `OUTLOOK_TENANT_ID`.
+
+5. **Boîte aux lettres partagée** :
+   - L'adresse email renseignée dans `OUTLOOK_SHARED_CALENDAR_EMAIL` doit correspondre à une boîte aux lettres utilisateur ou une boîte aux lettres partagée Microsoft 365 valide au sein du même Tenant.
 
 ## Images Docker
 
