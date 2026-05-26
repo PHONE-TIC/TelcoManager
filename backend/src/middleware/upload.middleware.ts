@@ -25,8 +25,12 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    // Keep original filename simply
-    cb(null, file.originalname);
+    // Sanitize filename to prevent Directory Traversal and character conflicts
+    const ext = path.extname(file.originalname).toLowerCase();
+    const baseName = path.basename(file.originalname, ext);
+    // Retain only safe alphanumeric characters, dashes, and underscores
+    const sanitizedBase = baseName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    cb(null, `${Date.now()}_${sanitizedBase}${ext}`);
   },
 });
 
@@ -35,14 +39,25 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  const allowedTypes = [
+  const allowedMimeTypes = [
     "image/jpeg",
     "image/png",
     "image/webp",
     "application/pdf",
   ];
+  
+  const allowedExts = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".pdf"
+  ];
 
-  if (allowedTypes.includes(file.mimetype)) {
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  // Validate BOTH the mimetype and the actual file extension for defense-in-depth
+  if (allowedMimeTypes.includes(file.mimetype) && allowedExts.includes(ext)) {
     cb(null, true);
   } else {
     cb(

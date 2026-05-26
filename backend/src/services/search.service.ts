@@ -18,7 +18,10 @@ export async function runGlobalSearch(
   filtersParam?: string,
   user?: { id: string; role: string; username: string }
 ) {
-  if (!q || q.length === 0) {
+  const searchTerm = String(q || "").trim();
+  const maxResults = 20;
+
+  if (!searchTerm || searchTerm.length === 0) {
     return {
       clients: [],
       interventions: [],
@@ -29,9 +32,6 @@ export async function runGlobalSearch(
     };
   }
 
-  const searchTerm = String(q).trim();
-  const maxResults = 20;
-
   let parsedFilters: SearchFilters = {};
   if (filtersParam) {
     try {
@@ -41,15 +41,18 @@ export async function runGlobalSearch(
     }
   }
 
-  const ipLinksSnapshot = getIpLinksSnapshot();
-  const ipLinks = ipLinksSnapshot.items
-    .filter((link) =>
-      [link.reference, link.clientName, link.collecteOperator || "", link.type, link.maxBandwidth]
-        .join(" ")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-    )
-    .slice(0, maxResults);
+  // Cloisonnement des Liens IP : réservé uniquement aux profils admin et gestionnaire
+  const showIpLinks = user?.role === "admin" || user?.role === "gestionnaire";
+  const ipLinks = showIpLinks
+    ? getIpLinksSnapshot().items
+        .filter((link) =>
+          [link.reference, link.clientName, link.collecteOperator || "", link.type, link.maxBandwidth]
+            .join(" ")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
+        )
+        .slice(0, maxResults)
+    : [];
 
   const [clients, interventions, stock, techniciens] = await Promise.all([
     prisma.client.findMany({

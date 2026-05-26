@@ -95,3 +95,34 @@ export const requireTechnicienOrAdmin = (req: AuthRequest, res: Response, next: 
 
     next();
 };
+
+export const requireInterventionAccess = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ error: "ID d'intervention manquant" });
+        }
+
+        const intervention = await prisma.intervention.findUnique({
+            where: { id }
+        });
+
+        if (!intervention) {
+            return res.status(404).json({ error: "Intervention non trouvée" });
+        }
+
+        // Restriction de cloisonnement : seuls l'assignataire de la fiche, un admin ou un gestionnaire peuvent y accéder
+        if (req.user?.role === 'technicien' && intervention.technicienId !== req.user.id) {
+            return res.status(403).json({ error: "Accès refusé - Vous n'êtes pas assigné à cette intervention" });
+        }
+
+        next();
+    } catch (error) {
+        console.error('requireInterventionAccess error:', error);
+        return res.status(500).json({ error: "Erreur serveur lors de la vérification des accès" });
+    }
+};

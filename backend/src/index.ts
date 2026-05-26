@@ -21,8 +21,17 @@ import notificationsRoutes from "./routes/notifications.routes";
 // Charger les variables d'environnement
 dotenv.config();
 
+if (process.env.NODE_ENV === "production") {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === "your-secret-key") {
+    console.error("FATAL ERROR: JWT_SECRET must be set to a secure custom key in production environments.");
+    process.exit(1);
+  }
+}
+
 // Initialiser Prisma
 import { prisma } from "./db";
+import { authenticate, AuthRequest } from "./middleware/auth.middleware";
+import fs from "fs";
 import { startIpLinksSyncJob } from "./services/ip-links.service";
 export { prisma };
 
@@ -65,8 +74,44 @@ app.use("/api/unyc", unycRoutes);
 app.use("/api/ip-links", ipLinksRoutes);
 app.use("/api/notifications", notificationsRoutes);
 
-// Servir les fichiers uploadés (photos, pdfs)
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Point d'accès sécurisé et cloisonné pour les fichiers uploadés (photos, rapports PDF)
+app.get(
+  "/uploads/interventions/:id/:filename",
+  authenticate,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { id, filename } = req.params;
+
+      const intervention = await prisma.intervention.findUnique({
+        where: { id },
+      });
+
+      if (!intervention) {
+        return res.status(404).json({ error: "Intervention non trouvée" });
+      }
+
+      // Restriction de cloisonnement : seuls l'assignataire de la fiche, un admin ou un gestionnaire peuvent y accéder
+      if (req.user?.role === "technicien" && intervention.technicienId !== req.user.id) {
+        return res.status(403).json({
+          error: "Accès refusé - Vous n'êtes pas assigné à cette intervention",
+        });
+      }
+
+      // Prévenir les attaques de Directory Traversal en assainissant le nom du fichier
+      const safeFilename = path.basename(filename);
+      const filePath = path.join(process.cwd(), "uploads", "interventions", id, safeFilename);
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "Fichier non trouvé" });
+      }
+
+      res.sendFile(filePath);
+    } catch (err) {
+      console.error("Error serving uploaded file:", err);
+      res.status(500).json({ error: "Erreur lors de la récupération du fichier" });
+    }
+  }
+);
 
 // Servir les fichiers statiques du frontend
 app.use(express.static(path.join(__dirname, "../client")));

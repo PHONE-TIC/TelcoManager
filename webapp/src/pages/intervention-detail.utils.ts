@@ -23,8 +23,12 @@ export function canEditInterventionByRole(
   role: string | undefined,
   statut: string
 ): boolean {
-  if (role === "admin") return true;
-  return statut === "planifiee" || statut === "en_cours";
+  if (!role) return false;
+  if (role === "admin" || role === "gestionnaire") return true;
+  if (role === "technicien") {
+    return statut === "planifiee" || statut === "en_cours";
+  }
+  return false;
 }
 
 export function isInterventionClosed(statut: string): boolean {

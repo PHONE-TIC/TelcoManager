@@ -5,6 +5,7 @@ import {
   authenticate,
   requireGestionnaireOrAdmin,
   requireTechnicienOrAdmin,
+  requireInterventionAccess,
 } from "../middleware/auth.middleware";
 import { upload } from "../middleware/upload.middleware";
 
@@ -19,10 +20,11 @@ router.get("/", interventionController.getAllInterventions);
 // Stream temps réel des verrous d'interventions
 router.get("/locks/stream", interventionController.locksStream);
 
-// Obtenir une intervention par ID
+// Obtenir une intervention par ID (cloisonné)
 router.get(
   "/:id",
   param("id").isUUID(),
+  requireInterventionAccess,
   interventionController.getInterventionById
 );
 
@@ -43,12 +45,13 @@ router.post(
   interventionController.createIntervention
 );
 
-// Mettre à jour une intervention
+// Mettre à jour une intervention (cloisonné)
 router.put(
   "/:id",
   requireTechnicienOrAdmin,
   [
     param("id").isUUID(),
+    requireInterventionAccess,
     body("technicienId").optional().isUUID(),
     body("titre").optional().notEmpty(),
     body("description").optional(),
@@ -70,48 +73,52 @@ router.delete(
   interventionController.deleteIntervention
 );
 
-// Mettre à jour le statut (Workflow)
+// Mettre à jour le statut (Workflow - cloisonné)
 router.put(
   "/:id/status",
   requireTechnicienOrAdmin,
   [
     param("id").isUUID(),
+    requireInterventionAccess,
     body("statut").isIn(["planifiee", "en_cours", "terminee", "annulee"]),
     body("datePriseEnCharge").optional().isISO8601(),
   ],
   interventionController.updateInterventionStatus
 );
 
-// Valider les heures
+// Valider les heures (cloisonné)
 router.put(
   "/:id/hours",
   requireTechnicienOrAdmin,
   [
     param("id").isUUID(),
+    requireInterventionAccess,
     body("heureArrivee").isISO8601(),
     body("heureDepart").isISO8601(),
   ],
   interventionController.validateHours
 );
 
-// Signer l'intervention
+// Signer l'intervention (cloisonné)
 router.put(
   "/:id/sign",
   requireTechnicienOrAdmin, // Le client signe via le device du technicien
   [
     param("id").isUUID(),
+    requireInterventionAccess,
     body("type").isIn(["technicien", "client"]),
     body("signature").notEmpty(),
   ],
   interventionController.signIntervention
 );
 
-// Ajouter/Gérer du matériel
+// Ajouter/Gérer du matériel (cloisonné)
 router.post(
   "/:id/equipements",
   requireTechnicienOrAdmin,
   [
     param("id").isUUID(),
+    requireInterventionAccess,
     body("stockId").optional().isUUID().withMessage("Stock ID invalide"),
     body("action").isIn(["install", "retrait"]), // Simplified actions
     body("etat").optional().isIn(["ok", "hs"]), // For removal
@@ -129,35 +136,37 @@ router.post(
   interventionController.manageEquipement
 );
 
-// Verrouillage (Concurrency)
+// Verrouillage (Concurrency - cloisonné)
 router.post(
   "/:id/lock",
   requireTechnicienOrAdmin,
   param("id").isUUID(),
+  requireInterventionAccess,
   interventionController.lockIntervention
 );
 router.post(
   "/:id/unlock",
   requireTechnicienOrAdmin,
   param("id").isUUID(),
+  requireInterventionAccess,
   interventionController.unlockIntervention
 );
 
-// Upload Artifacts (Photos + PDF)
+// Upload Artifacts (Photos + PDF - cloisonné en amont du chargement fichier)
 router.post(
   "/:id/artifacts",
   requireTechnicienOrAdmin,
   param("id").isUUID(),
+  requireInterventionAccess,
   upload.array("files"), // 'files' is the field name matching FormData
   interventionController.uploadArtifacts
 );
 
-// Get Artifacts
+// Get Artifacts (cloisonné)
 router.get(
   "/:id/artifacts",
-  authenticate, // Anyone authenticated can see artifacts? Or check role?
-  // Let's use authenticate for now, as Tech/Admin access is mainly handled by middleware
   param("id").isUUID(),
+  requireInterventionAccess,
   interventionController.getArtifacts
 );
 

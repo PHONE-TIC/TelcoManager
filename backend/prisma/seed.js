@@ -6,6 +6,12 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Démarrage du seed (JS - Admin Only)...');
 
+    if (process.env.NODE_ENV === 'production') {
+        if (!process.env.DEFAULT_ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD === 'admin123') {
+            throw new Error('FATAL ERROR: DEFAULT_ADMIN_PASSWORD must be set to a secure custom password in production environments.');
+        }
+    }
+
     const forceReset = process.env.SEED_ON_START === 'true';
     if (forceReset) {
         console.log('⚠️  Mode RESET activé : Réinitialisation forcée du mot de passe admin.');

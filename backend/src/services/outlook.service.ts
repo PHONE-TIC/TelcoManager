@@ -54,13 +54,36 @@ async function getAccessToken(): Promise<string | null> {
 }
 
 /**
+ * Échappe les caractères spéciaux HTML pour prévenir les injections HTML et de scripts (XSS).
+ */
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Formate le corps HTML de l'événement Outlook avec toutes les informations utiles.
  */
 function buildEventBody(intervention: any): string {
   const client = intervention.client;
-  const techName = intervention.technicienNom || "Non assigné";
-  const desc = intervention.description || "Aucune description fournie.";
-  const type = intervention.type || "SAV";
+  const techName = escapeHtml(intervention.technicienNom || "Non assigné");
+  const desc = escapeHtml(intervention.description || "Aucune description fournie.");
+  const type = escapeHtml(intervention.type || "SAV");
+  
+  const clientNom = escapeHtml(client?.nom || intervention.clientNom || "Inconnu");
+  const sousLieu = escapeHtml(client?.sousLieu || "");
+  const adresse = escapeHtml(
+    [client?.rue, client?.codePostal, client?.ville].filter(Boolean).join(", ")
+  );
+  const contact = escapeHtml(client?.contact || "Non spécifié");
+  const telephone = escapeHtml(client?.telephone || "");
+  const email = escapeHtml(client?.email || "");
+  const numero = escapeHtml(intervention.numero);
   
   return `
     <div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333;">
@@ -70,7 +93,7 @@ function buildEventBody(intervention: any): string {
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
           <td style="width: 150px; font-weight: bold; padding: 5px 0;">Numéro :</td>
-          <td style="padding: 5px 0;">${intervention.numero}</td>
+          <td style="padding: 5px 0;">${numero}</td>
         </tr>
         <tr>
           <td style="font-weight: bold; padding: 5px 0;">Type :</td>
@@ -87,30 +110,30 @@ function buildEventBody(intervention: any): string {
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
           <td style="width: 150px; font-weight: bold; padding: 5px 0;">Client :</td>
-          <td style="padding: 5px 0; font-weight: bold;">${client?.nom || intervention.clientNom || "Inconnu"}</td>
+          <td style="padding: 5px 0; font-weight: bold;">${clientNom}</td>
         </tr>
         ${client?.sousLieu ? `
         <tr>
           <td style="font-weight: bold; padding: 5px 0;">Sous-lieu :</td>
-          <td style="padding: 5px 0;">${client.sousLieu}</td>
+          <td style="padding: 5px 0;">${sousLieu}</td>
         </tr>` : ""}
         <tr>
           <td style="font-weight: bold; padding: 5px 0;">Adresse :</td>
-          <td style="padding: 5px 0;">📍 ${client?.rue || ""}, ${client?.codePostal || ""} ${client?.ville || ""}</td>
+          <td style="padding: 5px 0;">📍 ${adresse}</td>
         </tr>
         <tr>
           <td style="font-weight: bold; padding: 5px 0;">Contact sur place :</td>
-          <td style="padding: 5px 0;">${client?.contact || "Non spécifié"}</td>
+          <td style="padding: 5px 0;">${contact}</td>
         </tr>
         ${client?.telephone ? `
         <tr>
           <td style="font-weight: bold; padding: 5px 0;">Téléphone :</td>
-          <td style="padding: 5px 0;"><a href="tel:${client.telephone}">${client.telephone}</a></td>
+          <td style="padding: 5px 0;"><a href="tel:${telephone}">${telephone}</a></td>
         </tr>` : ""}
         ${client?.email ? `
         <tr>
           <td style="font-weight: bold; padding: 5px 0;">E-mail :</td>
-          <td style="padding: 5px 0;"><a href="mailto:${client.email}">${client.email}</a></td>
+          <td style="padding: 5px 0;"><a href="mailto:${email}">${email}</a></td>
         </tr>` : ""}
       </table>
 

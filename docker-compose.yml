@@ -22,15 +22,24 @@ services:
   app:
     image: phonetic76/telcomanager-app:latest
     container_name: telcomanager_app
+    build:
+      context: .
+      dockerfile: Dockerfile.combined
     environment:
       DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-stock_intervention}?schema=public
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:-}
       NODE_ENV: production
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-}
       # Push Notifications
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      # Outlook Shared Calendar Configuration
+      OUTLOOK_TENANT_ID: ${OUTLOOK_TENANT_ID:-}
+      OUTLOOK_CLIENT_ID: ${OUTLOOK_CLIENT_ID:-}
+      OUTLOOK_CLIENT_SECRET: ${OUTLOOK_CLIENT_SECRET:-}
+      OUTLOOK_SHARED_CALENDAR_EMAIL: ${OUTLOOK_SHARED_CALENDAR_EMAIL:-}
       # UNYC Sync Configuration
       UNYC_BASE_URL: ${UNYC_BASE_URL:-https://atlas-public-api.web.production.unyc.io}
       UNYC_IAM_URL: ${UNYC_IAM_URL:-https://accounts.unyc.io/realms/production}
@@ -42,7 +51,7 @@ services:
       ATLAS_PASSWORD: ${ATLAS_PASSWORD:-}
       ATLAS_TOTP_URI: ${ATLAS_TOTP_URI:-}
       # Optionnel: Reset DB au démarrage (true/false)
-      # SEED_ON_START: "false"
+      SEED_ON_START: ${SEED_ON_START:-false}
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,6 +64,9 @@ services:
   caddy:
     image: phonetic76/caddy-duckdns:latest
     container_name: telcomanager_caddy
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
     ports:
       - "80:80"
       - "8081:443"
