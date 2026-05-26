@@ -78,7 +78,7 @@ Services exposés par défaut :
 ### Identifiants par défaut
 
 - username : `admin`
-- password : `admin123`
+- password : `admin123` (valeur par défaut de premier démarrage si `DEFAULT_ADMIN_PASSWORD` n'est pas définie dans l'environnement)
 
 ## Variables d’environnement principales
 
@@ -132,8 +132,17 @@ npm run dev
 
 ### Mai 2026
 
-Ensemble d'améliorations majeures apportées à la robustesse, à l'expérience hors-ligne, à l'interface utilisateur et à la responsivité mobile :
+Ensemble d'améliorations majeures apportées à la sécurité, à la résilience des stocks, à la synchronisation et à la responsivité mobile :
 
+- **Sécurisation Globale & Audit de Code (Revue de Sécurité)** :
+  * **Middleware Anti-Zombie JWT** : Contrôle d'activité et de rôles en temps réel à chaque requête REST/SSE en base de données, bloquant immédiatement les utilisateurs désactivés ou rétrogradés.
+  * **Cloisonnement Strict Technicien** : Restructuration complète des points d'accès des contrôleurs pour interdire le listing et la consultation des interventions d'autrui, sécuriser le verrouillage collaboratif (lock/unlock) et limiter la recherche globale à leur périmètre légitime.
+  * **Sécurisation des Véhicules** : Restriction d'accès aux stocks véhicule par technicien et verrouillage de l'action de transfert de matériel défectueux (HS) aux seuls administrateurs.
+  * **Validation Express-Validator** : Consommation systématique de `validationResult(req)` dans tous les contrôleurs d'interventions secondaires (statut, heures, signatures, matériel, etc.) pour bloquer tôt les requêtes invalides ou malicieuses.
+  * **Transactions Prisma Interactives** : Encapsulation des mouvements de stock complexes de l'intervention dans des blocs transactionnels de base de données atomiques (`prisma.$transaction`) pour éviter toute désynchronisation de base.
+  * **Durcissement des Secrets & Déploiement** : Retrait complet des mots de passe admin par défaut (`admin123`) et des clés privées du fichier d'orchestration Docker au profit de variables d'environnement dynamiques sécurisées.
+- **Synchronisation Calendrier Partagé Outlook** : Implémentation d'une synchronisation automatique des interventions avec un calendrier Microsoft 365 partagé (via l'API Microsoft Graph) avec authentification démon (Client Credentials Azure AD), cache de token, corps de rendez-vous HTML riche (adresse cliquable, contacts téléphoniques et mails directs) et gestion résiliente des cycles de vie CRUD.
+- **Correction DevOps GitHub Actions** : Nettoyage et débogage du workflow CD `.github/workflows/cd.yml` (suppression de la dépendance inexistante `needs: [test-on-ci]`).
 - **Verrouillage Collaboratif en Temps Réel (SSE)** : Implémentation d'un système de verrous collaboratifs en temps réel via des flux SSE (Server-Sent Events) pour éviter les conflits d'édition d'interventions, avec des indicateurs visuels dynamiques sur le Dashboard.
 - **Mode Rafale pour le Scanner (Batch Scanning)** : Ajout d'une option de scan en rafale pour le scanner de codes-barres avec retours sonore (Web Audio API) et tactile (Vibration) pour fluidifier les opérations d'inventaire et de stock.
 - **Mode Hors-ligne & Synchronisation Automatique** : Création d'une file d'attente robuste (`offlineSync.ts`) capable de différer les actions utilisateur (y compris la validation et la clôture d'interventions avec photos sérialisées en base64) en cas de déconnexion réseau, puis de les resynchroniser silencieusement et séquentiellement dès le retour du réseau.
