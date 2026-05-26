@@ -137,5 +137,21 @@ describe("Auth Middleware", () => {
       expect(nextFunction).toHaveBeenCalled();
       expect(mockResponse.status).not.toHaveBeenCalled();
     });
+
+    it("should return 403 when user has an unrecognized role (default-deny)", async () => {
+      mockRequest.params.id = "int-123";
+      mockRequest.user = { id: "strange-1", username: "stranger", role: "unrecognized" };
+
+      const mockIntervention = {
+        id: "int-123",
+        technicienId: "tech-2",
+      };
+      vi.mocked(prisma.intervention.findUnique).mockResolvedValue(mockIntervention as any);
+
+      await requireInterventionAccess(mockRequest, mockResponse, nextFunction);
+      expect(mockResponse.status).toHaveBeenCalledWith(403);
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: "Accès refusé" });
+      expect(nextFunction).not.toHaveBeenCalled();
+    });
   });
 });

@@ -315,4 +315,5 @@ enum StatutIntervention {
 enum StatutStock {
   courant
   hs
+  retour_fournisseur
 }

@@ -60,9 +60,11 @@ describe("Stock Movement Service", () => {
       expect(prisma.stock.findUnique).toHaveBeenCalledWith({ where: { id: "stock-1" } });
       expect(prisma.$transaction).toHaveBeenCalled();
       expect(result.status).toBe(200);
-      expect(result.body.message).toBe("Transfert effectué avec succès");
-      expect(result.body.stock.quantite).toBe(8);
-      expect(result.body.movement.quantite).toBe(-2);
+      if (result.status === 200) {
+        expect(result.body.message).toBe("Transfert effectué avec succès");
+        expect(result.body.stock.quantite).toBe(8);
+        expect(result.body.movement.quantite).toBe(-2);
+      }
     });
 
     it("should return 400 when quantity is insufficient", async () => {

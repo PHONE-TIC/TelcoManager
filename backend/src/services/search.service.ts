@@ -1,3 +1,4 @@
+import { StatutIntervention } from "@prisma/client";
 import { prisma } from "../db";
 import {
   interventionClientListSelect,
@@ -39,6 +40,12 @@ export async function runGlobalSearch(
     } catch {
       parsedFilters = {};
     }
+  }
+
+  let parsedStatus: StatutIntervention[] | undefined;
+  if (parsedFilters.status?.length) {
+    parsedStatus = parsedFilters.status
+      .filter((s): s is StatutIntervention => Object.values(StatutIntervention).includes(s as StatutIntervention));
   }
 
   // Cloisonnement des Liens IP : réservé uniquement aux profils admin et gestionnaire
@@ -97,8 +104,8 @@ export async function runGlobalSearch(
               },
             }
           : {}),
-        ...(parsedFilters.status?.length
-          ? { statut: { in: parsedFilters.status } }
+        ...(parsedStatus?.length
+          ? { statut: { in: parsedStatus } }
           : {}),
         // Restriction de cloisonnement technicien
         ...(user?.role === "technicien" ? {

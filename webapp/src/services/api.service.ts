@@ -200,6 +200,15 @@ class ApiService {
     return response.data;
   }
 
+  async getArtifactBlob(id: string, filename: string): Promise<Blob> {
+    const token = sessionStorage.getItem("token");
+    const response = await axios.get(`/uploads/interventions/${id}/${filename}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      responseType: "blob",
+    });
+    return response.data;
+  }
+
   async manageInterventionEquipment(
     id: string,
     data: {

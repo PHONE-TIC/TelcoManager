@@ -1,3 +1,4 @@
+import { StatutStock } from "@prisma/client";
 import { prisma } from "../db";
 import { generateStockReference, parseSerialNumbers } from "../controllers/stock.controller.helpers";
 
@@ -8,7 +9,7 @@ type StockWriteInput = {
   modele?: string | null;
   codeBarre?: string;
   categorie?: string;
-  statut?: string;
+  statut?: StatutStock;
   quantite?: number;
   notes?: string;
   numeroSerie?: string;
@@ -39,7 +40,7 @@ export async function createStockItems(input: StockWriteInput) {
     modele,
     codeBarre,
     categorie,
-    statut = "courant",
+    statut = StatutStock.courant,
     quantite = 1,
     notes,
     numeroSerie,

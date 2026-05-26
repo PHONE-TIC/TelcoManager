@@ -1,11 +1,12 @@
 import * as bcrypt from "bcryptjs";
+import { Prisma, Role } from "@prisma/client";
 import { prisma } from "../db";
 
 type TechnicienWriteInput = {
   nom?: string;
   username?: string;
   password?: string;
-  role?: string;
+  role?: Role;
   active?: boolean;
 };
 
@@ -27,7 +28,7 @@ export async function createTechnicienRecord(input: TechnicienWriteInput) {
       nom: input.nom ?? "",
       username: input.username ?? "",
       passwordHash,
-      role: input.role || "technicien",
+      role: input.role || Role.technicien,
     },
     select: {
       id: true,
@@ -49,7 +50,7 @@ export async function updateTechnicienRecord(
   id: string,
   input: TechnicienWriteInput
 ) {
-  const data: Record<string, unknown> = {
+  const data: Prisma.TechnicienUpdateInput = {
     ...(input.nom && { nom: input.nom }),
     ...(input.username && { username: input.username }),
     ...(input.role && { role: input.role }),

@@ -22,6 +22,7 @@ import "./detail-form-harmonization.css";
 import "./screen-harmonization.css";
 import type { Intervention, InterventionEquipment, Photo } from "../types";
 import {
+  Artifact,
   extractInterventionTime,
   findArtifactReport,
   mapArtifactAttachments,
@@ -97,6 +98,7 @@ const TechnicianInterventionView: React.FC = () => {
 
   const [intervention, setIntervention] = useState<Intervention | null>(null);
   const [loading, setLoading] = useState(true);
+  const activeObjectUrlsRef = useRef<string[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
@@ -216,13 +218,33 @@ const TechnicianInterventionView: React.FC = () => {
       if (data.statut === "terminee" || data.statut === "annulee") {
         try {
           const artifacts = await apiService.getInterventionArtifacts(id);
-          const loadedPhotos = mapArtifactPhotos(artifacts);
+          
+          // Clean up previously created Object URLs
+          activeObjectUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+          activeObjectUrlsRef.current = [];
+
+          // Resolve secure blob URL for each artifact
+          const secureArtifacts = await Promise.all(
+            artifacts.map(async (art: Artifact) => {
+              try {
+                const blob = await apiService.getArtifactBlob(id, art.filename);
+                const secureUrl = URL.createObjectURL(blob);
+                activeObjectUrlsRef.current.push(secureUrl);
+                return { ...art, url: secureUrl };
+              } catch (err) {
+                console.warn("Failed to load secure artifact blob:", art.filename, err);
+                return art; // Fallback to raw URL
+              }
+            })
+          );
+
+          const loadedPhotos = mapArtifactPhotos(secureArtifacts);
           setPhotos(loadedPhotos);
 
-          const otherFiles = mapArtifactAttachments(artifacts);
+          const otherFiles = mapArtifactAttachments(secureArtifacts);
           setLoadedAttachments(otherFiles);
 
-          const report = findArtifactReport(artifacts);
+          const report = findArtifactReport(secureArtifacts);
 
           if (report) {
             setReportUrl(report.url);
@@ -270,6 +292,7 @@ const TechnicianInterventionView: React.FC = () => {
     // Cleanup: stop all cameras when leaving the page
     return () => {
       stopAllCameras();
+      activeObjectUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
     };
   }, [id, loadIntervention]);
 

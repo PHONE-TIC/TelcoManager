@@ -12,7 +12,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
-    "test": "vitest"
+    "test": "vitest src"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",

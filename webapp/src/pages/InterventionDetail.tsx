@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { AxiosError } from "axios";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { apiService } from "../services/api.service";
@@ -14,6 +14,7 @@ import { useAuth } from "../contexts/useAuth";
 import { useLocks } from "../contexts/LockContextCore";
 import SkeletonLoader from "../components/SkeletonLoader";
 import {
+  Artifact,
   canEditInterventionByRole,
   findDetailArtifactReport,
   getInterventionBackState,
@@ -68,6 +69,7 @@ const InterventionDetail: React.FC = () => {
   >([]);
   const [reportUrl, setReportUrl] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const activeObjectUrlsRef = useRef<string[]>([]);
   const { locks } = useLocks();
   const [lockedByDb, setLockedByDb] = useState<string | null>(null);
 
@@ -106,13 +108,33 @@ const InterventionDetail: React.FC = () => {
 
       try {
         const artifacts = await apiService.getInterventionArtifacts(id);
-        const loadedPhotos = mapDetailArtifactPhotos(artifacts);
+        
+        // Clean up previously created Object URLs
+        activeObjectUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+        activeObjectUrlsRef.current = [];
+
+        // Resolve secure blob URL for each artifact
+        const secureArtifacts = await Promise.all(
+          artifacts.map(async (art: Artifact) => {
+            try {
+              const blob = await apiService.getArtifactBlob(id, art.filename);
+              const secureUrl = URL.createObjectURL(blob);
+              activeObjectUrlsRef.current.push(secureUrl);
+              return { ...art, url: secureUrl };
+            } catch (err) {
+              console.warn("Failed to load secure artifact blob:", art.filename, err);
+              return art; // Fallback to raw URL
+            }
+          })
+        );
+
+        const loadedPhotos = mapDetailArtifactPhotos(secureArtifacts);
         setPhotos(loadedPhotos);
 
-        const otherFiles = mapDetailArtifactAttachments(artifacts);
+        const otherFiles = mapDetailArtifactAttachments(secureArtifacts);
         setLoadedAttachments(otherFiles);
 
-        const report = findDetailArtifactReport(artifacts);
+        const report = findDetailArtifactReport(secureArtifacts);
         setReportUrl(report?.url ?? null);
       } catch (e) {
         console.warn("Failed to load artifacts", e);
@@ -225,6 +247,7 @@ const InterventionDetail: React.FC = () => {
     return () => {
       clearInterval(interval);
       if (id) apiService.unlockIntervention(id).catch(() => {});
+      activeObjectUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
 
       // Stop all cameras when leaving page
       document.querySelectorAll("video").forEach((video) => {

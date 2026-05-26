@@ -1,6 +1,6 @@
 import type { Photo } from "../types";
 
-interface Artifact {
+export interface Artifact {
   type: string;
   filename: string;
   url: string;
