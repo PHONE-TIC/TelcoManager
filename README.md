@@ -85,16 +85,25 @@ Services exposés par défaut :
 | Variable | Description |
 | --- | --- |
 | `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Configuration PostgreSQL |
-| `JWT_SECRET` | Secret JWT |
-| `UNYC_BASE_URL` | URL API UNYC |
-| `UNYC_IAM_URL` | URL IAM UNYC |
-| `UNYC_CLIENT_ID` | Client ID UNYC |
-| `UNYC_USERNAME` | Login UNYC |
-| `UNYC_PASSWORD` | Mot de passe UNYC |
-| `VAPID_PUBLIC_KEY` | Clé publique notifications push |
-| `VAPID_PRIVATE_KEY` | Clé privée notifications push |
-| `VAPID_SUBJECT` | Sujet/contact notifications push |
-| `SEED_ON_START` | `true` pour réinitialiser le seed admin au démarrage |
+| `JWT_SECRET` | Secret JWT (requis et doit être personnalisé et sécurisé en production) |
+| `DEFAULT_ADMIN_PASSWORD` | Mot de passe personnalisé pour le compte admin par défaut (requis et doit être fort en production) |
+| `SEED_ON_START` | `true` pour réinitialiser de force le mot de passe de l'admin au démarrage (`false` par défaut) |
+| `OUTLOOK_TENANT_ID` | ID de l'annuaire (Tenant) Azure AD pour la synchronisation Microsoft Graph |
+| `OUTLOOK_CLIENT_ID` | ID d'application (Client) enregistré dans Azure AD pour Microsoft Graph |
+| `OUTLOOK_CLIENT_SECRET` | Secret client d'application généré dans Azure AD |
+| `OUTLOOK_SHARED_CALENDAR_EMAIL` | Adresse e-mail de la boîte aux lettres partagée contenant le calendrier cible |
+| `VAPID_PUBLIC_KEY` | Clé publique VAPID pour les notifications push web |
+| `VAPID_PRIVATE_KEY` | Clé privée VAPID pour les notifications push web |
+| `VAPID_SUBJECT` | Adresse e-mail ou URI de contact pour la configuration VAPID |
+| `UNYC_BASE_URL` | URL de base pour les appels API publique UNYC |
+| `UNYC_IAM_URL` | URL IAM UNYC pour l'authentification |
+| `UNYC_CLIENT_ID` | Client ID de l'API UNYC |
+| `UNYC_USERNAME` | Identifiant d'utilisateur API UNYC |
+| `UNYC_PASSWORD` | Mot de passe de l'utilisateur API UNYC |
+| `ATLAS_IP_LINKS_URL` | URL de synchronisation des fiches de liens IP Atlas |
+| `ATLAS_USERNAME` | Identifiant d'accès à l'espace Atlas |
+| `ATLAS_PASSWORD` | Mot de passe d'accès à l'espace Atlas |
+| `ATLAS_TOTP_URI` | URI brute TOTP MFA pour générer les jetons d'accès Atlas |
 
 ## Images Docker
 
