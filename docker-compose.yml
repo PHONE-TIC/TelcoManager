@@ -21,9 +21,6 @@ services:
 
   app:
     image: phonetic76/telcomanager-app:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.combined
     container_name: telcomanager_app
     environment:
       DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-stock_intervention}?schema=public
@@ -56,9 +53,7 @@ services:
     restart: always
 
   caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile.caddy
+    image: phonetic76/caddy-duckdns:latest
     container_name: telcomanager_caddy
     ports:
       - "80:80"
