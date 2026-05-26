@@ -3,6 +3,7 @@ import { validationResult } from "express-validator";
 import { prisma } from "../db";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { notifyNewIntervention } from "../services/push.service";
+import * as outlookService from "../services/outlook.service";
 import {
   manageInterventionEquipment,
 } from "../services/intervention-equipment.service";
@@ -244,6 +245,11 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
       await handleInterventionAssignmentNotification(technicienId, intervention.id);
     }
 
+    // Sync to Outlook Shared Calendar in background
+    outlookService.createOutlookEvent(intervention.id).catch((err) => {
+      console.error("Erreur lors de la création de l'événement Outlook:", err);
+    });
+
     res.status(201).json(intervention);
   } catch (error) {
     console.error("Erreur lors de la création de l'intervention:", error);
@@ -331,6 +337,11 @@ export const updateIntervention = async (req: AuthRequest, res: Response) => {
       await handleInterventionAssignmentNotification(technicienId, intervention.id);
     }
 
+    // Sync to Outlook Shared Calendar in background
+    outlookService.updateOutlookEvent(intervention.id).catch((err) => {
+      console.error("Erreur lors de la mise à jour de l'événement Outlook:", err);
+    });
+
     res.json(intervention);
   } catch (error: any) {
     if (error.code === "P2025") {
@@ -352,9 +363,22 @@ export const deleteIntervention = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
+    // Fetch outlookEventId before deletion
+    const intervention = await prisma.intervention.findUnique({
+      where: { id },
+      select: { outlookEventId: true },
+    });
+
     await prisma.intervention.delete({
       where: { id },
     });
+
+    if (intervention?.outlookEventId) {
+      // Sync deletion to Outlook in background
+      outlookService.deleteOutlookEvent(intervention.outlookEventId).catch((err) => {
+        console.error("Erreur lors de la suppression de l'événement Outlook:", err);
+      });
+    }
 
     res.status(204).send();
   } catch (error: any) {
@@ -427,6 +451,11 @@ export const updateInterventionStatus = async (
     const intervention = await prisma.intervention.update({
       where: { id },
       data,
+    });
+
+    // Sync status change to Outlook in background
+    outlookService.updateOutlookEvent(intervention.id).catch((err) => {
+      console.error("Erreur lors de la mise à jour de l'événement Outlook:", err);
     });
 
     res.json(intervention);

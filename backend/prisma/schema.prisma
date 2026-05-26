@@ -98,6 +98,7 @@ model Intervention {
   commentaireTechnicien String?                   @db.Text
   lockedAt              DateTime?                 @map("locked_at")
   lockedBy              String?                   @map("locked_by")
+  outlookEventId        String?                   @map("outlook_event_id")
   createdAt             DateTime                  @default(now()) @map("created_at")
   updatedAt             DateTime                  @updatedAt @map("updated_at")
   
