@@ -672,7 +672,7 @@ const TechnicianInterventionView: React.FC = () => {
       
       const axiosError = err as AxiosError<ApiErrorResponse>;
       const isOfflineError = !navigator.onLine || 
-        (err && typeof err === 'object' && ('message' in err) && (err as any).message === 'Network Error') ||
+        (err && typeof err === 'object' && ('message' in err) && (err as { message?: unknown }).message === 'Network Error') ||
         axiosError.code === 'ERR_NETWORK';
 
       if (isOfflineError) {

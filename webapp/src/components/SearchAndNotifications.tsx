@@ -20,7 +20,7 @@ export function SearchAndNotifications() {
   const { theme, toggleTheme } = useTheme();
 
   const canSearch = !!user && (user.role === "admin" || user.role === "gestionnaire");
-  const initials = useMemo(() => (user?.nom ? getInitials(user.nom) : "?"), [user?.nom]);
+  const initials = useMemo(() => (user?.nom ? getInitials(user.nom) : "?"), [user]);
 
   if (!user) {
     return null;

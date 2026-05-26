@@ -23,7 +23,7 @@ export default function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps)
     // Synth beep sound using Web Audio API
     const playBeep = () => {
         try {
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
             if (!AudioContextClass) return;
             const audioCtx = new AudioContextClass();
             const oscillator = audioCtx.createOscillator();

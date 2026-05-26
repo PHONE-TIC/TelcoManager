@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "../contexts/useAuth";
-import { useNotificationCenter } from "../contexts/NotificationCenterContext";
+import { useNotificationCenter } from "../contexts/NotificationCenterContextCore";
 
 export function IpLinksNotificationWatcher() {
   const { user } = useAuth();

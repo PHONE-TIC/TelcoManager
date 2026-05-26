@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { prisma } from '../db';
+import { getJwtSecret } from '../config/jwt';
 
 export interface AuthRequest extends Request {
     user?: {
@@ -26,7 +27,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
             return res.status(401).json({ error: 'Token manquant ou invalide' });
         }
 
-        const secret = process.env.JWT_SECRET || 'your-secret-key';
+        const secret = getJwtSecret();
 
         const decoded = jwt.verify(token, secret) as {
             id: string;

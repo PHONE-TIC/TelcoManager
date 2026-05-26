@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/useAuth";
 import MobilePlanning from "../components/MobilePlanning";
 import ConfirmConflictModal from "../components/ConfirmConflictModal";
 import { useOffline } from "../hooks/useOffline";
-import { useLocks } from "../contexts/LockContext";
+import { useLocks } from "../contexts/LockContextCore";
 import { useReminders } from "../hooks/useReminders";
 import { useResponsive } from "../hooks/useResponsive";
 import { AppIcon } from "../components/AppIcon";

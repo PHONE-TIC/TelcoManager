@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
@@ -17,16 +19,13 @@ import stockMovementsRoutes from "./routes/stockMovements.routes";
 import unycRoutes from "./routes/unyc.routes";
 import ipLinksRoutes from "./routes/ip-links.routes";
 import notificationsRoutes from "./routes/notifications.routes";
+import { getJwtSecret } from "./config/jwt";
 
 // Charger les variables d'environnement
 dotenv.config();
 
-if (process.env.NODE_ENV === "production") {
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === "your-secret-key") {
-    console.error("FATAL ERROR: JWT_SECRET must be set to a secure custom key in production environments.");
-    process.exit(1);
-  }
-}
+// Enforce JWT secret checks on startup
+getJwtSecret();
 
 // Initialiser Prisma
 import { prisma } from "./db";
@@ -38,6 +37,13 @@ export { prisma };
 // Créer l'application Express
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Global Security Middleware with Helmet (disabling default CSP to avoid breaking SPA)
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
 
 // Middleware
 app.use(
@@ -55,11 +61,23 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Rate limiting specifically for authentication endpoints to prevent brute force
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15, // Limit each IP to 15 login requests per 15 minutes
+  message: {
+    error: "Trop de tentatives de connexion. Veuillez réessayer dans 15 minutes.",
+  },
+  standardHeaders: true, // Return rate limit info in standard headers
+  legacyHeaders: false, // Disable X-RateLimit-* headers
+});
+
 // Routes
 app.get("/health", (req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+app.use("/api/auth/login", loginLimiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api/techniciens", technicienRoutes);

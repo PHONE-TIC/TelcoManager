@@ -5,7 +5,7 @@ echo "🚀 Starting TelcoManager App..."
 
 # Run migrations
 echo "🛠️  Syncing database schema..."
-npx prisma db push
+npx prisma migrate deploy
 
 # Always run seed (idempotent: create if missing, reset if SEED_ON_START=true)
 echo "🌱 Checking database state..."

@@ -58,10 +58,10 @@ export interface DashboardStats {
   totalInterventions: number;
 }
 
-export interface DashboardIpLinksAlertItem extends Pick<
+export type DashboardIpLinksAlertItem = Pick<
   IpLink,
   "id" | "reference" | "clientName" | "collecteOperator" | "healthStatus"
-> {}
+>;
 
 export function buildInterventionStats(
   interventions: Pick<Intervention, "statut">[]

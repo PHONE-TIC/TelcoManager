@@ -140,7 +140,7 @@ export default function RetraitSerialModal({
       } else {
         setStep("unknown_form");
       }
-    } catch (err: any) {
+    } catch {
       // 404 means unrecognized serial
       setStep("unknown_form");
     } finally {
@@ -168,8 +168,15 @@ export default function RetraitSerialModal({
               etat: etat,
               dryRun: true,
             });
-          } catch (err: any) {
-            const serverMsg = err.response?.data?.error || err.response?.data?.message || "Erreur de validation du matériel";
+          } catch (err: unknown) {
+            const serverMsg =
+              err && typeof err === "object" && "response" in err
+                ? (err as { response?: { data?: { error?: string; message?: string } } }).response?.data?.error ||
+                  (err as { response?: { data?: { error?: string; message?: string } } }).response?.data?.message ||
+                  "Erreur de validation du matériel"
+                : err instanceof Error
+                ? err.message
+                : "Erreur de validation du matériel";
             setError(serverMsg);
             setLoading(false);
             return;
@@ -222,8 +229,15 @@ export default function RetraitSerialModal({
               fournisseur: fournisseur,
               dryRun: true,
             });
-          } catch (err: any) {
-            const serverMsg = err.response?.data?.error || err.response?.data?.message || "Erreur de validation du matériel";
+          } catch (err: unknown) {
+            const serverMsg =
+              err && typeof err === "object" && "response" in err
+                ? (err as { response?: { data?: { error?: string; message?: string } } }).response?.data?.error ||
+                  (err as { response?: { data?: { error?: string; message?: string } } }).response?.data?.message ||
+                  "Erreur de validation du matériel"
+                : err instanceof Error
+                ? err.message
+                : "Erreur de validation du matériel";
             setError(serverMsg);
             setLoading(false);
             return;
@@ -246,7 +260,7 @@ export default function RetraitSerialModal({
         });
         handleClose();
       }
-    } catch (err: any) {
+    } catch {
       setError("Une erreur est survenue lors de la validation.");
     } finally {
       setLoading(false);

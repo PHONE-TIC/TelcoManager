@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { Link } from "react-router-dom";
-import { useNotificationCenter } from "../contexts/NotificationCenterContext";
+import { useNotificationCenter } from "../contexts/NotificationCenterContextCore";
 import { AppIcon } from "./AppIcon";
 
 function formatRelativeDate(value: string) {

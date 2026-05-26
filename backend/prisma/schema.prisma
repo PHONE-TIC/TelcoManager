@@ -38,7 +38,7 @@ model Technicien {
   nom             String
   username        String         @unique
   passwordHash    String         @map("password_hash")
-  role            String         @default("technicien") // technicien, admin
+  role            Role           @default(technicien)
   active          Boolean        @default(true)
   lastLogin       DateTime?      @map("last_login")
   createdAt       DateTime       @default(now()) @map("created_at")
@@ -89,7 +89,7 @@ model Intervention {
   heureArrivee        DateTime?                 @map("heure_arrivee")
   heureDepart         DateTime?                 @map("heure_depart")
   dateRealisee        DateTime?                 @map("date_realisee")
-  statut              String                    @default("planifiee") // planifiee, en_cours, terminee, annulee
+  statut              StatutIntervention        @default(planifiee)
   type                String                    @default("SAV") // SAV, Installation
   notes               String?                   @db.Text
   signature           String?                   @db.Text // Signature Client
@@ -124,7 +124,7 @@ model Stock {
   codeBarre           String?                   @unique @map("code_barre")
   categorie           String
   fournisseur         String?                   @map("fournisseur")
-  statut              String                    @default("courant") // courant, hs (hors service)
+  statut              StatutStock               @default(courant)
   quantite            Int                       @default(1)
   lowStockThreshold   Int?                      @default(5) @map("low_stock_threshold")
   dateEntree          DateTime                  @default(now()) @map("date_entree")
@@ -297,4 +297,22 @@ model Notification {
   metadata   Json?    // Pour stocker linkId, reference, clientName, etc.
 
   @@map("notifications")
+}
+
+enum Role {
+  technicien
+  admin
+  gestionnaire
+}
+
+enum StatutIntervention {
+  planifiee
+  en_cours
+  terminee
+  annulee
+}
+
+enum StatutStock {
+  courant
+  hs
 }

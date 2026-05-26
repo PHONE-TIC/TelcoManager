@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useNotificationCenter } from "../contexts/NotificationCenterContext";
+import { useNotificationCenter } from "../contexts/NotificationCenterContextCore";
 
 function getToastMeta(type: "ip_link_disconnected" | "ip_link_restored" | "new_intervention") {
   return {
@@ -94,9 +94,11 @@ export function NotificationToastOverlay() {
   }, [unreadNotifications]);
 
   useEffect(() => {
+    const currentCloseTimers = closeTimersRef.current;
+    const currentPhaseTimers = phaseTimersRef.current;
     return () => {
-      Object.values(closeTimersRef.current).forEach((timer) => window.clearTimeout(timer));
-      Object.values(phaseTimersRef.current).forEach((timer) => window.clearTimeout(timer));
+      Object.values(currentCloseTimers).forEach((timer) => window.clearTimeout(timer));
+      Object.values(currentPhaseTimers).forEach((timer) => window.clearTimeout(timer));
     };
   }, [markAsRead]);
 

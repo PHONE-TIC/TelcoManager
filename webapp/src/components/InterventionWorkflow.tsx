@@ -302,7 +302,7 @@ export default function InterventionWorkflow({
       
       const errMsg = getErrorMessage(err, "Erreur de clôture");
       const isOfflineError = !navigator.onLine || 
-        (err && typeof err === 'object' && ('message' in err) && (err as any).message === 'Network Error') ||
+        (err && typeof err === 'object' && ('message' in err) && (err as { message?: unknown }).message === 'Network Error') ||
         errMsg.includes("network") || errMsg.includes("Network Error");
 
       if (isOfflineError) {
@@ -412,8 +412,13 @@ export default function InterventionWorkflow({
       }
       showMessage("Matériel enregistré");
       setEquipments([]);
-    } catch (err: any) {
-      const errMsg = err?.response?.data?.error || err?.message || "Erreur lors de l'enregistrement du matériel";
+    } catch (err: unknown) {
+      const errMsg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || (err as { message?: string }).message || "Erreur lors de l'enregistrement du matériel"
+          : err instanceof Error
+          ? err.message
+          : "Erreur lors de l'enregistrement du matériel";
       showMessage(errMsg, true);
     } finally {
       setLoading(false);

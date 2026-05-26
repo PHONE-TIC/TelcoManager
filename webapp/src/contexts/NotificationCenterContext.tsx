@@ -1,44 +1,25 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { apiService } from "../services/api.service";
 import { useAuth } from "./useAuth";
-
-export type AppNotification = {
-  id: string;
-  type: "ip_link_disconnected" | "ip_link_restored" | "new_intervention";
-  title: string;
-  message: string;
-  createdAt: string;
-  read: boolean;
-  link?: string;
-  metadata?: Record<string, unknown>;
-};
-
-type NotificationCenterContextValue = {
-  notifications: AppNotification[];
-  unreadCount: number;
-  refreshNotifications: () => Promise<void>;
-  addNotification: (notification: Omit<AppNotification, "id" | "createdAt" | "read">) => void;
-  markAsRead: (id: string) => Promise<void>;
-  markAllAsRead: () => Promise<void>;
-  clearAll: () => Promise<void>;
-  removeNotification: (id: string) => void;
-};
-
-const NotificationCenterContext = createContext<NotificationCenterContextValue | undefined>(undefined);
+import {
+  NotificationCenterContext,
+  type AppNotification,
+} from "./NotificationCenterContextCore";
 
 export function NotificationCenterProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const { user } = useAuth();
+  const userId = user?.id;
 
   const refreshNotifications = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     try {
       const data = await apiService.getNotifications();
       setNotifications(data);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
     }
-  }, [user]);
+  }, [userId]);
 
   // Keep addNotification for compatibility with watchers (local append only)
   const addNotification = useCallback((notification: Omit<AppNotification, "id" | "createdAt" | "read">) => {
@@ -55,12 +36,23 @@ export function NotificationCenterProvider({ children }: { children: ReactNode }
   }, []);
 
   useEffect(() => {
-    if (user) {
-      refreshNotifications();
+    let timer: number | undefined;
+    if (userId) {
+      timer = window.setTimeout(() => {
+        void refreshNotifications();
+      }, 0);
     } else {
-      setNotifications([]);
+      // Clear notifications asynchronously to avoid synchronous setState inside effect
+      timer = window.setTimeout(() => {
+        setNotifications([]);
+      }, 0);
     }
-  }, [user, refreshNotifications]);
+    return () => {
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [userId, refreshNotifications]);
 
   const markAsRead = useCallback(async (id: string) => {
     setNotifications((current) =>
@@ -110,12 +102,4 @@ export function NotificationCenterProvider({ children }: { children: ReactNode }
   }), [notifications, refreshNotifications, addNotification, markAsRead, markAllAsRead, clearAll, removeNotification]);
 
   return <NotificationCenterContext.Provider value={value}>{children}</NotificationCenterContext.Provider>;
-}
-
-export function useNotificationCenter() {
-  const context = useContext(NotificationCenterContext);
-  if (!context) {
-    throw new Error("useNotificationCenter must be used within NotificationCenterProvider");
-  }
-  return context;
 }

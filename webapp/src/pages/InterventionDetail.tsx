@@ -11,7 +11,7 @@ import InterventionWorkflow from "../components/InterventionWorkflow";
 import { InterventionHeader } from "../components/Intervention/InterventionHeader";
 import { InterventionDescription } from "../components/Intervention/InterventionDescription";
 import { useAuth } from "../contexts/useAuth";
-import { useLocks } from "../contexts/LockContext";
+import { useLocks } from "../contexts/LockContextCore";
 import SkeletonLoader from "../components/SkeletonLoader";
 import {
   canEditInterventionByRole,
@@ -180,11 +180,15 @@ const InterventionDetail: React.FC = () => {
       } else {
         throw new Error("La génération du PDF a renvoyé un document vide.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Erreur lors de la tentative de ré-upload du rapport :", err);
+      const serverMsg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+          : undefined;
       setError(
-        err.response?.data?.error ||
-        err.message ||
+        serverMsg ||
+        (err as Error).message ||
         "Impossible de générer ou de transmettre le rapport PDF."
       );
     } finally {

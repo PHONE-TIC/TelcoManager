@@ -1,10 +1,7 @@
 import * as bcrypt from "bcryptjs";
-import jwt, { type SignOptions } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { prisma } from "../db";
-
-const getJwtSecret = () => process.env.JWT_SECRET || "your-secret-key";
-const getJwtExpiresIn = (): SignOptions["expiresIn"] =>
-  (process.env.JWT_EXPIRES_IN || "24h") as SignOptions["expiresIn"];
+import { getJwtSecret, getJwtExpiresIn } from "../config/jwt";
 
 type JwtPayload = {
   id: string;

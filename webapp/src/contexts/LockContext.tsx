@@ -1,16 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
+import { LockContext, type LockInfo } from './LockContextCore';
 
-interface LockInfo {
+interface SseLockItem {
+    interventionId: string;
     lockedBy: string;
     lockedAt: string;
 }
-
-interface LockContextType {
-    locks: Record<string, LockInfo>;
-}
-
-const LockContext = createContext<LockContextType>({ locks: {} });
 
 export function LockProvider({ children }: { children: React.ReactNode }) {
     const [locks, setLocks] = useState<Record<string, LockInfo>>({});
@@ -19,8 +15,11 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const token = sessionStorage.getItem('token');
         if (!user || !token) {
-            setLocks({});
-            return;
+            // Avoid calling setState synchronously within the effect body to prevent cascading renders
+            const timer = setTimeout(() => {
+                setLocks({});
+            }, 0);
+            return () => clearTimeout(timer);
         }
 
         const sseUrl = `/api/interventions/locks/stream?token=${encodeURIComponent(token)}`;
@@ -31,7 +30,7 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
                 const data = JSON.parse(event.data);
                 if (data.type === 'initial') {
                     const newLocks: Record<string, LockInfo> = {};
-                    data.locks.forEach((lock: any) => {
+                    data.locks.forEach((lock: SseLockItem) => {
                         newLocks[lock.interventionId] = {
                             lockedBy: lock.lockedBy,
                             lockedAt: lock.lockedAt,
@@ -71,8 +70,4 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
             {children}
         </LockContext.Provider>
     );
-}
-
-export function useLocks() {
-    return useContext(LockContext);
 }
