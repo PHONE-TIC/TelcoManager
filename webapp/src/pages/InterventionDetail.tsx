@@ -14,7 +14,7 @@ import { useAuth } from "../contexts/useAuth";
 import { useLocks } from "../contexts/LockContextCore";
 import SkeletonLoader from "../components/SkeletonLoader";
 import {
-  Artifact,
+  type Artifact,
   canEditInterventionByRole,
   findDetailArtifactReport,
   getInterventionBackState,

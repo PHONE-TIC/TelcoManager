@@ -22,7 +22,7 @@ import "./detail-form-harmonization.css";
 import "./screen-harmonization.css";
 import type { Intervention, InterventionEquipment, Photo } from "../types";
 import {
-  Artifact,
+  type Artifact,
   extractInterventionTime,
   findArtifactReport,
   mapArtifactAttachments,

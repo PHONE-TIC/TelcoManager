@@ -104,11 +104,12 @@ function buildEquipmentRows(
   }
 
   const installed = intervention.equipements.filter(
-    (eq) => eq.action === "install" || eq.action === "installe"
+    (eq) => eq.action && (eq.action.startsWith("install") || eq.action === "installe")
   );
   const retrieved = intervention.equipements.filter(
-    (eq) => eq.action === "retrait" || eq.action === "retire"
+    (eq) => eq.action && (eq.action.startsWith("retrait") || eq.action === "retire")
   );
+
 
   const pushEquipment = (title: string, items: typeof intervention.equipements) => {
     if (!items.length) return;

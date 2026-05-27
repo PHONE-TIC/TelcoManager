@@ -150,15 +150,6 @@ export async function manageInterventionEquipment(input: {
       };
     }
 
-    if (stock.statut === "courant") {
-      return {
-        status: 400 as const,
-        body: {
-          error: "Impossible d'installer : ce matériel est toujours dans le stock courant de l'entrepôt. Vous devez d'abord le transférer dans votre véhicule.",
-        },
-      };
-    }
-
     if (!intervention.technicienId) {
       return {
         status: 400 as const,

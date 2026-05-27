@@ -100,15 +100,6 @@ export async function assignTechnicianStockToClient(input: {
     };
   }
 
-  if (stock.statut === "courant") {
-    return {
-      status: 400 as const,
-      body: {
-        error: "Impossible d'assigner : ce matériel est toujours dans le stock courant de l'entrepôt. Vous devez d'abord le transférer dans votre véhicule.",
-      },
-    };
-  }
-
   const updated = await prisma.technicianStock.update({
     where: getTechnicianStockWhere(input.technicienId, input.stockId),
     data: {
