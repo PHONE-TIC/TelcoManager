@@ -3,13 +3,15 @@ set -e
 
 echo "🚀 Starting TelcoManager App..."
 
-# Run migrations
+# Execute defensive database schema recovery first
+echo "⚙️  Executing database schema recovery and enums patch..."
+node prisma/fix-enums.js
+
+# Run migrations to ensure schema is fully updated and tracked
 echo "🛠️  Syncing database schema..."
 npx prisma migrate deploy || {
-  echo "⚠️  Migrate deploy failed. Database might already be populated. Resolving baseline migration..."
+  echo "⚠️  Migrate deploy failed. Resolving baseline migration..."
   npx prisma migrate resolve --applied 20260526153000_init_schema
-  echo "⚙️  Executing missing enum types and columns patch..."
-  node prisma/fix-enums.js
   echo "🔄 Retrying migrate deploy..."
   npx prisma migrate deploy
 }
