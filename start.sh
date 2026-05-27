@@ -8,6 +8,8 @@ echo "🛠️  Syncing database schema..."
 npx prisma migrate deploy || {
   echo "⚠️  Migrate deploy failed. Database might already be populated. Resolving baseline migration..."
   npx prisma migrate resolve --applied 20260526153000_init_schema
+  echo "⚙️  Executing missing enum types and columns patch..."
+  node prisma/fix-enums.js
   echo "🔄 Retrying migrate deploy..."
   npx prisma migrate deploy
 }
