@@ -24,107 +24,113 @@ async function main() {
   // 2. Create missing tables if they do not exist
   console.log("⚙️  Verifying and creating missing tables...");
   await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "push_subscriptions" (
-        "id" TEXT NOT NULL,
-        "technicien_id" TEXT NOT NULL,
-        "endpoint" TEXT NOT NULL,
-        "p256dh" TEXT NOT NULL,
-        "auth" TEXT NOT NULL,
-        "user_agent" TEXT,
-        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updated_at" TIMESTAMP(3) NOT NULL,
-        CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id")
-    );
+    DO $$
+    BEGIN
+        CREATE TABLE IF NOT EXISTS "push_subscriptions" (
+            "id" TEXT NOT NULL,
+            "technicien_id" TEXT NOT NULL,
+            "endpoint" TEXT NOT NULL,
+            "p256dh" TEXT NOT NULL,
+            "auth" TEXT NOT NULL,
+            "user_agent" TEXT,
+            "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" TIMESTAMP(3) NOT NULL,
+            CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id")
+        );
 
-    CREATE TABLE IF NOT EXISTS "client_equipments" (
-        "id" TEXT NOT NULL,
-        "client_id" TEXT NOT NULL,
-        "client_nom" TEXT,
-        "stock_id" TEXT NOT NULL,
-        "reference_materiel" TEXT NOT NULL,
-        "date_installation" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "statut" TEXT NOT NULL DEFAULT 'installe',
-        "notes" TEXT,
-        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updated_at" TIMESTAMP(3) NOT NULL,
-        CONSTRAINT "client_equipments_pkey" PRIMARY KEY ("id")
-    );
+        CREATE TABLE IF NOT EXISTS "client_equipments" (
+            "id" TEXT NOT NULL,
+            "client_id" TEXT NOT NULL,
+            "client_nom" TEXT,
+            "stock_id" TEXT NOT NULL,
+            "reference_materiel" TEXT NOT NULL,
+            "date_installation" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "statut" TEXT NOT NULL DEFAULT 'installe',
+            "notes" TEXT,
+            "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" TIMESTAMP(3) NOT NULL,
+            CONSTRAINT "client_equipments_pkey" PRIMARY KEY ("id")
+        );
 
-    CREATE TABLE IF NOT EXISTS "intervention_equipments" (
-        "id" TEXT NOT NULL,
-        "intervention_id" TEXT NOT NULL,
-        "stock_id" TEXT,
-        "action" TEXT NOT NULL,
-        "quantite" INTEGER NOT NULL DEFAULT 1,
-        "nom" TEXT,
-        "marque" TEXT,
-        "modele" TEXT,
-        "serial_number" TEXT,
-        "notes" TEXT,
-        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "intervention_equipments_pkey" PRIMARY KEY ("id")
-    );
+        CREATE TABLE IF NOT EXISTS "intervention_equipments" (
+            "id" TEXT NOT NULL,
+            "intervention_id" TEXT NOT NULL,
+            "stock_id" TEXT,
+            "action" TEXT NOT NULL,
+            "quantite" INTEGER NOT NULL DEFAULT 1,
+            "nom" TEXT,
+            "marque" TEXT,
+            "modele" TEXT,
+            "serial_number" TEXT,
+            "notes" TEXT,
+            "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "intervention_equipments_pkey" PRIMARY KEY ("id")
+        );
 
-    CREATE TABLE IF NOT EXISTS "technician_stocks" (
-        "id" TEXT NOT NULL,
-        "technicien_id" TEXT NOT NULL,
-        "stock_id" TEXT NOT NULL,
-        "quantite" INTEGER NOT NULL DEFAULT 1,
-        "etat" TEXT NOT NULL DEFAULT 'ok',
-        "client_id" TEXT,
-        "assigned_at" TIMESTAMP(3),
-        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updated_at" TIMESTAMP(3) NOT NULL,
-        CONSTRAINT "technician_stocks_pkey" PRIMARY KEY ("id")
-    );
+        CREATE TABLE IF NOT EXISTS "technician_stocks" (
+            "id" TEXT NOT NULL,
+            "technicien_id" TEXT NOT NULL,
+            "stock_id" TEXT NOT NULL,
+            "quantite" INTEGER NOT NULL DEFAULT 1,
+            "etat" TEXT NOT NULL DEFAULT 'ok',
+            "client_id" TEXT,
+            "assigned_at" TIMESTAMP(3),
+            "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" TIMESTAMP(3) NOT NULL,
+            CONSTRAINT "technician_stocks_pkey" PRIMARY KEY ("id")
+        );
 
-    CREATE TABLE IF NOT EXISTS "inventory_sessions" (
-        "id" TEXT NOT NULL,
-        "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "status" TEXT NOT NULL DEFAULT 'draft',
-        "notes" TEXT,
-        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updated_at" TIMESTAMP(3) NOT NULL,
-        CONSTRAINT "inventory_sessions_pkey" PRIMARY KEY ("id")
-    );
+        CREATE TABLE IF NOT EXISTS "inventory_sessions" (
+            "id" TEXT NOT NULL,
+            "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "status" TEXT NOT NULL DEFAULT 'draft',
+            "notes" TEXT,
+            "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" TIMESTAMP(3) NOT NULL,
+            CONSTRAINT "inventory_sessions_pkey" PRIMARY KEY ("id")
+        );
 
-    CREATE TABLE IF NOT EXISTS "inventory_items" (
-        "id" TEXT NOT NULL,
-        "session_id" TEXT NOT NULL,
-        "stock_id" TEXT NOT NULL,
-        "expectedQuantity" INTEGER NOT NULL DEFAULT 0,
-        "countedQuantity" INTEGER,
-        "notes" TEXT,
-        CONSTRAINT "inventory_items_pkey" PRIMARY KEY ("id")
-    );
+        CREATE TABLE IF NOT EXISTS "inventory_items" (
+            "id" TEXT NOT NULL,
+            "session_id" TEXT NOT NULL,
+            "stock_id" TEXT NOT NULL,
+            "expectedQuantity" INTEGER NOT NULL DEFAULT 0,
+            "countedQuantity" INTEGER,
+            "notes" TEXT,
+            CONSTRAINT "inventory_items_pkey" PRIMARY KEY ("id")
+        );
 
-    CREATE TABLE IF NOT EXISTS "notifications" (
-        "id" TEXT NOT NULL,
-        "type" TEXT NOT NULL,
-        "title" TEXT NOT NULL,
-        "message" TEXT NOT NULL,
-        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "read" BOOLEAN NOT NULL DEFAULT false,
-        "link" TEXT,
-        "metadata" JSONB,
-        CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
-    );
+        CREATE TABLE IF NOT EXISTS "notifications" (
+            "id" TEXT NOT NULL,
+            "type" TEXT NOT NULL,
+            "title" TEXT NOT NULL,
+            "message" TEXT NOT NULL,
+            "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "read" BOOLEAN NOT NULL DEFAULT false,
+            "link" TEXT,
+            "metadata" JSONB,
+            CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
+        );
+    END$$;
   `);
 
   // 3. Add missing columns if they do not exist
   console.log("⚙️  Verifying and appending missing columns...");
   await prisma.$executeRawUnsafe(`
-    ALTER TABLE "techniciens" ADD COLUMN IF NOT EXISTS "last_login" TIMESTAMP(3);
+    DO $$
+    BEGIN
+        ALTER TABLE "techniciens" ADD COLUMN IF NOT EXISTS "last_login" TIMESTAMP(3);
 
-    ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "outlook_event_id" TEXT;
-    ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "signature" TEXT;
-    ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "signatureTechnicien" TEXT;
-    ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "locked_at" TIMESTAMP(3);
-    ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "locked_by" TEXT;
-    ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "commentaireTechnicien" TEXT;
+        ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "outlook_event_id" TEXT;
+        ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "signature" TEXT;
+        ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "signatureTechnicien" TEXT;
+        ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "locked_at" TIMESTAMP(3);
+        ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "locked_by" TEXT;
+        ALTER TABLE "interventions" ADD COLUMN IF NOT EXISTS "commentaireTechnicien" TEXT;
 
-    ALTER TABLE "stock" ADD COLUMN IF NOT EXISTS "numero_serie" TEXT NOT NULL DEFAULT '';
-    ALTER TABLE "stock" ADD COLUMN IF NOT EXISTS "low_stock_threshold" INTEGER DEFAULT 5;
+        ALTER TABLE "stock" ADD COLUMN IF NOT EXISTS "numero_serie" TEXT NOT NULL DEFAULT '';
+        ALTER TABLE "stock" ADD COLUMN IF NOT EXISTS "low_stock_threshold" INTEGER DEFAULT 5;
+    END$$;
   `);
 
   // 4. Convert columns to native PostgreSQL enums if they are still TEXT/VARCHAR
