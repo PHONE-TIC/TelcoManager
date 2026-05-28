@@ -1,164 +1,95 @@
-# TelcoManager
+# 📊 TelcoManager
 
-TelcoManager est une application web de gestion pour le suivi des stocks, des interventions techniques, des techniciens et des inventaires, avec une base PostgreSQL et un déploiement Docker simplifié.
+[![Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20PostgreSQL-blue?style=flat-sounding)](https://github.com/PHONE-TIC/TelcoManager)
+[![Docker Build](https://img.shields.io/badge/Docker-Compatible-blue?logo=docker&logoColor=white)](https://hub.docker.com/r/phonetic76/telcomanager-app)
+[![CI status](https://img.shields.io/badge/CI-Passed-success?logo=github-actions&logoColor=white)](https://github.com/PHONE-TIC/TelcoManager/actions)
+[![CD status](https://img.shields.io/badge/CD-Deployed-success?logo=github-actions&logoColor=white)](https://github.com/PHONE-TIC/TelcoManager/actions)
 
-## Fonctionnalités
+**TelcoManager** est une application web d'entreprise conçue pour le suivi en temps réel des stocks, des interventions techniques, des techniciens et des inventaires. L'application intègre une architecture conteneurisée robuste et sécurisée avec base PostgreSQL et serveur inverse HTTPS automatisé.
 
-### Application web
+---
 
-- Tableau de bord avec statistiques et raccourcis
-- Gestion des clients avec fiches détaillées
-- Gestion des techniciens avec rôles (`admin`, `gestionnaire`, `technicien`)
-- Planification et suivi des interventions
-- Gestion du stock courant et du stock HS
-- Module d’inventaire avec scan, comptage, écarts et export PDF
-- Recherche globale sur les principales entités
-- Centre de notifications intégré avec badge, panneau global et fermeture contextuelle
-- Alertes visuelles de déconnexion des liens IP avec toasts et notifications persistées côté interface
-- Authentification JWT
-- Support PWA
+## 🚀 Fonctionnalités Clés
 
-## Architecture
+### 💻 Interface & Logique Métier
+- **Tableau de Bord Premium** : Statistiques consolidées, indicateurs clés de performance (KPI) compactés et raccourcis d'accès rapide.
+- **Gestion des Interventions** : Planification, suivi, signatures électroniques, et chargement de pièces jointes.
+- **Gestion de Stock & Matériels** : Distinction claire entre stock courant (utilisable) et stock HS (défectueux). Transferts sécurisés.
+- **Module d'Inventaire Avancé** : Mode scan en rafale (batch scanning), retours sonores (Web Audio API) et vibrations (haptique) pour fluidifier les saisies. Exportation automatique des écarts d'inventaire au format PDF.
+- **Recherche Globale Intelligente** : Moteur de recherche unifié indexant les principales entités (clients, interventions, matériels).
+- **Centre de Notifications & Alertes** : Système in-app dynamique avec cloche, badges de lecture, toasts animés et surveillance continue des liens IP (Watcher et alertes de déconnexion).
+- **Mode Hors-ligne Unifié** : File d'attente robuste (`offlineSync.ts`) stockant localement les actions (y compris la validation et la clôture d'interventions avec photos sérialisées en base64) puis resynchronisation automatique au retour du réseau.
+- **Authentification Sécurisée** : Connexion par jeton JWT avec tolérance aux espaces accidentels (trim automatique).
 
-L'application est structurée selon une architecture moderne de conteneurs unifiés et sécurisés. Elle repose sur trois couches logiques principales orchestrées localement et en production par Docker Compose :
+### 🛡️ Sécurité & DevOps
+- **Zero-Trust Architecture** : Modèle de permission strict (Default-Deny) bloquant par défaut tout accès non explicite.
+- **Garde-fous de Production** : Blocage immédiat de l'application si l'environnement de production utilise des secrets faibles ou par défaut.
+- **Reverse Proxy Caddy** : Certificats TLS/SSL gérés automatiquement par Let's Encrypt & ZeroSSL, supportant le challenge `DNS-01` via DuckDNS pour les environnements non exposés publiquement.
+- **Pipeline CI/CD Robuste** : Workflows GitHub Actions pour exécuter la suite de tests et compiler les builds de production de manière sécurisée.
+
+---
+
+## 🏗️ Architecture Technique
+
+L'application repose sur une architecture moderne de conteneurs unifiés :
 
 ```text
 telcomanager/
-├── backend/              # API Node.js + Express + Prisma
-├── webapp/               # Frontend React (PWA)
-├── postgres/             # Scripts d'initialisation PostgreSQL
-├── Caddyfile             # Configuration du serveur web inverse (HTTPS/TLS)
-├── Dockerfile.caddy      # Build personnalisé de Caddy (avec plugin DNS)
-├── Dockerfile.combined   # Build de production unifié de l'application
+├── backend/              # API REST & SSE (Node.js, Express, Prisma ORM)
+├── webapp/               # Frontend Single Page App (React, Vite, PWA)
+├── postgres/             # Scripts d'initialisation et structures PostgreSQL
+├── Caddyfile             # Configuration du proxy inverse Caddy (HTTP/2, HTTPS & compression)
+├── Dockerfile.caddy      # Image Caddy personnalisée compilée avec le module DuckDNS
+├── Dockerfile.combined   # Image de production combinée (Multi-stage build)
 ├── docker-compose.yml    # Fichier d'orchestration multi-services
-└── publish-docker.sh     # Script utilitaire de publication Docker Hub
+└── publish-docker.sh     # Script utilitaire de publication sur Docker Hub
 ```
 
-### Détails Techniques & Fonctionnement
+### 🔍 Focus sur l'Infrastructure
 
-1. **Build de Production Unifié (`Dockerfile.combined`)** :
-   - L'image finale de production est construite en plusieurs étapes (multi-stage build) pour garantir une légèreté maximale.
-   - **Frontend (React / Vite)** : Compilé en amont en fichiers statiques optimisés dans un dossier client (`/app/client`).
-   - **Backend (Node.js / Express)** : Conçu pour héberger les API REST/SSE tout en servant de manière transparente et sécurisée les ressources statiques du frontend.
-   - Aucun fichier de test, script de débogage ou dépendance de développement n'est embarqué dans l'image finale, assurant une sécurité et une efficacité accrues.
+1. **Build de Production Combiné (`Dockerfile.combined`)** :
+   - Compile en amont les ressources statiques du frontend React dans `/app/client`.
+   - Lance le serveur d'API Express (Node.js) qui sert également les fichiers statiques de façon performante et hermétique.
+   - Les dépendances de développement, outils de test et codes sources non transpilés sont exclus de l'image de production.
+2. **Base de Données & ORM (PostgreSQL & Prisma)** :
+   - PostgreSQL 15 héberge les données de manière persistante.
+   - L'ORM **Prisma** gère le typage statique de bout en bout et applique automatiquement les migrations de schéma SQL à chaque démarrage du conteneur applicatif via le script d'entrée `start.sh`.
+3. **Sécurisation Réseau Caddy & En-têtes HTTP** :
+   - Compression à la volée via les algorithmes Zstd et Gzip.
+   - Forçage strict du protocole chiffré via *HSTS* (Strict-Transport-Security).
+   - En-têtes de durcissement activés par défaut : *X-Frame-Options* (anti-clickjacking), *X-Content-Type-Options* (anti-sniffing), et *X-XSS-Protection*.
 
-2. **Accès aux Données & Base de Données (PostgreSQL / Prisma)** :
-   - Les données transactionnelles sont stockées dans une base de données PostgreSQL robuste (version 15).
-   - Les interactions avec la base de données sont gérées via l'ORM **Prisma**, garantissant un typage statique de bout en bout de l'application et la synchronisation automatisée du schéma via des migrations au démarrage du conteneur (`npx prisma migrate deploy` piloté par le script `start.sh`).
+---
 
-3. **Serveur Inverse & Sécurisation TLS (`Caddy` / `Dockerfile.caddy`)** :
-   - Un conteneur **Caddy** dédié est configuré comme serveur web inverse de production en amont de l'application.
-   - **SSL/TLS Automatique** : Caddy gère nativement le provisionnement et le renouvellement automatique des certificats SSL/TLS gratuits Let's Encrypt / ZeroSSL.
-   - **Support DuckDNS (`Dockerfile.caddy`)** : Caddy est compilé sur mesure avec le module DuckDNS pour résoudre les défis Let's Encrypt par la méthode `DNS-01`. Cela permet l'obtention de certificats SSL de confiance même lorsque le conteneur n'est pas directement exposé aux ports publics 80/443.
-   - **Renforcement de Sécurité (Headers HTTP)** : Application stricte des meilleures pratiques en matière d'en-têtes HTTP de sécurité :
-     - *HSTS (Strict-Transport-Security)* : Force les communications chiffrées en HTTPS sur l'intégralité du domaine et sous-domaines.
-     - *Anti-Clickjacking (X-Frame-Options)* : Bloque l'intégration de l'application dans des Iframe externes.
-     - *Anti-MIME Sniffing (X-Content-Type-Options)* : Empêche le navigateur de deviner le type MIME des ressources envoyées.
-     - *Protection XSS (X-XSS-Protection)* : Active le filtre de blocage XSS par défaut.
-   - **Optimisations de Performance** : Compression dynamique des flux de données à l'aide des algorithmes de pointe Gzip et Zstd.
-
-## Démarrage rapide
+## ⚡ Démarrage Rapide (Docker)
 
 ### Prérequis
-
 - Docker
 - Docker Compose
 
-### Lancer l’environnement local
+### Lancer l'environnement de production local
+1. **Générer et compiler les images localement** :
+   ```bash
+   docker compose build
+   ```
+2. **Démarrer les services en arrière-plan** :
+   ```bash
+   docker compose up -d
+   ```
 
-Pour compiler les conteneurs localement via les Dockerfiles du dépôt (recommandé lors de modifications de code) :
-```bash
-docker compose build
-```
+### Services exposés
+- **Application Web** : [https://localhost:8081](https://localhost:8081) *(Accès HTTPS chiffré via Caddy)*
+- **PostgreSQL** : `localhost:5435` *(Masqué de l'hôte externe par défaut en production pour des raisons de sécurité)*
 
-Pour démarrer l'ensemble des services en arrière-plan :
-```bash
-docker compose up -d
-```
+### Identifiants par défaut au premier démarrage
+- **Identifiant** : `admin`
+- **Mot de passe** : `admin123` *(Sauf si modifié via `DEFAULT_ADMIN_PASSWORD`)*
 
-Services exposés par défaut :
+---
 
-- application : `https://localhost:8081` (Caddy reverse proxy avec HTTPS)
-- PostgreSQL : `localhost:5435`
+## 🛠️ Développement Local
 
-### Identifiants par défaut
-
-- username : `admin`
-- password : `admin123` (valeur par défaut de premier démarrage si `DEFAULT_ADMIN_PASSWORD` n'est pas définie dans l'environnement)
-
-## Variables d’environnement principales
-
-| Variable | Description |
-| --- | --- |
-| `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Configuration PostgreSQL |
-| `JWT_SECRET` | Secret JWT (requis et doit être personnalisé et sécurisé en production) |
-| `DEFAULT_ADMIN_PASSWORD` | Mot de passe personnalisé pour le compte admin par défaut (requis et doit être fort en production) |
-| `SEED_ON_START` | `true` pour réinitialiser de force le mot de passe de l'admin au démarrage (`false` par défaut) |
-| `OUTLOOK_TENANT_ID` | ID de l'annuaire (Tenant) Azure AD pour la synchronisation Microsoft Graph |
-| `OUTLOOK_CLIENT_ID` | ID d'application (Client) enregistré dans Azure AD pour Microsoft Graph |
-| `OUTLOOK_CLIENT_SECRET` | Secret client d'application généré dans Azure AD |
-| `OUTLOOK_SHARED_CALENDAR_EMAIL` | Adresse e-mail de la boîte aux lettres partagée contenant le calendrier cible |
-| `VAPID_PUBLIC_KEY` | Clé publique VAPID pour les notifications push web |
-| `VAPID_PRIVATE_KEY` | Clé privée VAPID pour les notifications push web |
-| `VAPID_SUBJECT` | Adresse e-mail ou URI de contact pour la configuration VAPID |
-| `UNYC_BASE_URL` | URL de base pour les appels API publique UNYC |
-| `UNYC_IAM_URL` | URL IAM UNYC pour l'authentification |
-| `UNYC_CLIENT_ID` | Client ID de l'API UNYC |
-| `UNYC_USERNAME` | Identifiant d'utilisateur API UNYC |
-| `UNYC_PASSWORD` | Mot de passe de l'utilisateur API UNYC |
-| `ATLAS_IP_LINKS_URL` | URL de synchronisation des fiches de liens IP Atlas |
-| `ATLAS_USERNAME` | Identifiant d'accès à l'espace Atlas |
-| `ATLAS_PASSWORD` | Mot de passe d'accès à l'espace Atlas |
-| `ATLAS_TOTP_URI` | URI brute TOTP MFA pour générer les jetons d'accès Atlas |
-
-## Configuration de la Synchronisation Outlook (Microsoft Entra ID)
-
-Pour synchroniser automatiquement vos interventions avec un calendrier partagé Microsoft 365, suivez ces étapes pas-à-pas pour inscrire l'application dans votre portail Azure / Microsoft Entra ID :
-
-1. **Enregistrement de l'Application** :
-   - Connectez-vous au [Portail Microsoft Entra ID](https://entra.microsoft.com/) ou au Portail Azure.
-   - Allez dans **Enregistrements d'applications (App registrations)** ➡️ **Nouvel enregistrement (New registration)**.
-   - Donnez un nom à l'application (ex: `TelcoManager Outlook Sync`).
-   - Choisissez le type de compte : *Comptes dans cet annuaire d'organisation uniquement (Single Tenant)*.
-   - Laissez l'URI de redirection vide et cliquez sur **Enregistrer (Register)**.
-
-2. **Configuration des Permissions API (Microsoft Graph)** :
-   - Dans le menu de gauche, allez dans **Autorisations d'API (API permissions)** ➡️ **Ajouter une autorisation (Add a permission)**.
-   - Sélectionnez **Microsoft Graph** puis **Autorisations d'application (Application permissions)**.
-   - Recherchez et cochez la permission **`Calendars.ReadWrite`** (permet d'écrire et de gérer les événements du calendrier).
-   - Cliquez sur **Ajouter des autorisations (Add permissions)**.
-   - **CRITICAL (Étape obligatoire)** : Cliquez sur **Accorder un consentement d'administrateur pour [Votre Société] (Grant admin consent for...)** pour valider l'accès démon sans interaction humaine.
-
-3. **Génération du Secret Client** :
-   - Allez dans **Certificats et secrets (Certificates & secrets)** ➡️ **Nouveau secret client (New client secret)**.
-   - Entrez une description et choisissez une durée d'expiration (ex: 24 mois), puis cliquez sur **Ajouter (Add)**.
-   - **CRITICAL** : Copiez immédiatement la **Valeur (Value)** du secret généré. Elle ne sera plus affichée par la suite. C'est cette valeur qui doit être affectée à `OUTLOOK_CLIENT_SECRET`.
-
-4. **Récupération des Identifiants (IDs)** :
-   - Retournez sur l'onglet **Vue d'ensemble (Overview)** de l'application.
-   - Copiez l'**ID d'application (client)** ➡️ correspond à `OUTLOOK_CLIENT_ID`.
-   - Copiez l'**ID de l'annuaire (locataire)** ➡️ correspond à `OUTLOOK_TENANT_ID`.
-
-5. **Boîte aux lettres partagée** :
-   - L'adresse email renseignée dans `OUTLOOK_SHARED_CALENDAR_EMAIL` doit correspondre à une boîte aux lettres utilisateur ou une boîte aux lettres partagée Microsoft 365 valide au sein du même Tenant.
-
-## Images Docker
-
-Image publiée :
-
-- `phonetic76/telcomanager-app:latest`
-
-Mise à jour d’une instance :
-
-```bash
-docker compose pull
-docker compose up -d
-```
-
-## Développement local
-
-### Backend
-
+### Installation & Lancement du Backend
 ```bash
 cd backend
 npm install
@@ -166,166 +97,171 @@ npx prisma migrate dev
 npm run dev
 ```
 
-### Frontend
-
+### Installation & Lancement du Frontend (Webapp)
 ```bash
 cd webapp
 npm install
 npm run dev
 ```
 
-### Exécuter les tests (Backend)
-
+### Exécution des Tests Unitaires & Intégration (Backend)
 ```bash
 cd backend
 npm test
 ```
 
-## Mises à jour techniques récentes
+---
 
-### Mai 2026
+## 📋 Variables d'Environnement
 
-Ensemble d'amélioration majeures apportées à la sécurité, à la résilience des stocks, à la synchronisation et à la responsivité mobile :
+L'ensemble des configurations s'effectue via des variables d'environnement déclarées dans le fichier `.env` à la racine (voir modèle dans [.env.example](file:///home/nplacide/Documents/TelcoManager/.env.example)) :
 
-- **Revue de Sécurité Globale & Audit V3 (Mai 2026)** :
-  * **Persistance & Migrations Versionnées** : Transition définitive de `db push` à des migrations relationnelles PostgreSQL robustes. Baselining de la base de données locale avec un script de création complète des structures de tables, index, contraintes et relations à partir de zéro, garantissant un déploiement fiable sur base neuve sans utiliser de `DROP TYPE ... CASCADE` destructeur.
-  * **Patch de Schéma Sécurisé & Résolution Manuelle des Compteurs à 0** : L'exécution automatique du script `fix-enums.js` a été désactivée par défaut pour prévenir toute altération ou écriture involontaire sur la structure de la base de données. L'application du correctif de schéma s'effectue désormais de manière sécurisée et explicite via l'activation de la variable d'environnement `RUN_SCHEMA_RECOVERY=true` au démarrage du conteneur. Le mécanisme automatique de forçage de statut `migrate resolve --applied` a été supprimé pour préserver l'historique officiel des migrations Prisma.
-  * **Sécurisation de la Migration d'Unicité des Numéros de Série (P4)** : Intégration d'un bloc de vérification de préflight PL/pgSQL strict dans la migration de l'index unique partiel sur `numero_serie` (ignorant les chaînes vides). Cette étape échoue volontairement au démarrage de la migration avec l'exception `DB_PREFLIGHT_FAIL` si des doublons de numéros de série (insensibles à la casse) sont détectés dans la table de stock existante, permettant à l'administrateur d'assainir manuellement les données avant d'appliquer l'index unique.
-  * **Résolution 502 & Prepared Statements PostgreSQL** : Encapsulation de l'ensemble des commandes DDL (créations de tables et ajouts de colonnes multiples) au sein de blocs `DO $$ BEGIN ... END$$;` PL/pgSQL natifs. Cela élimine le crash de démarrage (erreur 502) en respectant la restriction PostgreSQL interdisant l'exécution d'instructions multiples au sein d'une seule requête préparée Prisma (`cannot insert multiple commands into a prepared statement`).
-  * **Intégration Stricte des Énumérations Prisma** : Typage fort et gestion des énumérations `Role`, `StatutIntervention` et `StatutStock` (comprenant l'état `retour_fournisseur` pour résoudre toute incohérence avec les validations d'API). Utilisation de type guards et parsers robustes pour mapper et valider les paramètres de requête HTTP.
-  * **Sécurisation Express Globale (Helmet & Rate-Limiter)** : Branchement de `helmet` pour la protection des en-têtes réseau en production et limitation du taux d'appels brute-force avec `express-rate-limit` sur l'authentification (`/api/auth/login`), plafonné à 15 tentatives par 15 minutes.
-  * **Centralisation de la Sécurité JWT** : Création d'un module de configuration JWT unifié (`jwt.ts`) validant les variables d'environnement au boot et crashant l'application en production si le secret d'authentification reste sur le fallback faible par défaut.
-  * **Résolution Totale des Erreurs de Linter ESLint (0 erreur, 0 warning)** :
-    - Stabilisation des cycles de re-rendu infinis causés par `useAuth` dans les contexts React en ciblant la propriété primitive stable `user?.id` à la place de l'objet complet.
-    - Élimination des avertissements de Vite Fast Refresh en isolant contextes et hooks dans des modules d'infrastructures pures (`LockContextCore.ts` et `NotificationCenterContextCore.ts`) sans composants exportés.
-    - Élimination des erreurs `set-state-in-effect` (appels synchrone de `setState` dans les hooks d'effet) en encapsulant les ré-initialisations d'états dans des minuteurs asynchrones `setTimeout`.
-    - Remplacement complet des types `any` résiduels par du typage TypeScript fort (guards sur structures Axios, structures d'artéfacts et support webkit audio) atteignant 100% de conformité ESLint.
-  * **Hardenisation du Middleware d'Accès aux Interventions (Default-Deny)** : Refonte de `requireInterventionAccess` pour appliquer un modèle de restriction d'accès par défaut étanche : seuls l'administrateur et le gestionnaire sont explicitement autorisés, le technicien doit être vérifié par son assignation, et tout autre rôle ou absence de session est rejeté d'office avec une erreur HTTP 403 Forbidden.
-  * **Téléchargement & Affichage Sécurisé des Pièces Jointes** : Remplacement des URL directes d'uploads par un mécanisme sécurisé et temporaire. Récupération des fichiers sous forme de Blob binaire authentifié par le header Bearer, transformation en URL d'objet locale temporaire (`URL.createObjectURL`), et révocation automatique (`URL.revokeObjectURL`) au démontage des composants React ou au rafraîchissement pour éviter toute fuite de mémoire ou erreur navigateurs 401.
-  * **Suites de Tests Réelles & Couverture de Production (Vitest)** : Suppression des anciens tests bidons et écriture de 13 tests réels pour valider les mouvements de stock transactionnels complexes, la recherche globale et les middlewares d'autorisation (dont le cloisonnement strict et le modèle default-deny).
-  * **Hermétisation de la Base de Données (Production)** : Retrait de l'exposition publique du port de base de données `5435` sur l'hôte externe dans le fichier Docker Compose.
-  * **Pipeline CD Gated par CI GitHub Actions** : Ajout d'étapes de typecheck TypeScript (`tsc`), lintage ESLint et tests Vitest automatisés dans le fichier de CI (`ci.yml`), restriction du déclenchement du workflow CD (`cd.yml`) uniquement sur la branche `main` et checkout explicite du SHA du commit validé (`ref: ${{ github.event.workflow_run.head_sha }}`).
-- **Sécurisation Globale & Audit de Code (Revue de Sécurité V2)** :
-  * **Verrous Anti-Fallback de Production** : Blocage immédiat du démarrage du backend en production si `JWT_SECRET` est vide ou égal à la valeur faible par défaut (`your-secret-key`), et blocage de l'exécution du seed en production si `DEFAULT_ADMIN_PASSWORD` est vide ou égal à la valeur faible par défaut (`admin123`).
-  * **Middleware Anti-Zombie JWT** : Contrôle d'activité et de rôles en temps réel à chaque requête REST/SSE en base de données, bloquant immédiatement les utilisateurs désactivés ou rétrogradés.
-  * **Route d'Accès Sécurisée et Cloisonnée aux Fichiers** : Suppression de l'accès statique public au répertoire `/uploads` et création d'une route d'API authentifiée (`GET /uploads/interventions/:id/:filename`) qui contrôle l'assignation du technicien et prévient le *Directory Traversal* via `path.basename`.
-  * **Double Validation Multer & Assainissement** : Double vérification stricte du type MIME et de l'extension de fichier Multer contre une liste blanche (`.pdf`, `.jpg`, `.jpeg`, `.png`, `.webp`) pour interdire les faux types de fichiers, avec renommage nettoyé (`${Date.now()}_${nom_nettoyé}${extension}`) et suppression du suivi Git de l'ensemble des fichiers d'uploads historiques de test.
-  * **Middleware d'Autorisation en Amont (Multer Block)** : Injection du middleware `requireInterventionAccess` avant le chargement Multer dans la route d'artéfacts, rejetant les écritures de fichiers non autorisés sur le disque.
-  * **Cloisonnement Strict Technicien** : Restructuration complète des points d'accès des contrôleurs pour interdire le listing et la consultation des interventions d'autrui, et sécuriser le verrouillage collaboratif (lock/unlock).
-  * **Recherche Globale Hardenie** : Masquage des résultats `ipLinks` aux techniciens lors de la recherche et blocage des recherches vides composées uniquement d'espaces blancs.
-  * **Sécurisation des Véhicules** : Restriction d'accès aux stocks véhicule par technicien et verrouillage de l'action de transfert de matériel défectueux (HS) aux seuls administrateurs.
-  * **Helper Frontend Sécurisé** : Correction de `canEditInterventionByRole` pour bloquer les formulaires d'édition si le rôle de l'utilisateur est indéfini ou absent.
-  * **Validation Express-Validator** : Consommation systématique de `validationResult(req)` dans tous les contrôleurs d'interventions secondaires (statut, heures, signatures, matériel, etc.) pour bloquer tôt les requêtes invalides ou malicieuses.
-  * **Transactions Prisma Interactives** : Encapsulation des mouvements de stock complexes de l'intervention dans des blocs transactionnels de base de données atomiques (`prisma.$transaction`) pour éviter toute désynchronisation de base.
-- **Synchronisation Calendrier Partagé Outlook** : Implémentation d'une synchronisation automatique des interventions avec un calendrier Microsoft 365 partagé (via l'API Microsoft Graph) avec authentification démon (Client Credentials Azure AD), cache de token, corps de rendez-vous HTML riche assaini contre le XSS via un échappement de caractères (`escapeHtml`), et gestion résiliente du cycle de vie CRUD.
-- **Déploiement Compose & DevOps** :
-  * **Configuration Compose Build** : Configuration des blocs `build` dans Compose pour le conteneur applicatif `app` (via `Dockerfile.combined`) et `caddy` (via `Dockerfile.caddy`), permettant à `docker compose build` du pipeline CD de fonctionner nominalement.
-  * **Déclaration des Variables** : Déclaration propre des variables d'environnement (`OUTLOOK_*`, `DEFAULT_ADMIN_PASSWORD`, `SEED_ON_START`) dans le fichier Compose et déclaration complète dans le modèle `.env.example`.
-  * **Correction DevOps GitHub Actions** : Nettoyage et débogage du workflow CD `.github/workflows/cd.yml` (suppression de la dépendance inexistante `needs: [test-on-ci]`).
-  * **Fiabilisation de la CI (Vitest Dummy)** : Création de tests unitaires Vitest de base (`backend/src/dummy.test.ts` et `webapp/src/dummy.test.ts`) pour garantir l'exécution sans erreur de la commande `npm test` dans la CI GitHub Actions.
-- **Verrouillage Collaboratif en Temps Réel (SSE)** : Implémentation d'un système de verrous collaboratifs en temps réel via des flux SSE (Server-Sent Events) pour éviter les conflits d'édition d'interventions, avec des indicateurs visuels dynamiques sur le Dashboard.
-- **Mode Rafale pour le Scanner (Batch Scanning)** : Ajout d'une option de scan en rafale pour le scanner de codes-barres avec retours sonore (Web Audio API) et tactile (Vibration) pour fluidifier les opérations d'inventaire et de stock.
-- **Mode Hors-ligne & Synchronisation Automatique** : Création d'une file d'attente robuste (`offlineSync.ts`) capable de différer les actions utilisateur (y compris la validation et la clôture d'interventions avec photos sérialisées en base64) en cas de déconnexion réseau, puis de les resynchroniser silencieusement et séquentiellement dès le retour du réseau.
-- **Raffinements Visuels Glassmorphic & Skeleton Loaders** : Intégration d'un composant de chargement squelette haut de gamme (`SkeletonLoader.tsx`) avec animation scintillante (shimmer) pour un chargement fluide, et application d'un flou d'arrière-plan (Glassmorphism) sur la Topbar, les modales et les overlays.
-- **Auto-Réenregistrement des notifications Push** : Mécanisme d'auto-réenregistrement silencieux et de synchronisation des abonnements aux notifications Push web entre le frontend et le backend au démarrage de l'application.
-- **Refonte Premium de la page de Connexion** :
-  - Tolérance aux espaces accidentels lors de la saisie (trim automatique sur les champs frontend et backend, utile lors de collages depuis des gestionnaires de mots de passe).
-  - Suppression du bouton de changement de thème sur l'écran de connexion pour détecter et suivre automatiquement les préférences de l'OS (`prefers-color-scheme`).
-  - Interface modernisée et premium avec effets de verre dépoli (Glassmorphism), animations d'ambiance et retour haptique visuel (shake animation) sur les erreurs d'authentification.
-- **Harmonisation Sidebar/Topbar** : Ajustement minutieux de la Topbar (couleurs de fond harmonisées avec la Sidebar et suppression de la bordure inférieure) pour restaurer le coin arrondi parfait entre les deux volets.
-- **Optimisations de la Responsivité Mobile (Interventions)** :
-  * Restructuration du JSX pour rendre le formulaire de création d'interventions entièrement visible et réactif sur mobile.
-  * Activation d'une vue planning mobile optimisée sous forme de timeline agenda (`MobilePlanning`) lorsque le mode calendrier est sélectionné sur mobile, masquant proprement le grand calendrier de bureau peu adapté aux petits écrans.
-  * Résolution des conflits de masquage responsif dans l'onglet "Toutes" pour permettre un accès complet et fonctionnel aux administrateurs sur mobile.
+### 🔑 Configuration Générale & Sécurité
+| Variable | Description | Valeur par défaut / Recommandation |
+| --- | --- | --- |
+| `JWT_SECRET` | Secret de signature des jetons de session JWT. | **Requis (Doit être fort en prod)** |
+| `DEFAULT_ADMIN_PASSWORD` | Mot de passe du compte administrateur initial (`admin`). | **Requis (Doit être fort en prod)** |
+| `SEED_ON_START` | Force la réinitialisation du mot de passe admin au boot si `true`. | `false` |
+| `RUN_SCHEMA_RECOVERY` | Active le mode de restauration défensive du schéma (voir section Maintenance). | `false` |
 
-### Avril 2026
+### 📂 Base de Données (PostgreSQL)
+| Variable | Description |
+| --- | --- |
+| `DB_USER` | Identifiant de connexion PostgreSQL. |
+| `DB_PASSWORD` | Mot de passe de connexion PostgreSQL. |
+| `DB_NAME` | Nom de la base de données. |
 
-Optimisations et simplifications importantes, sans modification fonctionnelle volontaire :
+### 📧 Synchronisation Outlook (Microsoft Graph)
+| Variable | Description |
+| --- | --- |
+| `OUTLOOK_TENANT_ID` | ID de l'annuaire (Tenant) Azure AD / Microsoft Entra. |
+| `OUTLOOK_CLIENT_ID` | ID d'application (Client) enregistré dans Azure AD. |
+| `OUTLOOK_CLIENT_SECRET` | Secret client généré pour l'application Azure AD. |
+| `OUTLOOK_SHARED_CALENDAR_EMAIL` | Adresse e-mail du calendrier partagé Microsoft 365. |
 
-- lazy-loading des pages au niveau des routes
-- lazy-loading de `GlobalSearch`, des dépendances PDF à l’export, de l’UI PWA et du `ReloadPrompt`
-- amélioration du chargement initial du frontend
-- harmonisation responsive et transitions
-- extraction progressive de helpers, types, sections et utilitaires depuis les grosses pages frontend (`Dashboard`, `Interventions`, pages détail, imports, PDF)
-- optimisation finale du bundle avec allègement du dashboard, remplacement du graphe lourd par un composant natif léger et chargement différé du calendrier d’interventions
-- simplification backend par extraction de services métier, services de requête et helpers communs
-- dernier durcissement léger des services backend restants (`auth`, `stock-write`, `stock-movement-query`)
-- ajout d’une première base de tests automatisés ciblés sur les helpers extraits du frontend
-- centralisation de pagination, validation et accès Prisma
-- nettoyage de fichiers obsolètes et rationalisation de la documentation
-- suppression complète de l’application mobile et de l’application desktop pour recentrer le projet sur la webapp
-- mise à jour du README, des guides de déploiement, de test et du guide utilisateur pour refléter une architecture web-only
-- réduction progressive puis correction complète des erreurs lint frontend, avec passage final à 0 erreur et seulement quelques warnings hooks résiduels de confort si non traités dans certains états intermédiaires
-- validation continue via tests frontend, lint frontend, builds backend/webapp, rebuilds Docker, push GitHub et publication DockerHub
-- harmonisation visuelle globale de l’application en prenant l’écran `Interventions` comme référence de mise en page
-- factorisation des styles d’écrans et d’écrans détail via des feuilles CSS communes pour éviter la duplication
-- fusion des zones header + résumé/statistiques sur les écrans principaux pour gagner de la place et améliorer la lisibilité
-- compactage global des compteurs et KPI pour tenir sur une seule ligne autant que possible
-- amélioration de la lisibilité des actions d’interface, notamment le bouton de déconnexion en rouge et un sélecteur clair/sombre plus visible
-- simplification de la vue `Interventions` pour les techniciens, limitée aux interventions du jour avec compteur dédié dans le titre
-- harmonisation de l’écran `Supervision de liens IP` avec les autres écrans de l’application
-- intégration de la supervision des liens IP directement dans le tableau de bord avec KPI dédiés et panneau des liens KO
-- ajout d’un centre de notifications in-app avec cloche dans le header partagé, badge non lu, marquage lu, suppression et lien direct vers la fiche concernée
-- ajout d’un watcher global de supervision des liens IP pour déclencher les notifications même hors de la page dédiée
-- ajout de toasts in-app pour les changements d’état des liens IP, affichés sous la topbar en haut à droite avec animations d’entrée/sortie, barre de progression visuelle et navigation directe vers la fiche du lien
-- ajout d’une page détail par lien IP (`/supervision-liens-ip/:reference`)
-- remplacement global des émojis d’interface par des icônes SVG homogènes via le composant partagé `AppIcon`
-- repositionnement de la recherche globale et de la cloche dans une barre commune, avec comportement modal cohérent pour la recherche et les notifications
+### 🔔 Notifications Push (Web Push / VAPID)
+| Variable | Description |
+| --- | --- |
+| `VAPID_PUBLIC_KEY` | Clé publique de chiffrement Web Push. |
+| `VAPID_PRIVATE_KEY` | Clé privée de chiffrement Web Push. |
+| `VAPID_SUBJECT` | E-mail de contact ou URI enregistré auprès des serveurs Push. |
 
-### Décembre 2025
+### 📡 Intégrations API Externes
+| Variable | Description |
+| --- | --- |
+| `UNYC_BASE_URL` / `UNYC_IAM_URL` | Points d'accès de l'API UNYC et de son module d'authentification. |
+| `UNYC_CLIENT_ID` / `UNYC_USERNAME` / `UNYC_PASSWORD` | Identifiants d'accès partenaires pour l'API UNYC. |
+| `ATLAS_IP_LINKS_URL` | URL de synchronisation des fiches de liens IP du portail Atlas. |
+| `ATLAS_USERNAME` / `ATLAS_PASSWORD` / `ATLAS_TOTP_URI` | Identifiants et clé TOTP brute (MFA) de l'agent Atlas. |
 
-Travail initial de stabilisation et d’allègement :
+---
 
-- centralisation des types TypeScript
-- amélioration de la vue technicien
-- nettoyage de logs de debug et de code mort
-- correction de problèmes de typage et de robustesse
-- validation du build de production
+## 📅 Synchronisation Outlook (Microsoft Entra ID)
 
-## Structure de données
+Pour connecter l'application à un calendrier d'équipe ou de technicien partagé Microsoft 365, configurez votre portail Microsoft Entra ID :
 
-Principales entités :
+1. **Enregistrement de l'Application** :
+   - Rendez-vous sur le [Portail Microsoft Entra ID](https://entra.microsoft.com/).
+   - Enregistrez une nouvelle application (*Single Tenant*), en laissant l'URL de redirection vide.
+2. **Attribution des Permissions** :
+   - Ajoutez l'autorisation d'application **`Calendars.ReadWrite`** dans Microsoft Graph.
+   - **CRITICAL** : Cliquez impérativement sur **Accorder un consentement d'administrateur** pour valider les accès.
+3. **Création du Secret** :
+   - Créez un nouveau secret client dans *Certificats & secrets*.
+   - Copiez immédiatement sa valeur (elle sera masquée par la suite) et affectez-la à `OUTLOOK_CLIENT_SECRET`.
+4. **Configuration du Calendrier** :
+   - L'adresse email fournie dans `OUTLOOK_SHARED_CALENDAR_EMAIL` doit correspondre à une boîte ou un calendrier partagé valide sur le même Tenant.
 
-- `clients`
-- `techniciens`
-- `interventions`
-- `stock`
-- `equipments`
+---
 
-## Maintenance & Résolution des Conflits Base de Données
+## 🛡️ Maintenance & Résolution des Conflits de Base
 
 ### 1. Gestion des Doublons de Numéros de Série (Préflight de Migration)
+La migration d'unicité partielle des numéros de série applique un index unique insensible à la casse sur la colonne `numero_serie` de la table `stock` (excluant les chaînes vides). Si des doublons existent dans vos données historiques, la migration échouera proprement avec le code d'erreur `DB_PREFLIGHT_FAIL`.
 
-La migration d'unicité partielle des numéros de série applique un index unique insensible à la casse sur la colonne `numero_serie` de la table `stock` (excluant les chaînes vides). Si des doublons existent déjà dans votre base de données, la migration échouera proprement avec le code d'erreur `DB_PREFLIGHT_FAIL`.
-
-#### Requête d'identification des doublons :
-Pour lister les doublons existants et leurs occurrences :
-```sql
-SELECT lower(numero_serie) AS serial, count(*), string_agg(nom_materiel, ', ') AS materiels
-FROM stock
-WHERE numero_serie <> ''
-GROUP BY lower(numero_serie)
-HAVING count(*) > 1;
-```
+> [!IMPORTANT]
+> **REQUÊTE D'IDENTIFICATION DES DOUBLONS**
+> Connectez-vous à PostgreSQL et exécutez la requête suivante pour lister les conflits de numéros de série :
+> ```sql
+> SELECT lower(numero_serie) AS serial, count(*), string_agg(nom_materiel, ', ') AS materiels
+> FROM stock
+> WHERE numero_serie <> ''
+> GROUP BY lower(numero_serie)
+> HAVING count(*) > 1;
+> ```
 
 #### Stratégies de nettoyage manuel :
-L'administrateur doit nettoyer ces doublons avant de pouvoir appliquer la migration. Deux méthodes sont recommandées :
-* **Normalisation/Correction** : Mettre à jour les numéros de série erronés si certains contiennent des fautes de saisie.
-* **Fusion** : Si deux enregistrements représentent en réalité le même lot de matériel générique, consolider les quantités sur un seul enregistrement et supprimer la ligne en doublon :
+- **Normalisation** : Corrigez les numéros de série mal saisis ou erronés.
+- **Fusion** : Regroupez les quantités sur une seule ligne et supprimez la ligne en doublon :
   ```sql
-  -- Exemple : Reporter la quantité du doublon B sur le doublon A
+  -- Exemple : Fusionner la quantité de l'ID doublon B sur l'ID doublon A
   UPDATE stock SET quantite = quantite + (SELECT quantite FROM stock WHERE id = 'ID_DOUBLON_B') WHERE id = 'ID_DOUBLON_A';
   DELETE FROM stock WHERE id = 'ID_DOUBLON_B';
   ```
 
-### 2. Récupération Globale du Schéma (Compteurs à 0 / Colonnes manquantes)
+### 2. Importation de Stocks par CSV (Validation & Normalisation)
+Le système d'importation en masse par CSV a été renforcé pour assurer la robustesse des écritures :
+- **Majuscules & Nettoyage** : Les numéros de série importés subissent systématiquement un `.trim().toUpperCase()` pour correspondre à la saisie manuelle.
+- **Détection des Doublons de Fichier** : Le parser analyse les données *à l'intérieur du fichier d'importation* avant toute transaction. Si un numéro de série est dupliqué au sein du CSV, la ligne en faute est rejetée avec un message explicite (ex: `Numéro de série doublon détecté dans le fichier d'import : SN-DUPLICATE-2`), sans bloquer le reste de l'importation.
+- **Traitement des Collisions en Base** : Les violations d'unicité PostgreSQL (`P2002`) sont capturées pour renvoyer une erreur explicite d'utilisation du numéro de série.
 
-Si des colonnes manquent ou si les compteurs du tableau de bord affichent `0` en raison d'une mauvaise initialisation historique de PostgreSQL, vous pouvez forcer la réparation manuelle des types et des colonnes :
-1. Définissez la variable d'environnement `RUN_SCHEMA_RECOVERY=true` dans votre fichier `.env` ou dans l'environnement du conteneur.
-2. Redémarrez le conteneur applicatif. Le script `fix-enums.js` sera exécuté une seule fois pour recréer proprement les énumérations SQL natives, ajouter les colonnes requises (ex: `outlook_event_id`) et restaurer les états de stock manquants.
-3. Une fois la base réparée, désactivez la variable (`RUN_SCHEMA_RECOVERY=false`) pour sécuriser l'environnement.
+### 3. Récupération Globale du Schéma (Compteurs à 0 / Colonnes manquantes)
+Si vos compteurs de tableau de bord restent bloqués à `0` ou que le backend signale des colonnes manquantes (en raison d'un état hérité de votre base) :
 
-## Notes
+> [!TIP]
+> **PROCÉDURE DE RÉCUPÉRATION DU SCHÉMA**
+> 1. Définissez temporairement `RUN_SCHEMA_RECOVERY=true` dans l'environnement du conteneur applicatif.
+> 2. Redémarrez le conteneur. Au boot, le script sécurisé `fix-enums.js` sera invoqué pour recréer proprement les énumérations SQL natives, ajouter les colonnes manquantes (telles que `outlook_event_id`), et restaurer les états de stock par défaut.
+> 3. Une fois l'opération accomplie avec succès, repassez la variable à `false` ou supprimez-la pour sécuriser l'environnement.
 
-- Le projet est désormais centré sur la webapp pour tous les usages.
-- Les changements récents ont été testés localement via Docker avant publication.
+---
+
+## 📈 Historique des Évolutions Techniques
+
+<details>
+<summary><b>🚀 Version 5.0 (Mai 2026) - Durcissement de l'Audit & Traçabilité</b></summary>
+
+- **Audit d'Activité Strict (`performedById`)** : Rectification complète de la traçabilité des mouvements de stock dans les véhicules de techniciens. L'identifiant de l'utilisateur connecté effectuant l'action (`performedById`) est désormais rigoureusement capturé par les contrôleurs et propagé aux services métier. Les actions administratives de transfert ou de modification sur le stock d'un tiers sont ainsi créditées à l'exécuteur réel et non au propriétaire du véhicule.
+- **Pré-validation & Durcissement CSV** : Normalisation automatique (`.trim().toUpperCase()`) des numéros de série importés. Pré-validation interne des doublons au sein du fichier CSV avec rapports d'erreur précis par ligne, permettant d'ignorer les erreurs isolées sans corrompre la transaction globale.
+- **Validation Stricte Express** : Injection forcée de conversions de types `.toInt()` sur les validateurs de quantité de stock véhicule, évitant toute discordance de type à l'exécution de la logique métier.
+- **Suite de Tests Unitaires Enrichie** : Ajout de tests unitaires ciblés sur les règles d'audit, la normalisation CSV et la gestion des doublons (la suite passe à 27 tests entièrement verts).
+</details>
+
+<details>
+<summary><b>🔒 Version 4.0 (Mai 2026) - Audit de Sécurité Global V3 & Zéro Défaut ESLint</b></summary>
+
+- **Migrations Relationnelles Versionnées** : Transition finale de `db push` vers un modèle de migrations PostgreSQL robustes, avec mise en place d'un baselining étanche pour les nouvelles bases de données.
+- **Index d'Unicité Sécurisé** : Index unique insensible à la casse sur `numero_serie` (ignorant les chaînes vides) avec garde PL/pgSQL stricte détectant et bloquant les doublons existants avant l'application de la migration.
+- **Prepared Statements & Résolution 502** : Regroupement des requêtes DDL dans des blocs transactionnels PL/pgSQL natifs (`DO $$ BEGIN ... END$$;`), contournant la limitation PostgreSQL sur les requêtes préparées Prisma multiples.
+- **Express Sécurisé par Défaut** : Branchement de `helmet` pour la protection des en-têtes et d'un rate-limiter strict sur l'accès authentifié (`/api/auth/login`), limité à 15 tentatives par 15 minutes.
+- **Authentification & JWT Hardened** : Crash volontaire au démarrage si le secret JWT reste défini sur la clé faible par défaut en production. Contrôle en temps réel (Middleware anti-zombie) de l'activation des comptes utilisateurs à chaque requête.
+- **Téléchargement Sécurisé des Pièces Jointes** : Remplacement des URL statiques d'upload publiques par des flux binaires Blob authentifiés, avec création et révocation dynamique d'URL d'objets pour éliminer les fuites de mémoire.
+- **Cloisonnement Strict Technicien** : Refonte de `requireInterventionAccess` appliquant un modèle de permission strict (Default-Deny). Blocage des techniciens sur le périmètre exclusif de leurs interventions assignées.
+- **Zéro Erreur ESLint (0 erreur, 0 warning)** : Nettoyage complet des cycles de re-rendu dans React (contexts isolés, timers asynchrones pour les mises à jour d'états dans les effets, typage TypeScript strict sans recours à `any`).
+- **Pipeline CD Verrouillé** : Intégration de verrous TypeScript, Lint et Tests dans GitHub Actions, forçant la validation stricte de la CI avant le déploiement.
+</details>
+
+<details>
+<summary><b>📦 Version 3.0 (Avril 2026) - Performance, Synchronisation Outlook & Mobile First</b></summary>
+
+- **Synchronisation Outlook Calendrier** : Création d'un connecteur daemon Microsoft Graph (Client Credentials) gérant l'authentification silencieuse, le cache de jetons, et la synchronisation résiliente bidirectionnelle.
+- **Verrous Collaboratifs Temps Réel** : Implémentation de verrous d'éditions d'interventions basés sur des flux d'événements Server-Sent Events (SSE).
+- **Scanner Ultra-Fluide** : Mode scan en rafale avec intégration de retours haptiques (vibrations) et sonores (Web Audio API) pour fluidifier les saisies d'inventaire.
+- **Optimisation des Bundles Frontend** : Division du code (code-splitting), chargement différé (lazy-loading) des routes et composants lourds (Global Search, exports PDF, graphiques de statistiques).
+- **Responsivité Mobile Avancée** : Intégration de la vue planning sous forme de timeline agenda (`MobilePlanning`) adaptée aux petits écrans et ajustements de l'ensemble des formulaires d'intervention.
+</details>
+
+<details>
+<summary><b>🛠️ Version 2.0 (Décembre 2025) - Stabilisation & Consolidation Structurelle</b></summary>
+
+- **Nettoyage Général** : Extraction des services de requêtes, centralisation des définitions TypeScript, suppression de l'ancien code mort et des messages de debug verbeux.
+- **Prisma Transactions** : Sécurisation des écritures de mouvements de stock complexes au sein de blocs transactionnels natifs Prisma.
+</details>
+
+---
+
+## 📝 Licence & Propriété
+
+Ce dépôt est la propriété exclusive de **PHONE-TIC** et de ses affiliés. Toute redistribution ou utilisation non autorisée est strictement interdite.
+
+*Développé avec ❤️ par l'équipe d'ingénierie de PHONE-TIC.*
