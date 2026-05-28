@@ -49,65 +49,79 @@ export async function transferStockToTechnician(input: {
   reason?: string;
   performedById: string;
 }) {
+  if (!Number.isInteger(input.quantite) || input.quantite <= 0) {
+    return { status: 400 as const, body: { error: "Quantité invalide" } };
+  }
+
   const stock = await prisma.stock.findUnique({ where: { id: input.stockId } });
   if (!stock) {
     return { status: 404 as const, body: { error: "Article non trouvé" } };
   }
 
-  if (stock.quantite < input.quantite) {
-    return {
-      status: 400 as const,
-      body: { error: "Quantité insuffisante en stock" },
-    };
-  }
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Décrément atomique : ne réussit que si la quantité est suffisante
+      const decremented = await tx.stock.updateMany({
+        where: { id: input.stockId, quantite: { gte: input.quantite } },
+        data: { quantite: { decrement: input.quantite } },
+      });
 
-  const result = await prisma.$transaction(async (tx) => {
-    const updatedStock = await tx.stock.update({
-      where: { id: input.stockId },
-      data: { quantite: stock.quantite - input.quantite },
-    });
+      if (decremented.count !== 1) {
+        throw new Error("INSUFFICIENT_STOCK");
+      }
 
-    await tx.technicianStock.upsert({
-      where: {
-        technicienId_stockId: {
+      const updatedStock = await tx.stock.findUniqueOrThrow({ where: { id: input.stockId } });
+
+      await tx.technicianStock.upsert({
+        where: {
+          technicienId_stockId: {
+            technicienId: input.technicienId,
+            stockId: input.stockId,
+          },
+        },
+        update: {
+          quantite: { increment: input.quantite },
+        },
+        create: {
           technicienId: input.technicienId,
           stockId: input.stockId,
+          quantite: input.quantite,
         },
-      },
-      update: {
-        quantite: { increment: input.quantite },
-      },
-      create: {
-        technicienId: input.technicienId,
-        stockId: input.stockId,
-        quantite: input.quantite,
-      },
+      });
+
+      const movement = await tx.stockMovement.create({
+        data: {
+          stockId: input.stockId,
+          type: "transfert",
+          quantite: -input.quantite,
+          quantiteAvant: updatedStock.quantite + input.quantite,
+          quantiteApres: updatedStock.quantite,
+          reason: input.reason || "Transfert vers technicien",
+          technicienId: input.technicienId,
+          performedById: input.performedById,
+        },
+      });
+
+      return { updatedStock, movement };
     });
 
-    const movement = await tx.stockMovement.create({
-      data: {
-        stockId: input.stockId,
-        type: "transfert",
-        quantite: -input.quantite,
-        quantiteAvant: stock.quantite,
-        quantiteApres: stock.quantite - input.quantite,
-        reason: input.reason || "Transfert vers technicien",
-        technicienId: input.technicienId,
-        performedById: input.performedById,
+    return {
+      status: 200 as const,
+      body: {
+        message: "Transfert effectué avec succès",
+        stock: result.updatedStock,
+        movement: result.movement,
       },
-    });
-
-    return { updatedStock, movement };
-  });
-
-  return {
-    status: 200 as const,
-    body: {
-      message: "Transfert effectué avec succès",
-      stock: result.updatedStock,
-      movement: result.movement,
-    },
-  };
+    };
+  } catch (error: any) {
+    if (error.message === "INSUFFICIENT_STOCK") {
+      return {
+        status: 400 as const,
+        body: { error: "Quantité insuffisante en stock" },
+      };
+    }
+    throw error;
+  }
 }
 
 export async function bulkImportStockItems(input: {

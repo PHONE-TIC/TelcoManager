@@ -5,6 +5,7 @@ import { getTechnicianStockWhere } from "./technician-stock.controller.helpers";
 import {
   addTechnicianStockItem,
   assignTechnicianStockToClient,
+  removeTechnicianStockItem,
   retrieveTechnicianStockFromClient,
   transferHsTechnicianStockToGeneralStock,
   updateTechnicianStockItem,
@@ -109,14 +110,15 @@ export const removeItemFromVehicle = async (req: AuthRequest, res: Response) => 
 
     if (!checkTechnicianStockAccess(req, res, technicienId)) return;
 
-    await prisma.technicianStock.delete({
-      where: getTechnicianStockWhere(technicienId, stockId),
+    const result = await removeTechnicianStockItem({
+      technicienId,
+      stockId,
     });
 
-    res.json({ message: "Matériel retiré du véhicule avec succès" });
+    return res.status(result.status).json(result.body);
   } catch (error) {
     console.error("Erreur removeItemFromVehicle:", error);
-    res.status(500).json({ error: "Erreur lors du retrait du matériel" });
+    return res.status(500).json({ error: "Erreur lors du retrait du matériel" });
   }
 };
 

@@ -65,7 +65,17 @@ export async function createStockItems(input: StockWriteInput) {
     nomMateriel ||
     (modele ? `${marque ?? ""} ${modele}` : `${marque ?? ""} ${categorie ?? ""}`);
 
-  const serialNumbers = parseSerialNumbers(numeroSerie);
+  const serialNumbers = parseSerialNumbers(numeroSerie).map((s) => s.trim().toUpperCase());
+  const uniqueSerials = [...new Set(serialNumbers)];
+  if (uniqueSerials.length !== serialNumbers.length) {
+    return {
+      status: 400 as const,
+      body: {
+        error: "Des numéros de série doublons ont été détectés dans la saisie multiple.",
+      },
+    };
+  }
+
   const nonEmptySerialNumbers = serialNumbers.filter(
     (serial) => serial && serial.trim() !== ""
   );
@@ -75,6 +85,7 @@ export async function createStockItems(input: StockWriteInput) {
       where: {
         numeroSerie: {
           in: nonEmptySerialNumbers,
+          mode: "insensitive",
         },
       },
       include: {

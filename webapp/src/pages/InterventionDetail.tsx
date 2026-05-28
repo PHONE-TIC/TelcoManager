@@ -218,19 +218,18 @@ const InterventionDetail: React.FC = () => {
     }
   };
 
+  // Effect 1: lock — depends ONLY on id
   useEffect(() => {
-    loadIntervention();
-    loadClientsAndTechniciens();
+    if (!id) return;
+    let cancelled = false;
 
-    // Lock logic on mount
     const acquireLock = async () => {
-      if (!id) return;
       try {
         await apiService.lockIntervention(id);
-        setLockedByDb(null);
+        if (!cancelled) setLockedByDb(null);
       } catch (e: unknown) {
         const axiosError = e as AxiosError<ApiErrorResponse>;
-        if (axiosError.response?.status === 409) {
+        if (axiosError.response?.status === 409 && !cancelled) {
           setLockedByDb(
             axiosError.response.data?.lockedBy || "Un autre utilisateur"
           );
@@ -239,17 +238,25 @@ const InterventionDetail: React.FC = () => {
     };
     acquireLock();
 
-    // Auto-Refresh of intervention details (no need to poll lock state manually anymore)
+    return () => {
+      cancelled = true;
+      apiService.unlockIntervention(id).catch(() => {});
+    };
+  }, [id]);
+
+  // Effect 2: load, polling, cleanups
+  useEffect(() => {
+    loadIntervention();
+    loadClientsAndTechniciens();
+
     const interval = setInterval(() => {
-      loadIntervention(true); // Silent reload
-    }, 15000); // 15 seconds
+      loadIntervention(true);
+    }, 15000);
 
     return () => {
       clearInterval(interval);
-      if (id) apiService.unlockIntervention(id).catch(() => {});
       activeObjectUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
 
-      // Stop all cameras when leaving page
       document.querySelectorAll("video").forEach((video) => {
         if (video.srcObject) {
           const stream = video.srcObject as MediaStream;

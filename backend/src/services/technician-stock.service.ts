@@ -12,35 +12,73 @@ export async function addTechnicianStockItem(input: {
   if (!input.stockId) {
     return { status: 400 as const, body: { error: "stockId est requis" } };
   }
-
-  const existing = await findTechnicianStockItem(input.technicienId, input.stockId);
-
-  if (existing) {
-    const updated = await prisma.technicianStock.update({
-      where: getTechnicianStockWhere(input.technicienId, input.stockId),
-      data: {
-        quantite: existing.quantite + (input.quantite || 1),
-      },
-      include: {
-        stock: true,
-      },
-    });
-
-    return { status: 200 as const, body: updated };
+  const nonNullStockId = input.stockId;
+  const qty = input.quantite || 1;
+  if (qty <= 0) {
+    return { status: 400 as const, body: { error: "La quantité doit être supérieure à 0" } };
   }
 
-  const vehicleItem = await prisma.technicianStock.create({
-    data: {
-      technicienId: input.technicienId,
-      stockId: input.stockId,
-      quantite: input.quantite || 1,
-    },
-    include: {
-      stock: true,
-    },
-  });
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const stock = await tx.stock.findUnique({ where: { id: nonNullStockId } });
+      if (!stock) {
+        throw new Error("STOCK_NOT_FOUND");
+      }
+      if (stock.quantite < qty) {
+        throw new Error("INSUFFICIENT_STOCK");
+      }
 
-  return { status: 201 as const, body: vehicleItem };
+      await tx.stock.update({
+        where: { id: nonNullStockId },
+        data: { quantite: { decrement: qty } },
+      });
+
+      const updated = await tx.technicianStock.upsert({
+        where: {
+          technicienId_stockId: {
+            technicienId: input.technicienId,
+            stockId: nonNullStockId,
+          },
+        },
+        update: {
+          quantite: { increment: qty },
+        },
+        create: {
+          technicienId: input.technicienId,
+          stockId: nonNullStockId,
+          quantite: qty,
+        },
+        include: {
+          stock: true,
+        },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          stockId: nonNullStockId,
+          type: "transfert",
+          quantite: -qty,
+          quantiteAvant: stock.quantite,
+          quantiteApres: stock.quantite - qty,
+          reason: "Ajout matériel au véhicule",
+          technicienId: input.technicienId,
+          performedById: input.technicienId,
+        },
+      });
+
+      return updated;
+    });
+
+    return { status: 201 as const, body: result };
+  } catch (error: any) {
+    if (error.message === "STOCK_NOT_FOUND") {
+      return { status: 404 as const, body: { error: "Matériel non trouvé" } };
+    }
+    if (error.message === "INSUFFICIENT_STOCK") {
+      return { status: 400 as const, body: { error: "Quantité insuffisante en stock" } };
+    }
+    throw error;
+  }
 }
 
 export async function updateTechnicianStockItem(input: {
@@ -49,29 +87,205 @@ export async function updateTechnicianStockItem(input: {
   quantite: number;
   etat?: string;
 }) {
-  if (input.quantite <= 0) {
-    await prisma.technicianStock.delete({
-      where: getTechnicianStockWhere(input.technicienId, input.stockId),
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const currentTechStock = await tx.technicianStock.findUnique({
+        where: {
+          technicienId_stockId: {
+            technicienId: input.technicienId,
+            stockId: input.stockId,
+          },
+        },
+      });
+
+      const oldQty = currentTechStock ? currentTechStock.quantite : 0;
+      const newQty = input.quantite;
+
+      if (newQty === oldQty) {
+        if (currentTechStock && input.etat) {
+          const updated = await tx.technicianStock.update({
+            where: {
+              technicienId_stockId: {
+                technicienId: input.technicienId,
+                stockId: input.stockId,
+              },
+            },
+            data: { etat: input.etat },
+            include: { stock: true },
+          });
+          return { type: "updated" as const, data: updated };
+        }
+        return { type: "no_change" as const, data: { message: "Aucune modification" } };
+      }
+
+      const stock = await tx.stock.findUnique({ where: { id: input.stockId } });
+      if (!stock) {
+        throw new Error("STOCK_NOT_FOUND");
+      }
+
+      if (newQty > oldQty) {
+        const diff = newQty - oldQty;
+        if (stock.quantite < diff) {
+          throw new Error("INSUFFICIENT_STOCK");
+        }
+
+        await tx.stock.update({
+          where: { id: input.stockId },
+          data: { quantite: { decrement: diff } },
+        });
+
+        const updated = await tx.technicianStock.upsert({
+          where: {
+            technicienId_stockId: {
+              technicienId: input.technicienId,
+              stockId: input.stockId,
+            },
+          },
+          update: {
+            quantite: newQty,
+            ...(input.etat && { etat: input.etat }),
+          },
+          create: {
+            technicienId: input.technicienId,
+            stockId: input.stockId,
+            quantite: newQty,
+            ...(input.etat && { etat: input.etat }),
+          },
+          include: { stock: true },
+        });
+
+        await tx.stockMovement.create({
+          data: {
+            stockId: input.stockId,
+            type: "transfert",
+            quantite: -diff,
+            quantiteAvant: stock.quantite,
+            quantiteApres: stock.quantite - diff,
+            reason: "Ajustement quantité véhicule (Ajout)",
+            technicienId: input.technicienId,
+            performedById: input.technicienId,
+          },
+        });
+
+        return { type: "updated" as const, data: updated };
+      } else {
+        const diff = oldQty - newQty;
+
+        await tx.stock.update({
+          where: { id: input.stockId },
+          data: { quantite: { increment: diff } },
+        });
+
+        let updatedOrDeleted: any;
+        if (newQty <= 0) {
+          await tx.technicianStock.delete({
+            where: {
+              technicienId_stockId: {
+                technicienId: input.technicienId,
+                stockId: input.stockId,
+              },
+            },
+          });
+          updatedOrDeleted = { message: "Matériel retiré du véhicule" };
+        } else {
+          updatedOrDeleted = await tx.technicianStock.update({
+            where: {
+              technicienId_stockId: {
+                technicienId: input.technicienId,
+                stockId: input.stockId,
+              },
+            },
+            data: {
+              quantite: newQty,
+              ...(input.etat && { etat: input.etat }),
+            },
+            include: { stock: true },
+          });
+        }
+
+        await tx.stockMovement.create({
+          data: {
+            stockId: input.stockId,
+            type: "transfert",
+            quantite: diff,
+            quantiteAvant: stock.quantite,
+            quantiteApres: stock.quantite + diff,
+            reason: "Ajustement quantité véhicule (Retour)",
+            technicienId: input.technicienId,
+            performedById: input.technicienId,
+          },
+        });
+
+        return { type: "updated" as const, data: updatedOrDeleted };
+      }
     });
 
-    return {
-      status: 200 as const,
-      body: { message: "Matériel retiré du véhicule" },
-    };
+    return { status: 200 as const, body: result.data };
+  } catch (error: any) {
+    if (error.message === "STOCK_NOT_FOUND") {
+      return { status: 404 as const, body: { error: "Matériel non trouvé" } };
+    }
+    if (error.message === "INSUFFICIENT_STOCK") {
+      return { status: 400 as const, body: { error: "Quantité insuffisante en stock" } };
+    }
+    throw error;
   }
+}
 
-  const updated = await prisma.technicianStock.update({
-    where: getTechnicianStockWhere(input.technicienId, input.stockId),
-    data: {
-      quantite: input.quantite,
-      ...(input.etat && { etat: input.etat }),
-    },
-    include: {
-      stock: true,
-    },
-  });
+export async function removeTechnicianStockItem(input: {
+  technicienId: string;
+  stockId: string;
+}) {
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const current = await tx.technicianStock.findUnique({
+        where: getTechnicianStockWhere(input.technicienId, input.stockId),
+      });
 
-  return { status: 200 as const, body: updated };
+      if (!current) {
+        throw new Error("VEHICLE_ITEM_NOT_FOUND");
+      }
+
+      const stock = await tx.stock.findUnique({ where: { id: input.stockId } });
+      if (!stock) {
+        throw new Error("STOCK_NOT_FOUND");
+      }
+
+      await tx.stock.update({
+        where: { id: input.stockId },
+        data: { quantite: { increment: current.quantite } },
+      });
+
+      await tx.technicianStock.delete({
+        where: getTechnicianStockWhere(input.technicienId, input.stockId),
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          stockId: input.stockId,
+          type: "transfert",
+          quantite: current.quantite,
+          quantiteAvant: stock.quantite,
+          quantiteApres: stock.quantite + current.quantite,
+          reason: "Retrait matériel du véhicule (Retour complet)",
+          technicienId: input.technicienId,
+          performedById: input.technicienId,
+        },
+      });
+
+      return { message: "Matériel retiré du véhicule avec succès et retourné à l'entrepôt" };
+    });
+
+    return { status: 200 as const, body: result };
+  } catch (error: any) {
+    if (error.message === "VEHICLE_ITEM_NOT_FOUND") {
+      return { status: 404 as const, body: { error: "Article non trouvé dans le véhicule" } };
+    }
+    if (error.message === "STOCK_NOT_FOUND") {
+      return { status: 404 as const, body: { error: "Matériel non trouvé" } };
+    }
+    throw error;
+  }
 }
 
 export async function assignTechnicianStockToClient(input: {

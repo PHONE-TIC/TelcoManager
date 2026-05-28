@@ -121,6 +121,17 @@ export const bulkTransfer = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "Liste d'articles requise" });
     }
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    for (const item of items) {
+      if (!item.stockId || !uuidRegex.test(item.stockId)) {
+        return res.status(400).json({ error: "stockId invalide ou manquant" });
+      }
+      const qty = Number(item.quantite);
+      if (!Number.isInteger(qty) || qty <= 0 || isNaN(qty)) {
+        return res.status(400).json({ error: "Quantité invalide pour le transfert" });
+      }
+    }
+
     if (
       !["warehouse", "technician"].includes(sourceType) ||
       !["warehouse", "technician"].includes(destType)

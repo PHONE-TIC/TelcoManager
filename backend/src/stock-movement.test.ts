@@ -8,6 +8,8 @@ vi.mock("./db", () => {
     stock: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
+      findUniqueOrThrow: vi.fn(),
     },
     technicianStock: {
       upsert: vi.fn(),
@@ -38,7 +40,8 @@ describe("Stock Movement Service", () => {
       };
 
       vi.mocked(prisma.stock.findUnique).mockResolvedValue(mockStock as any);
-      vi.mocked(prisma.stock.update).mockResolvedValue({ ...mockStock, quantite: 8 } as any);
+      vi.mocked(prisma.stock.updateMany).mockResolvedValue({ count: 1 } as any);
+      vi.mocked(prisma.stock.findUniqueOrThrow).mockResolvedValue({ ...mockStock, quantite: 8 } as any);
       vi.mocked(prisma.technicianStock.upsert).mockResolvedValue({} as any);
       vi.mocked(prisma.stockMovement.create).mockResolvedValue({
         id: "m-1",
@@ -58,6 +61,10 @@ describe("Stock Movement Service", () => {
       });
 
       expect(prisma.stock.findUnique).toHaveBeenCalledWith({ where: { id: "stock-1" } });
+      expect(prisma.stock.updateMany).toHaveBeenCalledWith({
+        where: { id: "stock-1", quantite: { gte: 2 } },
+        data: { quantite: { decrement: 2 } },
+      });
       expect(prisma.$transaction).toHaveBeenCalled();
       expect(result.status).toBe(200);
       if (result.status === 200) {
@@ -67,16 +74,17 @@ describe("Stock Movement Service", () => {
       }
     });
 
-    it("should return 400 when quantity is insufficient", async () => {
+    it("should return 400 when quantity is insufficient during updateMany", async () => {
       const mockStock = {
         id: "stock-1",
         nomMateriel: "Cisco IP Phone",
         reference: "CISCO-7945",
-        quantite: 1,
+        quantite: 10,
         statut: "courant",
       };
 
       vi.mocked(prisma.stock.findUnique).mockResolvedValue(mockStock as any);
+      vi.mocked(prisma.stock.updateMany).mockResolvedValue({ count: 0 } as any); // Simulate failure to update because of concurrently modified stock
 
       const result = await transferStockToTechnician({
         stockId: "stock-1",
@@ -86,7 +94,8 @@ describe("Stock Movement Service", () => {
       });
 
       expect(prisma.stock.findUnique).toHaveBeenCalledWith({ where: { id: "stock-1" } });
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.stock.updateMany).toHaveBeenCalled();
+      expect(prisma.$transaction).toHaveBeenCalled();
       expect(result.status).toBe(400);
       expect(result.body.error).toBe("Quantité insuffisante en stock");
     });
@@ -103,6 +112,18 @@ describe("Stock Movement Service", () => {
 
       expect(result.status).toBe(404);
       expect(result.body.error).toBe("Article non trouvé");
+    });
+
+    it("should return 400 when quantity is negative or invalid", async () => {
+      const result = await transferStockToTechnician({
+        stockId: "stock-1",
+        technicienId: "tech-123",
+        quantite: -5,
+        performedById: "admin-1",
+      });
+
+      expect(result.status).toBe(400);
+      expect(result.body.error).toBe("Quantité invalide");
     });
   });
 });
