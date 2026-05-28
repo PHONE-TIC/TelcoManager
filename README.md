@@ -189,7 +189,8 @@ Ensemble d'amélioration majeures apportées à la sécurité, à la résilience
 
 - **Revue de Sécurité Globale & Audit V3 (Mai 2026)** :
   * **Persistance & Migrations Versionnées** : Transition définitive de `db push` à des migrations relationnelles PostgreSQL robustes. Baselining de la base de données locale avec un script de création complète des structures de tables, index, contraintes et relations à partir de zéro, garantissant un déploiement fiable sur base neuve sans utiliser de `DROP TYPE ... CASCADE` destructeur.
-  * **Exécution Inconditionnelle du Patch de Schéma & Résolution des Compteurs à 0** : Déplacement de l'appel à `fix-enums.js` pour s'exécuter de manière inconditionnelle avant `prisma migrate deploy` au démarrage du conteneur. Cela résout l'affichage de compteurs à `0` sur le tableau de bord en garantissant l'intégrité de la structure PostgreSQL (énumérations natives, tables complémentaires et colonnes V2 comme `outlook_event_id`) même sur une base de données déjà initialisée où les migrations sont signalées comme appliquées.
+  * **Patch de Schéma Sécurisé & Résolution Manuelle des Compteurs à 0** : L'exécution automatique du script `fix-enums.js` a été désactivée par défaut pour prévenir toute altération ou écriture involontaire sur la structure de la base de données. L'application du correctif de schéma s'effectue désormais de manière sécurisée et explicite via l'activation de la variable d'environnement `RUN_SCHEMA_RECOVERY=true` au démarrage du conteneur. Le mécanisme automatique de forçage de statut `migrate resolve --applied` a été supprimé pour préserver l'historique officiel des migrations Prisma.
+  * **Sécurisation de la Migration d'Unicité des Numéros de Série (P4)** : Intégration d'un bloc de vérification de préflight PL/pgSQL strict dans la migration de l'index unique partiel sur `numero_serie` (ignorant les chaînes vides). Cette étape échoue volontairement au démarrage de la migration avec l'exception `DB_PREFLIGHT_FAIL` si des doublons de numéros de série (insensibles à la casse) sont détectés dans la table de stock existante, permettant à l'administrateur d'assainir manuellement les données avant d'appliquer l'index unique.
   * **Résolution 502 & Prepared Statements PostgreSQL** : Encapsulation de l'ensemble des commandes DDL (créations de tables et ajouts de colonnes multiples) au sein de blocs `DO $$ BEGIN ... END$$;` PL/pgSQL natifs. Cela élimine le crash de démarrage (erreur 502) en respectant la restriction PostgreSQL interdisant l'exécution d'instructions multiples au sein d'une seule requête préparée Prisma (`cannot insert multiple commands into a prepared statement`).
   * **Intégration Stricte des Énumérations Prisma** : Typage fort et gestion des énumérations `Role`, `StatutIntervention` et `StatutStock` (comprenant l'état `retour_fournisseur` pour résoudre toute incohérence avec les validations d'API). Utilisation de type guards et parsers robustes pour mapper et valider les paramètres de requête HTTP.
   * **Sécurisation Express Globale (Helmet & Rate-Limiter)** : Branchement de `helmet` pour la protection des en-têtes réseau en production et limitation du taux d'appels brute-force avec `express-rate-limit` sur l'authentification (`/api/auth/login`), plafonné à 15 tentatives par 15 minutes.
@@ -290,6 +291,39 @@ Principales entités :
 - `interventions`
 - `stock`
 - `equipments`
+
+## Maintenance & Résolution des Conflits Base de Données
+
+### 1. Gestion des Doublons de Numéros de Série (Préflight de Migration)
+
+La migration d'unicité partielle des numéros de série applique un index unique insensible à la casse sur la colonne `numero_serie` de la table `stock` (excluant les chaînes vides). Si des doublons existent déjà dans votre base de données, la migration échouera proprement avec le code d'erreur `DB_PREFLIGHT_FAIL`.
+
+#### Requête d'identification des doublons :
+Pour lister les doublons existants et leurs occurrences :
+```sql
+SELECT lower(numero_serie) AS serial, count(*), string_agg(nom_materiel, ', ') AS materiels
+FROM stock
+WHERE numero_serie <> ''
+GROUP BY lower(numero_serie)
+HAVING count(*) > 1;
+```
+
+#### Stratégies de nettoyage manuel :
+L'administrateur doit nettoyer ces doublons avant de pouvoir appliquer la migration. Deux méthodes sont recommandées :
+* **Normalisation/Correction** : Mettre à jour les numéros de série erronés si certains contiennent des fautes de saisie.
+* **Fusion** : Si deux enregistrements représentent en réalité le même lot de matériel générique, consolider les quantités sur un seul enregistrement et supprimer la ligne en doublon :
+  ```sql
+  -- Exemple : Reporter la quantité du doublon B sur le doublon A
+  UPDATE stock SET quantite = quantite + (SELECT quantite FROM stock WHERE id = 'ID_DOUBLON_B') WHERE id = 'ID_DOUBLON_A';
+  DELETE FROM stock WHERE id = 'ID_DOUBLON_B';
+  ```
+
+### 2. Récupération Globale du Schéma (Compteurs à 0 / Colonnes manquantes)
+
+Si des colonnes manquent ou si les compteurs du tableau de bord affichent `0` en raison d'une mauvaise initialisation historique de PostgreSQL, vous pouvez forcer la réparation manuelle des types et des colonnes :
+1. Définissez la variable d'environnement `RUN_SCHEMA_RECOVERY=true` dans votre fichier `.env` ou dans l'environnement du conteneur.
+2. Redémarrez le conteneur applicatif. Le script `fix-enums.js` sera exécuté une seule fois pour recréer proprement les énumérations SQL natives, ajouter les colonnes requises (ex: `outlook_event_id`) et restaurer les états de stock manquants.
+3. Une fois la base réparée, désactivez la variable (`RUN_SCHEMA_RECOVERY=false`) pour sécuriser l'environnement.
 
 ## Notes
 

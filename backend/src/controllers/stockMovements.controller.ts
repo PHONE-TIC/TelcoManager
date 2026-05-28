@@ -167,8 +167,8 @@ export const bulkTransfer = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     console.error("Erreur bulk transfer:", error);
-    res
-      .status(500)
-      .json({ error: error.message || "Erreur lors du transfert" });
+    const status = error.message.includes("insuffisant") || error.message === "INSUFFICIENT_STOCK" ? 400 : 500;
+    const msg = error.message === "INSUFFICIENT_STOCK" ? "Stock insuffisant en entrepôt" : error.message;
+    res.status(status).json({ error: msg || "Erreur lors du transfert" });
   }
 };

@@ -314,17 +314,19 @@ async function transferWarehouseToTechnician(
     movements: Prisma.StockMovementCreateManyInput[];
   }
 ) {
-  const stock = await tx.stock.findUnique({ where: { id: input.stockId } });
-  if (!stock || stock.quantite < input.qty) {
-    throw new Error(
-      `Stock insuffisant pour l'article ${stock ? stock.nomMateriel : input.stockId}`
-    );
-  }
-
-  await tx.stock.update({
-    where: { id: input.stockId },
+  const decremented = await tx.stock.updateMany({
+    where: { id: input.stockId, quantite: { gte: input.qty } },
     data: { quantite: { decrement: input.qty } },
   });
+
+  if (decremented.count !== 1) {
+    throw new Error("INSUFFICIENT_STOCK");
+  }
+
+  const updatedStock = await tx.stock.findUniqueOrThrow({
+    where: { id: input.stockId },
+  });
+
   await incrementTechnicianStock(tx, {
     technicienId: input.destId,
     stockId: input.stockId,
@@ -335,8 +337,8 @@ async function transferWarehouseToTechnician(
     stockId: input.stockId,
     type: "transfert",
     quantite: -input.qty,
-    quantiteAvant: stock.quantite,
-    quantiteApres: stock.quantite - input.qty,
+    quantiteAvant: updatedStock.quantite + input.qty,
+    quantiteApres: updatedStock.quantite,
     reason: "Transfert Entrepôt -> Technicien",
     technicienId: input.destId,
     performedById: input.performedById,

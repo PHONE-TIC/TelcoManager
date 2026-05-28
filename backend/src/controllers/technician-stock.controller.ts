@@ -1,7 +1,9 @@
 import { Response } from "express";
+import { validationResult } from "express-validator";
 import { prisma } from "../db";
 import { AuthRequest } from "../middleware/auth.middleware";
 import { getTechnicianStockWhere } from "./technician-stock.controller.helpers";
+import { respondValidationError } from "./controller.utils";
 import {
   addTechnicianStockItem,
   assignTechnicianStockToClient,
@@ -30,6 +32,11 @@ const checkTechnicianStockAccess = (req: AuthRequest, res: Response, targetTechn
 // Obtenir le stock du véhicule d'un technicien
 export const getTechnicianStock = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { technicienId } = req.params;
 
     if (!checkTechnicianStockAccess(req, res, technicienId)) return;
@@ -56,6 +63,11 @@ export const getTechnicianStock = async (req: AuthRequest, res: Response) => {
 // Ajouter un matériel au véhicule
 export const addItemToVehicle = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { technicienId } = req.params;
 
     if (!checkTechnicianStockAccess(req, res, technicienId)) return;
@@ -78,14 +90,15 @@ export const addItemToVehicle = async (req: AuthRequest, res: Response) => {
 // Mettre à jour la quantité d'un matériel dans le véhicule
 export const updateItemQuantity = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { technicienId, stockId } = req.params;
     const { quantite, etat } = req.body;
 
     if (!checkTechnicianStockAccess(req, res, technicienId)) return;
-
-    if (quantite === undefined || quantite === null) {
-      return res.status(400).json({ error: "quantite est requis" });
-    }
 
     const result = await updateTechnicianStockItem({
       technicienId,
@@ -106,6 +119,11 @@ export const updateItemQuantity = async (req: AuthRequest, res: Response) => {
 // Retirer un matériel du véhicule
 export const removeItemFromVehicle = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { technicienId, stockId } = req.params;
 
     if (!checkTechnicianStockAccess(req, res, technicienId)) return;
@@ -125,6 +143,11 @@ export const removeItemFromVehicle = async (req: AuthRequest, res: Response) => 
 // Assigner un matériel à un client
 export const assignToClient = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { technicienId, stockId } = req.params;
 
     if (!checkTechnicianStockAccess(req, res, technicienId)) return;
@@ -145,6 +168,11 @@ export const assignToClient = async (req: AuthRequest, res: Response) => {
 // Reprendre un matériel d'un client
 export const retrieveFromClient = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { technicienId, stockId } = req.params;
 
     if (!checkTechnicianStockAccess(req, res, technicienId)) return;
@@ -165,6 +193,11 @@ export const retrieveFromClient = async (req: AuthRequest, res: Response) => {
 // Transférer stock HS technicien vers stock HS général (Admin uniquement)
 export const transferHsToGeneralStock = async (req: AuthRequest, res: Response) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return respondValidationError(res, errors.array());
+    }
+
     const { technicienId, stockId } = req.params;
 
     // Strictement réservé aux administrateurs

@@ -198,6 +198,13 @@ export const createStock = async (req: AuthRequest, res: Response) => {
     return res.status(result.status).json(result.body);
   } catch (error: any) {
     if (error.code === "P2002") {
+      const target = error.meta?.target;
+      if (Array.isArray(target) && target.includes("numero_serie")) {
+        return res.status(409).json({ error: "Ce numéro de série est déjà utilisé par un autre article." });
+      }
+      if (typeof target === "string" && (target.includes("numero_serie") || target.includes("stock_numero_serie_unique_not_empty"))) {
+        return res.status(409).json({ error: "Ce numéro de série est déjà utilisé par un autre article." });
+      }
       return res.status(409).json({ error: "Code-barres déjà utilisé" });
     }
     console.error("Erreur lors de la création de l'article:", error);
@@ -238,7 +245,9 @@ export const updateStock = async (req: AuthRequest, res: Response) => {
       ...(statut && { statut }),
       ...(quantite !== undefined && { quantite }),
       ...(notes !== undefined && { notes }),
-      ...(numeroSerie !== undefined && { numeroSerie }),
+      ...(numeroSerie !== undefined && {
+        numeroSerie: numeroSerie !== null && numeroSerie !== undefined ? String(numeroSerie).trim().toUpperCase() : ""
+      }),
       ...(fournisseur !== undefined && { fournisseur }),
       ...(lowStockThreshold !== undefined && { lowStockThreshold }),
     };
@@ -254,6 +263,13 @@ export const updateStock = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: "Article non trouvé" });
     }
     if (error.code === "P2002") {
+      const target = error.meta?.target;
+      if (Array.isArray(target) && target.includes("numero_serie")) {
+        return res.status(409).json({ error: "Ce numéro de série est déjà utilisé par un autre article." });
+      }
+      if (typeof target === "string" && (target.includes("numero_serie") || target.includes("stock_numero_serie_unique_not_empty"))) {
+        return res.status(409).json({ error: "Ce numéro de série est déjà utilisé par un autre article." });
+      }
       return res.status(409).json({ error: "Code-barres déjà utilisé" });
     }
     console.error("Erreur lors de la mise à jour de l'article:", error);

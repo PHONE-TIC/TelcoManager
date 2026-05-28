@@ -20,17 +20,22 @@ export async function addTechnicianStockItem(input: {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const stock = await tx.stock.findUnique({ where: { id: nonNullStockId } });
-      if (!stock) {
+      const stockExists = await tx.stock.findUnique({ where: { id: nonNullStockId } });
+      if (!stockExists) {
         throw new Error("STOCK_NOT_FOUND");
       }
-      if (stock.quantite < qty) {
+
+      const decremented = await tx.stock.updateMany({
+        where: { id: nonNullStockId, quantite: { gte: qty } },
+        data: { quantite: { decrement: qty } },
+      });
+
+      if (decremented.count !== 1) {
         throw new Error("INSUFFICIENT_STOCK");
       }
 
-      await tx.stock.update({
+      const updatedStock = await tx.stock.findUniqueOrThrow({
         where: { id: nonNullStockId },
-        data: { quantite: { decrement: qty } },
       });
 
       const updated = await tx.technicianStock.upsert({
@@ -58,8 +63,8 @@ export async function addTechnicianStockItem(input: {
           stockId: nonNullStockId,
           type: "transfert",
           quantite: -qty,
-          quantiteAvant: stock.quantite,
-          quantiteApres: stock.quantite - qty,
+          quantiteAvant: updatedStock.quantite + qty,
+          quantiteApres: updatedStock.quantite,
           reason: "Ajout matériel au véhicule",
           technicienId: input.technicienId,
           performedById: input.technicienId,
@@ -87,6 +92,10 @@ export async function updateTechnicianStockItem(input: {
   quantite: number;
   etat?: string;
 }) {
+  if (!Number.isInteger(input.quantite) || input.quantite < 0) {
+    return { status: 400 as const, body: { error: "Quantité invalide" } };
+  }
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       const currentTechStock = await tx.technicianStock.findUnique({
@@ -118,20 +127,25 @@ export async function updateTechnicianStockItem(input: {
         return { type: "no_change" as const, data: { message: "Aucune modification" } };
       }
 
-      const stock = await tx.stock.findUnique({ where: { id: input.stockId } });
-      if (!stock) {
+      const stockExists = await tx.stock.findUnique({ where: { id: input.stockId } });
+      if (!stockExists) {
         throw new Error("STOCK_NOT_FOUND");
       }
 
       if (newQty > oldQty) {
         const diff = newQty - oldQty;
-        if (stock.quantite < diff) {
+
+        const decremented = await tx.stock.updateMany({
+          where: { id: input.stockId, quantite: { gte: diff } },
+          data: { quantite: { decrement: diff } },
+        });
+
+        if (decremented.count !== 1) {
           throw new Error("INSUFFICIENT_STOCK");
         }
 
-        await tx.stock.update({
+        const updatedStock = await tx.stock.findUniqueOrThrow({
           where: { id: input.stockId },
-          data: { quantite: { decrement: diff } },
         });
 
         const updated = await tx.technicianStock.upsert({
@@ -159,8 +173,8 @@ export async function updateTechnicianStockItem(input: {
             stockId: input.stockId,
             type: "transfert",
             quantite: -diff,
-            quantiteAvant: stock.quantite,
-            quantiteApres: stock.quantite - diff,
+            quantiteAvant: updatedStock.quantite + diff,
+            quantiteApres: updatedStock.quantite,
             reason: "Ajustement quantité véhicule (Ajout)",
             technicienId: input.technicienId,
             performedById: input.technicienId,
@@ -171,7 +185,7 @@ export async function updateTechnicianStockItem(input: {
       } else {
         const diff = oldQty - newQty;
 
-        await tx.stock.update({
+        const updatedStock = await tx.stock.update({
           where: { id: input.stockId },
           data: { quantite: { increment: diff } },
         });
@@ -208,8 +222,8 @@ export async function updateTechnicianStockItem(input: {
             stockId: input.stockId,
             type: "transfert",
             quantite: diff,
-            quantiteAvant: stock.quantite,
-            quantiteApres: stock.quantite + diff,
+            quantiteAvant: updatedStock.quantite - diff,
+            quantiteApres: updatedStock.quantite,
             reason: "Ajustement quantité véhicule (Retour)",
             technicienId: input.technicienId,
             performedById: input.technicienId,
@@ -424,28 +438,88 @@ export async function transferHsTechnicianStockToGeneralStock(input: {
     };
   }
 
+  const qty = item.quantite;
+
   await prisma.$transaction(async (tx) => {
+    // Delete the vehicle stock line
     await tx.technicianStock.delete({
       where: getTechnicianStockWhere(input.technicienId, input.stockId),
     });
 
-    await tx.stock.update({
-      where: { id: input.stockId },
-      data: { statut: "hs" },
-    });
+    if (item.stock.numeroSerie) {
+      // Option A: Serialized items - update original line to HS and increment quantity
+      const originalStock = await tx.stock.findUniqueOrThrow({
+        where: { id: input.stockId },
+      });
 
-    await tx.stockMovement.create({
-      data: {
-        stockId: input.stockId,
-        type: "hs",
-        quantite: -1,
-        quantiteAvant: 1,
-        quantiteApres: 0,
-        reason: `Transféré vers stock HS général depuis véhicule ${item.technicien.nom}`,
-        technicienId: input.technicienId,
-        performedById: input.technicienId,
-      },
-    });
+      await tx.stock.update({
+        where: { id: input.stockId },
+        data: {
+          statut: "hs",
+          quantite: { increment: qty },
+        },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          stockId: input.stockId,
+          type: "hs",
+          quantite: qty,
+          quantiteAvant: originalStock.quantite,
+          quantiteApres: originalStock.quantite + qty,
+          reason: `Transféré vers stock HS général depuis véhicule ${item.technicien.nom}`,
+          technicienId: input.technicienId,
+          performedById: input.technicienId,
+        },
+      });
+    } else {
+      // Option B: Non-serialized items - find/create separate HS line in warehouse
+      const originalStock = await tx.stock.findUniqueOrThrow({
+        where: { id: input.stockId },
+      });
+
+      let hsStock = await tx.stock.findFirst({
+        where: {
+          reference: originalStock.reference,
+          statut: "hs",
+          nomMateriel: originalStock.nomMateriel,
+        },
+      });
+
+      if (!hsStock) {
+        hsStock = await tx.stock.create({
+          data: {
+            nomMateriel: originalStock.nomMateriel,
+            reference: originalStock.reference,
+            categorie: originalStock.categorie,
+            statut: "hs",
+            quantite: 0,
+            codeBarre: null,
+            lowStockThreshold: 0,
+          },
+        });
+      }
+
+      await tx.stock.update({
+        where: { id: hsStock.id },
+        data: {
+          quantite: { increment: qty },
+        },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          stockId: hsStock.id,
+          type: "hs",
+          quantite: qty,
+          quantiteAvant: hsStock.quantite,
+          quantiteApres: hsStock.quantite + qty,
+          reason: `Transféré vers stock HS général depuis véhicule ${item.technicien.nom} - Origine: ${input.stockId}`,
+          technicienId: input.technicienId,
+          performedById: input.technicienId,
+        },
+      });
+    }
   });
 
   return {
