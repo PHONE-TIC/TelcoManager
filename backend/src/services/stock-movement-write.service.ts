@@ -133,6 +133,12 @@ export async function bulkImportStockItems(input: {
     errors: [] as { row: number; error: string }[],
   };
 
+  // Pre-calculate case-insensitive serial number duplicates in the file
+  const serials = input.items
+    .map((it: any) => (it.numeroSerie ? String(it.numeroSerie).trim().toUpperCase() : ""))
+    .filter(Boolean);
+  const duplicatesInFile = serials.filter((s, i) => serials.indexOf(s) !== i);
+
   for (let i = 0; i < input.items.length; i++) {
     const item = input.items[i] as Record<string, any>;
     try {
@@ -144,11 +150,24 @@ export async function bulkImportStockItems(input: {
         continue;
       }
 
+      const normalizedSerial = item.numeroSerie
+        ? String(item.numeroSerie).trim().toUpperCase()
+        : "";
+
+      // Rejeter si le numéro de série est un doublon présent plusieurs fois dans le fichier
+      if (normalizedSerial && duplicatesInFile.includes(normalizedSerial)) {
+        results.errors.push({
+          row: i + 1,
+          error: `Numéro de série doublon détecté dans le fichier d'import : ${normalizedSerial}`,
+        });
+        continue;
+      }
+
       const stock = await prisma.stock.create({
         data: {
           nomMateriel: item.nomMateriel,
           reference: item.reference,
-          numeroSerie: item.numeroSerie || "",
+          numeroSerie: normalizedSerial,
           codeBarre: item.codeBarre || null,
           categorie: item.categorie,
           fournisseur: item.fournisseur || null,
@@ -172,9 +191,20 @@ export async function bulkImportStockItems(input: {
 
       results.created++;
     } catch (error: any) {
+      let errMsg = error.message || "Erreur inconnue";
+      if (error.code === "P2002") {
+        const target = error.meta?.target;
+        if (Array.isArray(target) && target.includes("numero_serie")) {
+          errMsg = "Ce numéro de série est déjà utilisé par un autre article.";
+        } else if (typeof target === "string" && (target.includes("numero_serie") || target.includes("stock_numero_serie_unique_not_empty"))) {
+          errMsg = "Ce numéro de série est déjà utilisé par un autre article.";
+        } else {
+          errMsg = "Code-barres déjà utilisé.";
+        }
+      }
       results.errors.push({
         row: i + 1,
-        error: error.message || "Erreur inconnue",
+        error: errMsg,
       });
     }
   }

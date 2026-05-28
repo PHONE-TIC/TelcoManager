@@ -8,6 +8,7 @@ export async function addTechnicianStockItem(input: {
   technicienId: string;
   stockId?: string;
   quantite?: number;
+  performedById: string;
 }) {
   if (!input.stockId) {
     return { status: 400 as const, body: { error: "stockId est requis" } };
@@ -67,7 +68,7 @@ export async function addTechnicianStockItem(input: {
           quantiteApres: updatedStock.quantite,
           reason: "Ajout matériel au véhicule",
           technicienId: input.technicienId,
-          performedById: input.technicienId,
+          performedById: input.performedById,
         },
       });
 
@@ -91,6 +92,7 @@ export async function updateTechnicianStockItem(input: {
   stockId: string;
   quantite: number;
   etat?: string;
+  performedById: string;
 }) {
   if (!Number.isInteger(input.quantite) || input.quantite < 0) {
     return { status: 400 as const, body: { error: "Quantité invalide" } };
@@ -177,7 +179,7 @@ export async function updateTechnicianStockItem(input: {
             quantiteApres: updatedStock.quantite,
             reason: "Ajustement quantité véhicule (Ajout)",
             technicienId: input.technicienId,
-            performedById: input.technicienId,
+            performedById: input.performedById,
           },
         });
 
@@ -226,7 +228,7 @@ export async function updateTechnicianStockItem(input: {
             quantiteApres: updatedStock.quantite,
             reason: "Ajustement quantité véhicule (Retour)",
             technicienId: input.technicienId,
-            performedById: input.technicienId,
+            performedById: input.performedById,
           },
         });
 
@@ -249,6 +251,7 @@ export async function updateTechnicianStockItem(input: {
 export async function removeTechnicianStockItem(input: {
   technicienId: string;
   stockId: string;
+  performedById: string;
 }) {
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -283,7 +286,7 @@ export async function removeTechnicianStockItem(input: {
           quantiteApres: stock.quantite + current.quantite,
           reason: "Retrait matériel du véhicule (Retour complet)",
           technicienId: input.technicienId,
-          performedById: input.technicienId,
+          performedById: input.performedById,
         },
       });
 
@@ -306,6 +309,7 @@ export async function assignTechnicianStockToClient(input: {
   technicienId: string;
   stockId: string;
   clientId?: string;
+  performedById: string;
 }) {
   if (!input.clientId) {
     return { status: 400 as const, body: { error: "clientId est requis" } };
@@ -349,7 +353,7 @@ export async function assignTechnicianStockToClient(input: {
       quantiteApres: 0,
       reason: `Assigné au client: ${client.nom}`,
       technicienId: input.technicienId,
-      performedById: input.technicienId,
+      performedById: input.performedById,
     },
   });
 
@@ -363,6 +367,7 @@ export async function retrieveTechnicianStockFromClient(input: {
   technicienId: string;
   stockId: string;
   etat?: string;
+  performedById: string;
 }) {
   if (!input.etat || !["ok", "hs"].includes(input.etat)) {
     return {
@@ -405,7 +410,7 @@ export async function retrieveTechnicianStockFromClient(input: {
       quantiteApres: 1,
       reason: `Repris du client: ${clientNom} (état: ${input.etat.toUpperCase()})`,
       technicienId: input.technicienId,
-      performedById: input.technicienId,
+      performedById: input.performedById,
     },
   });
 
@@ -421,6 +426,7 @@ export async function retrieveTechnicianStockFromClient(input: {
 export async function transferHsTechnicianStockToGeneralStock(input: {
   technicienId: string;
   stockId: string;
+  performedById: string;
 }) {
   const item = await prisma.technicianStock.findUnique({
     where: getTechnicianStockWhere(input.technicienId, input.stockId),
@@ -469,7 +475,7 @@ export async function transferHsTechnicianStockToGeneralStock(input: {
           quantiteApres: originalStock.quantite + qty,
           reason: `Transféré vers stock HS général depuis véhicule ${item.technicien.nom}`,
           technicienId: input.technicienId,
-          performedById: input.technicienId,
+          performedById: input.performedById,
         },
       });
     } else {
@@ -516,7 +522,7 @@ export async function transferHsTechnicianStockToGeneralStock(input: {
           quantiteApres: hsStock.quantite + qty,
           reason: `Transféré vers stock HS général depuis véhicule ${item.technicien.nom} - Origine: ${input.stockId}`,
           technicienId: input.technicienId,
-          performedById: input.technicienId,
+          performedById: input.performedById,
         },
       });
     }

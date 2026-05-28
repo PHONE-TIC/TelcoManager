@@ -76,6 +76,7 @@ export const addItemToVehicle = async (req: AuthRequest, res: Response) => {
       technicienId,
       stockId: req.body.stockId,
       quantite: req.body.quantite,
+      performedById: req.user!.id,
     });
 
     return res.status(result.status).json(result.body);
@@ -105,6 +106,7 @@ export const updateItemQuantity = async (req: AuthRequest, res: Response) => {
       stockId,
       quantite,
       etat,
+      performedById: req.user!.id,
     });
 
     return res.status(result.status).json(result.body);
@@ -131,6 +133,7 @@ export const removeItemFromVehicle = async (req: AuthRequest, res: Response) => 
     const result = await removeTechnicianStockItem({
       technicienId,
       stockId,
+      performedById: req.user!.id,
     });
 
     return res.status(result.status).json(result.body);
@@ -156,6 +159,7 @@ export const assignToClient = async (req: AuthRequest, res: Response) => {
       technicienId,
       stockId,
       clientId: req.body.clientId,
+      performedById: req.user!.id,
     });
 
     return res.status(result.status).json(result.body);
@@ -181,6 +185,7 @@ export const retrieveFromClient = async (req: AuthRequest, res: Response) => {
       technicienId,
       stockId,
       etat: req.body.etat,
+      performedById: req.user!.id,
     });
 
     return res.status(result.status).json(result.body);
@@ -210,6 +215,7 @@ export const transferHsToGeneralStock = async (req: AuthRequest, res: Response) 
     const result = await transferHsTechnicianStockToGeneralStock({
       technicienId,
       stockId,
+      performedById: req.user!.id,
     });
 
     return res.status(result.status).json(result.body);

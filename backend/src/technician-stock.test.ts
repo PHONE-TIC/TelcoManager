@@ -43,6 +43,7 @@ describe("Technician Stock Service", () => {
       const result = await addTechnicianStockItem({
         technicienId: "tech-1",
         quantite: 5,
+        performedById: "tech-1",
       });
       expect(result.status).toBe(400);
       expect(result.body.error).toBe("stockId est requis");
@@ -53,6 +54,7 @@ describe("Technician Stock Service", () => {
         technicienId: "tech-1",
         stockId: "stock-1",
         quantite: -2,
+        performedById: "tech-1",
       });
       expect(result.status).toBe(400);
       expect(result.body.error).toBe("La quantité doit être supérieure à 0");
@@ -69,6 +71,7 @@ describe("Technician Stock Service", () => {
         technicienId: "tech-1",
         stockId: "stock-1",
         quantite: 2,
+        performedById: "tech-1",
       });
 
       expect(prisma.stock.updateMany).toHaveBeenCalledWith({
@@ -88,6 +91,7 @@ describe("Technician Stock Service", () => {
         technicienId: "tech-1",
         stockId: "stock-1",
         quantite: 5,
+        performedById: "tech-1",
       });
 
       expect(prisma.stock.updateMany).toHaveBeenCalled();
@@ -102,6 +106,7 @@ describe("Technician Stock Service", () => {
         technicienId: "tech-1",
         stockId: "stock-1",
         quantite: -5,
+        performedById: "tech-1",
       });
       expect(result1.status).toBe(400);
       expect(result1.body.error).toBe("Quantité invalide");
@@ -110,6 +115,7 @@ describe("Technician Stock Service", () => {
         technicienId: "tech-1",
         stockId: "stock-1",
         quantite: 2.5,
+        performedById: "tech-1",
       });
       expect(result2.status).toBe(400);
       expect(result2.body.error).toBe("Quantité invalide");
@@ -127,6 +133,7 @@ describe("Technician Stock Service", () => {
         technicienId: "tech-1",
         stockId: "stock-1",
         quantite: 5,
+        performedById: "tech-1",
       });
 
       expect(prisma.stock.updateMany).toHaveBeenCalledWith({
@@ -147,6 +154,7 @@ describe("Technician Stock Service", () => {
         technicienId: "tech-1",
         stockId: "stock-1",
         quantite: 2,
+        performedById: "tech-1",
       });
 
       expect(prisma.stock.update).toHaveBeenCalledWith({
@@ -171,6 +179,7 @@ describe("Technician Stock Service", () => {
       const result = await transferHsTechnicianStockToGeneralStock({
         technicienId: "tech-1",
         stockId: "stock-1",
+        performedById: "tech-1",
       });
 
       expect(result.status).toBe(404);
@@ -188,6 +197,7 @@ describe("Technician Stock Service", () => {
       const result = await transferHsTechnicianStockToGeneralStock({
         technicienId: "tech-1",
         stockId: "stock-1",
+        performedById: "tech-1",
       });
 
       expect(result.status).toBe(400);
@@ -210,6 +220,7 @@ describe("Technician Stock Service", () => {
       const result = await transferHsTechnicianStockToGeneralStock({
         technicienId: "tech-1",
         stockId: "stock-1",
+        performedById: "tech-1",
       });
 
       // Assert vehicle stock line is deleted
@@ -256,6 +267,7 @@ describe("Technician Stock Service", () => {
       const result = await transferHsTechnicianStockToGeneralStock({
         technicienId: "tech-1",
         stockId: "stock-1",
+        performedById: "tech-1",
       });
 
       // Assert vehicle line deleted
@@ -285,6 +297,80 @@ describe("Technician Stock Service", () => {
         }),
       }));
       expect(result.status).toBe(200);
+    });
+  });
+
+  describe("Audit performedById & CSV Import Hardening", () => {
+    it("should log performedById as the active user, not the vehicle owner", async () => {
+      const mockTechStock = {
+        technicienId: "tech-1",
+        stockId: "stock-1",
+        quantite: 1,
+        etat: "hs",
+        stock: { id: "stock-1", numeroSerie: "SN-999-XYZ", nomMateriel: "Mat" },
+        technicien: { nom: "John Doe" },
+      };
+
+      vi.mocked(prisma.technicianStock.findUnique).mockResolvedValue(mockTechStock as any);
+      vi.mocked(prisma.stock.findUniqueOrThrow).mockResolvedValue({ id: "stock-1", quantite: 10 } as any);
+
+      // Admin "admin-999" performs the HS transfer on tech-1's vehicle stock
+      const result = await transferHsTechnicianStockToGeneralStock({
+        technicienId: "tech-1",
+        stockId: "stock-1",
+        performedById: "admin-999",
+      });
+
+      // Assert movement is logged under admin-999, NOT tech-1
+      expect(prisma.stockMovement.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({
+          performedById: "admin-999",
+        }),
+      }));
+      expect(result.status).toBe(200);
+    });
+
+    it("should normalize serial numbers to uppercase and pre-validate duplicates during CSV import", async () => {
+      const { bulkImportStockItems } = await import("./services/stock-movement-write.service");
+
+      vi.mocked(prisma.stock.create).mockImplementation(async (args: any) => {
+        return {
+          id: "imported-stock-1",
+          quantite: args.data.quantite,
+          numeroSerie: args.data.numeroSerie,
+        } as any;
+      });
+
+      const mockCsvItems = [
+        { nomMateriel: "Phone 1", reference: "REF1", categorie: "Phones", numeroSerie: "sn-lowercase-1" },
+        { nomMateriel: "Phone 2", reference: "REF2", categorie: "Phones", numeroSerie: "sn-duplicate-2" },
+        { nomMateriel: "Phone 3", reference: "REF3", categorie: "Phones", numeroSerie: "SN-DUPLICATE-2" }, // case-insensitive duplicate in file
+      ];
+
+      const result = await bulkImportStockItems({
+        items: mockCsvItems,
+        performedById: "admin-1",
+      });
+
+      expect(result.created).toBe(1); // Only the first row succeeds
+      expect(result.errors.length).toBe(2); // The other two are duplicates or errors
+
+      // Check normalization on the successfully created item
+      expect(prisma.stock.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({
+          numeroSerie: "SN-LOWERCASE-1", // Uppercased
+        }),
+      }));
+
+      // Check clear duplicate reporting on the duplicate rows
+      expect(result.errors[0]).toEqual({
+        row: 2,
+        error: "Numéro de série doublon détecté dans le fichier d'import : SN-DUPLICATE-2",
+      });
+      expect(result.errors[1]).toEqual({
+        row: 3,
+        error: "Numéro de série doublon détecté dans le fichier d'import : SN-DUPLICATE-2",
+      });
     });
   });
 });

@@ -21,7 +21,7 @@ router.post(
   [
     param("technicienId").isUUID(),
     body("stockId").isUUID().withMessage("stockId invalide"),
-    body("quantite").optional().isInt({ min: 1 }).withMessage("Quantité invalide"),
+    body("quantite").optional().isInt({ min: 1 }).toInt().withMessage("Quantité invalide"),
   ],
   technicianStockController.addItemToVehicle
 );
@@ -32,7 +32,7 @@ router.put(
   [
     param("technicienId").isUUID(),
     param("stockId").isUUID(),
-    body("quantite").isInt({ min: 0 }).withMessage("Quantité invalide"),
+    body("quantite").isInt({ min: 0 }).toInt().withMessage("Quantité invalide"),
   ],
   technicianStockController.updateItemQuantity
 );
