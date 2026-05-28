@@ -67,7 +67,7 @@ telcomanager/
 - Docker
 - Docker Compose
 
-### Lancer l'environnement de production local
+### Lancer l'environnement en local (Développement / Recette)
 1. **Générer et compiler les images localement** :
    ```bash
    docker compose build
@@ -76,6 +76,12 @@ telcomanager/
    ```bash
    docker compose up -d
    ```
+
+### Lancer en Production (serveur hôte avec stockage sous `/opt`)
+Pour appliquer la configuration de production (surcharge des volumes persistants de PostgreSQL sous `/opt` et Caddyfile absolu) :
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
 
 ### Services exposés
 - **Application Web** : [https://localhost:8081](https://localhost:8081) *(Accès HTTPS chiffré via Caddy)*
@@ -123,6 +129,7 @@ L'ensemble des configurations s'effectue via des variables d'environnement décl
 | `DEFAULT_ADMIN_PASSWORD` | Mot de passe du compte administrateur initial (`admin`). | **Requis (Doit être fort en prod)** |
 | `SEED_ON_START` | Force la réinitialisation du mot de passe admin au boot si `true`. | `false` |
 | `RUN_SCHEMA_RECOVERY` | Active le mode de restauration défensive du schéma (voir section Maintenance). | `false` |
+| `ALLOWED_ORIGINS` | Liste d'origines CORS autorisées séparées par des virgules (ex: `https://app.mon-domaine.fr`). | **Requis en production (Bloquant)** |
 
 ### 📂 Base de Données (PostgreSQL)
 | Variable | Description |
