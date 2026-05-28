@@ -342,9 +342,9 @@ describe("Technician Stock Service", () => {
       });
 
       const mockCsvItems = [
-        { nomMateriel: "Phone 1", reference: "REF1", categorie: "Phones", numeroSerie: "sn-lowercase-1" },
-        { nomMateriel: "Phone 2", reference: "REF2", categorie: "Phones", numeroSerie: "sn-duplicate-2" },
-        { nomMateriel: "Phone 3", reference: "REF3", categorie: "Phones", numeroSerie: "SN-DUPLICATE-2" }, // case-insensitive duplicate in file
+        { nomMateriel: "Phone 1", reference: "REF1", categorie: "Phones", numeroSerie: "sn-lowercase-1", quantite: "1" },
+        { nomMateriel: "Phone 2", reference: "REF2", categorie: "Phones", numeroSerie: "sn-duplicate-2", quantite: "1" },
+        { nomMateriel: "Phone 3", reference: "REF3", categorie: "Phones", numeroSerie: "SN-DUPLICATE-2", quantite: "1" }, // case-insensitive duplicate in file
       ];
 
       const result = await bulkImportStockItems({
@@ -371,6 +371,35 @@ describe("Technician Stock Service", () => {
         row: 3,
         error: "Numéro de série doublon détecté dans le fichier d'import : SN-DUPLICATE-2",
       });
+    });
+
+    it("should reject invalid quantities and alert thresholds during CSV import", async () => {
+      const { bulkImportStockItems } = await import("./services/stock-movement-write.service");
+
+      const mockCsvItems = [
+        { nomMateriel: "Phone 1", reference: "REF1", categorie: "Phones", quantite: "0" }, // qty 0
+        { nomMateriel: "Phone 2", reference: "REF2", categorie: "Phones", quantite: "-5" }, // negative
+        { nomMateriel: "Phone 3", reference: "REF3", categorie: "Phones", quantite: "abc" }, // text
+        { nomMateriel: "Phone 4", reference: "REF4", categorie: "Phones", quantite: "1.5" }, // decimal
+        { nomMateriel: "Phone 5", reference: "REF5", categorie: "Phones", quantite: "" }, // empty
+        { nomMateriel: "Phone 6", reference: "REF6", categorie: "Phones", quantite: "10", lowStockThreshold: "-1" }, // invalid lowStockThreshold
+        { nomMateriel: "Phone 7", reference: "REF7", categorie: "Phones", quantite: "10", lowStockThreshold: "abc" }, // invalid lowStockThreshold
+      ];
+
+      const result = await bulkImportStockItems({
+        items: mockCsvItems,
+        performedById: "admin-1",
+      });
+
+      expect(result.created).toBe(0);
+      expect(result.errors.length).toBe(7);
+      expect(result.errors[0].error).toContain("quantité");
+      expect(result.errors[1].error).toContain("quantité");
+      expect(result.errors[2].error).toContain("quantité");
+      expect(result.errors[3].error).toContain("quantité");
+      expect(result.errors[4].error).toContain("quantité");
+      expect(result.errors[5].error).toContain("seuil d'alerte");
+      expect(result.errors[6].error).toContain("seuil d'alerte");
     });
   });
 });

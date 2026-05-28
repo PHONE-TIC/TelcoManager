@@ -122,7 +122,7 @@ router.post(
     body("stockId").optional().isUUID().withMessage("Stock ID invalide"),
     body("action").isIn(["install", "retrait"]), // Simplified actions
     body("etat").optional().isIn(["ok", "hs"]), // For removal
-    body("quantite").optional().isInt({ min: 1 }),
+    body("quantite").optional().isInt({ min: 1 }).toInt(),
     body("notes").optional(),
     body("nom").optional().isString(),
     body("marque").optional().isString(),
@@ -131,7 +131,7 @@ router.post(
     body("reference").optional().isString(),
     body("categorie").optional().isString(),
     body("fournisseur").optional().isString(),
-    body("dryRun").optional().isBoolean(),
+    body("dryRun").optional().isBoolean().toBoolean(),
   ],
   interventionController.manageEquipement
 );

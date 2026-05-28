@@ -12,9 +12,9 @@
     # OPTION 2 : Défi DNS DuckDNS (Si les ports 80/443 sont bloqués)
     # Décommentez le bloc 'tls' ci-dessous si vous utilisez l'Option 2 :
     # =========================================================================
-    tls {
-        dns duckdns {$DUCKDNS_TOKEN}
-    }
+    # tls {
+    #     dns duckdns {$DUCKDNS_TOKEN}
+    # }
 
     # Sécurité supplémentaire : Compression et en-têtes recommandés
     encode gzip zstd

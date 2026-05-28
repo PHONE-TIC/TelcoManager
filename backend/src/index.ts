@@ -27,6 +27,14 @@ dotenv.config();
 // Enforce JWT secret checks on startup
 getJwtSecret();
 
+// Enforce ALLOWED_ORIGINS check in production
+if (process.env.NODE_ENV === "production") {
+  if (!process.env.ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS.trim() === "") {
+    console.error("FATAL ERROR: ALLOWED_ORIGINS environment variable must be set in production to secure CORS policies.");
+    process.exit(1);
+  }
+}
+
 // Initialiser Prisma
 import { prisma } from "./db";
 import { authenticate, AuthRequest } from "./middleware/auth.middleware";
@@ -45,10 +53,15 @@ app.use(
   })
 );
 
+// Resolve allowed origins (providing explicit defaults in development)
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"];
+
 // Middleware
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
+    origin: allowedOrigins,
     credentials: true,
   })
 );

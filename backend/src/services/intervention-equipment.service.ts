@@ -27,6 +27,12 @@ export async function manageInterventionEquipment(input: {
   dryRun?: boolean;
 }) {
   const quantite = input.quantite ?? 1;
+  if (!Number.isInteger(quantite) || quantite <= 0) {
+    return {
+      status: 400 as const,
+      body: { error: "Quantité invalide" },
+    };
+  }
 
   if (!input.stockId && !input.nom && !input.marque && !input.modele) {
     return {

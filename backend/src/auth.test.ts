@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { requireAdmin, requireInterventionAccess } from "./middleware/auth.middleware";
+import { authenticate, requireAdmin, requireInterventionAccess } from "./middleware/auth.middleware";
 import { prisma } from "./db";
 import type { Response, NextFunction } from "express";
 
@@ -10,6 +10,18 @@ vi.mock("./db", () => {
       intervention: {
         findUnique: vi.fn(),
       },
+      technicien: {
+        findUnique: vi.fn(),
+      },
+    },
+  };
+});
+
+// Mock jsonwebtoken centralized for the entire test file
+vi.mock("jsonwebtoken", () => {
+  return {
+    default: {
+      verify: vi.fn(),
     },
   };
 });
@@ -23,6 +35,8 @@ describe("Auth Middleware", () => {
     vi.clearAllMocks();
     mockRequest = {
       params: {},
+      query: {},
+      headers: {},
       user: undefined,
     };
     mockResponse = {
@@ -152,6 +166,72 @@ describe("Auth Middleware", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(403);
       expect(mockResponse.json).toHaveBeenCalledWith({ error: "Accès refusé" });
       expect(nextFunction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("authenticate", () => {
+    it("should return 401 when token is missing", async () => {
+      mockRequest.headers = {};
+      await authenticate(mockRequest, mockResponse, nextFunction);
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: "Token manquant ou invalide" });
+      expect(nextFunction).not.toHaveBeenCalled();
+    });
+
+    it("should return 403 when authenticated user is deactivated (active === false)", async () => {
+      const jwt = await import("jsonwebtoken");
+      
+      mockRequest.headers = { authorization: "Bearer valid-token" };
+      
+      // Use mock return value
+      vi.mocked(jwt.default.verify).mockReturnValue({
+        id: "tech-inactive",
+        username: "inactive_user",
+        role: "technicien",
+      } as any);
+
+      // Mock prisma.technicien.findUnique to return inactive user
+      vi.mocked(prisma.technicien.findUnique).mockResolvedValue({
+        id: "tech-inactive",
+        username: "inactive_user",
+        role: "technicien",
+        active: false, // inactive account!
+      } as any);
+
+      await authenticate(mockRequest, mockResponse, nextFunction);
+
+      expect(prisma.technicien.findUnique).toHaveBeenCalledWith({ where: { id: "tech-inactive" } });
+      expect(mockResponse.status).toHaveBeenCalledWith(403);
+      expect(mockResponse.json).toHaveBeenCalledWith({ error: "Compte désactivé. Accès refusé." });
+      expect(nextFunction).not.toHaveBeenCalled();
+    });
+
+    it("should call next() when authenticated user is active", async () => {
+      const jwt = await import("jsonwebtoken");
+      
+      mockRequest.headers = { authorization: "Bearer valid-token" };
+      
+      vi.mocked(jwt.default.verify).mockReturnValue({
+        id: "tech-active",
+        username: "active_user",
+        role: "technicien",
+      } as any);
+
+      vi.mocked(prisma.technicien.findUnique).mockResolvedValue({
+        id: "tech-active",
+        username: "active_user",
+        role: "technicien",
+        active: true,
+      } as any);
+
+      await authenticate(mockRequest, mockResponse, nextFunction);
+
+      expect(nextFunction).toHaveBeenCalled();
+      expect(mockRequest.user).toEqual({
+        id: "tech-active",
+        username: "active_user",
+        role: "technicien",
+      });
     });
   });
 });

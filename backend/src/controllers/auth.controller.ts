@@ -2,7 +2,8 @@ import { Response } from 'express';
 import { validationResult } from 'express-validator';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { respondValidationError } from './controller.utils';
-import { authenticateUser, getAuthenticatedUserFromToken, refreshJwtToken } from '../services/auth.service';
+import { authenticateUser, refreshJwtToken } from '../services/auth.service';
+import { prisma } from '../db';
 
 export const login = async (req: AuthRequest, res: Response) => {
     try {
@@ -37,20 +38,32 @@ export const refreshToken = async (req: AuthRequest, res: Response) => {
 
 export const getCurrentUser = async (req: AuthRequest, res: Response) => {
     try {
-        const authHeader = req.headers.authorization;
-
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Token manquant' });
+        if (!req.user) {
+            return res.status(401).json({ error: 'Non authentifié' });
         }
 
-        const technicien = await getAuthenticatedUserFromToken(authHeader.substring(7));
+        const technicien = await prisma.technicien.findUnique({
+            where: { id: req.user.id },
+            select: {
+                id: true,
+                nom: true,
+                username: true,
+                role: true,
+                active: true,
+            },
+        });
 
         if (!technicien) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
 
+        if (!technicien.active) {
+            return res.status(403).json({ error: 'Compte désactivé. Accès refusé.' });
+        }
+
         return res.json({ user: technicien });
     } catch (error) {
-        return res.status(401).json({ error: 'Token invalide' });
+        console.error('Error in getCurrentUser:', error);
+        return res.status(500).json({ error: 'Erreur interne du serveur' });
     }
 };

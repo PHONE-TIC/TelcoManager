@@ -163,6 +163,30 @@ export async function bulkImportStockItems(input: {
         continue;
       }
 
+      const rawQty = item.quantite;
+      const qty = Number(rawQty);
+      if (rawQty === undefined || rawQty === null || rawQty === "" || !Number.isInteger(qty) || qty <= 0) {
+        results.errors.push({
+          row: i + 1,
+          error: `La quantité (${rawQty === undefined ? "indéfinie" : rawQty}) doit être un entier strictement positif.`,
+        });
+        continue;
+      }
+
+      const rawThreshold = item.lowStockThreshold;
+      let threshold = 5;
+      if (rawThreshold !== undefined && rawThreshold !== null && rawThreshold !== "") {
+        const t = Number(rawThreshold);
+        if (!Number.isInteger(t) || t < 0) {
+          results.errors.push({
+            row: i + 1,
+            error: `Le seuil d'alerte (${rawThreshold}) doit être un entier positif ou nul.`,
+          });
+          continue;
+        }
+        threshold = t;
+      }
+
       const stock = await prisma.stock.create({
         data: {
           nomMateriel: item.nomMateriel,
@@ -171,8 +195,8 @@ export async function bulkImportStockItems(input: {
           codeBarre: item.codeBarre || null,
           categorie: item.categorie,
           fournisseur: item.fournisseur || null,
-          quantite: Number(item.quantite) || 1,
-          lowStockThreshold: Number(item.lowStockThreshold) || 5,
+          quantite: qty,
+          lowStockThreshold: threshold,
           notes: item.notes || null,
         },
       });

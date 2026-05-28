@@ -1,6 +1,6 @@
 # 📊 TelcoManager
 
-[![Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20PostgreSQL-blue?style=flat-sounding)](https://github.com/PHONE-TIC/TelcoManager)
+[![Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20PostgreSQL-blue?style=flat-square)](https://github.com/PHONE-TIC/TelcoManager)
 [![Docker Build](https://img.shields.io/badge/Docker-Compatible-blue?logo=docker&logoColor=white)](https://hub.docker.com/r/phonetic76/telcomanager-app)
 [![CI status](https://img.shields.io/badge/CI-Passed-success?logo=github-actions&logoColor=white)](https://github.com/PHONE-TIC/TelcoManager/actions)
 [![CD status](https://img.shields.io/badge/CD-Deployed-success?logo=github-actions&logoColor=white)](https://github.com/PHONE-TIC/TelcoManager/actions)
@@ -79,7 +79,7 @@ telcomanager/
 
 ### Services exposés
 - **Application Web** : [https://localhost:8081](https://localhost:8081) *(Accès HTTPS chiffré via Caddy)*
-- **PostgreSQL** : `localhost:5435` *(Masqué de l'hôte externe par défaut en production pour des raisons de sécurité)*
+- **PostgreSQL** : Non exposé à l'extérieur par défaut pour des raisons de sécurité (uniquement accessible au sein de l'environnement conteneurisé).
 
 ### Identifiants par défaut au premier démarrage
 - **Identifiant** : `admin`
@@ -114,7 +114,7 @@ npm test
 
 ## 📋 Variables d'Environnement
 
-L'ensemble des configurations s'effectue via des variables d'environnement déclarées dans le fichier `.env` à la racine (voir modèle dans [.env.example](file:///home/nplacide/Documents/TelcoManager/.env.example)) :
+L'ensemble des configurations s'effectue via des variables d'environnement déclarées dans le fichier `.env` à la racine (voir modèle dans [.env.example](.env.example)) :
 
 ### 🔑 Configuration Générale & Sécurité
 | Variable | Description | Valeur par défaut / Recommandation |

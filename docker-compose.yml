@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-stock_intervention}
     volumes:
-      - /opt/phonetic_telco-manager/data/db:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${DB_USER:-postgres} -d $${DB_NAME:-stock_intervention}"]
       interval: 5s
@@ -50,6 +50,8 @@ services:
       ATLAS_TOTP_URI: ${ATLAS_TOTP_URI:-}
       # Optionnel: Reset DB au démarrage (true/false)
       SEED_ON_START: ${SEED_ON_START:-false}
+      RUN_SCHEMA_RECOVERY: ${RUN_SCHEMA_RECOVERY:-false}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,7 +74,7 @@ services:
       DOMAIN: ${DOMAIN:-localhost}
       DUCKDNS_TOKEN: ${DUCKDNS_TOKEN:-}
     volumes:
-      - /opt/phonetic_telco-manager/Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -86,6 +88,7 @@ networks:
     driver: bridge
 
 volumes:
+  db_data:
   uploads_data:
   caddy_data:
   caddy_config:

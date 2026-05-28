@@ -33,6 +33,13 @@ function getDuplicateStockLocation(item: {
 }
 
 export async function createStockItems(input: StockWriteInput) {
+  if (input.quantite !== undefined && (!Number.isInteger(input.quantite) || input.quantite < 0)) {
+    return {
+      status: 400 as const,
+      body: { error: "Quantité invalide" },
+    };
+  }
+
   const {
     nomMateriel,
     reference,
@@ -207,7 +214,14 @@ export async function moveStockToHs(input: {
     };
   }
 
-  const qteADeplacer = input.quantite || stockCourant.quantite;
+  const qteADeplacer = input.quantite !== undefined ? input.quantite : stockCourant.quantite;
+  if (!Number.isInteger(qteADeplacer) || qteADeplacer <= 0) {
+    return {
+      status: 400 as const,
+      body: { error: "Quantité invalide" },
+    };
+  }
+
   if (qteADeplacer > stockCourant.quantite) {
     return {
       status: 400 as const,

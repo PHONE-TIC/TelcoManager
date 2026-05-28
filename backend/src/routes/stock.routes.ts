@@ -47,7 +47,7 @@ router.post(
     body("codeBarre").optional(),
     body("categorie").notEmpty().withMessage("Catégorie requise"),
     body("statut").optional().isIn(["courant", "hs", "retour_fournisseur"]),
-    body("quantite").optional().isInt({ min: 0 }),
+    body("quantite").optional().isInt({ min: 0 }).toInt(),
     body("notes").optional(),
   ],
   stockController.createStock
@@ -65,7 +65,7 @@ router.put(
     body("codeBarre").optional(),
     body("categorie").optional().notEmpty(),
     body("statut").optional().isIn(["courant", "hs", "retour_fournisseur"]),
-    body("quantite").optional().isInt({ min: 0 }),
+    body("quantite").optional().isInt({ min: 0 }).toInt(),
     body("notes").optional(),
   ],
   stockController.updateStock
@@ -84,7 +84,7 @@ router.post(
   "/:id/move-to-hs",
   [
     param("id").isUUID(),
-    body("quantite").optional().isInt({ min: 1 }),
+    body("quantite").optional().isInt({ min: 1 }).toInt(),
     body("notes").optional(),
   ],
   stockController.moveToHS
