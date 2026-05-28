@@ -219,12 +219,15 @@ Si vos compteurs de tableau de bord restent bloqués à `0` ou que le backend si
 ## 📈 Historique des Évolutions Techniques
 
 <details>
-<summary><b>🚀 Version 5.0 (Mai 2026) - Durcissement de l'Audit & Traçabilité</b></summary>
+<summary><b>🚀 Version 5.0 (Mai 2026) - Durcissement, Sécurisation & Portabilité</b></summary>
 
+- **Portabilité & Déploiement Docker** : Remplacement des répertoires absolus `/opt` par un volume Docker nommé `db_data` et un montage de configuration relatif `./Caddyfile` pour assurer une reproductibilité instantanée en local sur `localhost`. Neutralisation par défaut du défi DNS DuckDNS, et création d'un fichier de surcharge de production `docker-compose.prod.yml` dédié à l'hébergement réel.
 - **Audit d'Activité Strict (`performedById`)** : Rectification complète de la traçabilité des mouvements de stock dans les véhicules de techniciens. L'identifiant de l'utilisateur connecté effectuant l'action (`performedById`) est désormais rigoureusement capturé par les contrôleurs et propagé aux services métier. Les actions administratives de transfert ou de modification sur le stock d'un tiers sont ainsi créditées à l'exécuteur réel et non au propriétaire du véhicule.
-- **Pré-validation & Durcissement CSV** : Normalisation automatique (`.trim().toUpperCase()`) des numéros de série importés. Pré-validation interne des doublons au sein du fichier CSV avec rapports d'erreur précis par ligne, permettant d'ignorer les erreurs isolées sans corrompre la transaction globale.
-- **Validation Stricte Express** : Injection forcée de conversions de types `.toInt()` sur les validateurs de quantité de stock véhicule, évitant toute discordance de type à l'exécution de la logique métier.
-- **Suite de Tests Unitaires Enrichie** : Ajout de tests unitaires ciblés sur les règles d'audit, la normalisation CSV et la gestion des doublons (la suite passe à 27 tests entièrement verts).
+- **Validation Stricte d'Import CSV** : Durcissement du parseur en rejetant individuellement les lignes de quantité invalides, négatives, décimales ou manquantes, et les seuils d'alerte erronés avec rapports d'erreur précis par ligne. Normalisation automatique des numéros de série en majuscules.
+- **Sécurisation de la Route `/auth/me`** : Association du middleware de session anti-zombie `authenticate` sur la route `/me`, garantissant le blocage HTTP 403 immédiat de toute session appartenant à un utilisateur dont le compte a été marqué désactivé.
+- **Durcissement des CORS de Production** : Interdiction d'exposer l'application avec un CORS wildcard `*` en production ; le serveur s'arrête avec un code d'erreur fatal au boot si la variable d'environnement `ALLOWED_ORIGINS` est absente ou vide. Fallback d'origines explicites (`localhost`) en mode développement.
+- **Durcissement des Typecastings & Gardes Express** : Injection de validateurs `.toInt()` / `.toBoolean()` sur toutes les routes d'interventions et de stocks, remplacement des replis `||` erronés et intégration de gardes d'assertion de quantité strictes dans les services métier.
+- **Suite de Tests Unitaires validée (31 tests verts)** : Ajout de nouveaux cas de tests unitaires et d'intégration validant le comportement de la route `/me` pour les inactifs, les politiques de CORS et la résistance aux CSV malformés, portant la couverture à 31 tests.
 </details>
 
 <details>
