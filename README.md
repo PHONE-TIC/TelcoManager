@@ -226,6 +226,12 @@ Si vos compteurs de tableau de bord restent bloqués à `0` ou que le backend si
 ## 📈 Historique des Évolutions Techniques
 
 <details>
+<summary><b>🩹 Version 5.1 (Juin 2026) - Correction de l'affichage des clients lors de la création d'interventions</b></summary>
+
+- **Résolution de la pagination des clients** : Augmentation de la limite de récupération à 1000 clients et 1000 techniciens dans le formulaire de planification des interventions (`Interventions.tsx`), corrigeant le dysfonctionnement où les clients au-delà du 20ème (limite par défaut du backend) ne s'affichaient pas.
+</details>
+
+<details>
 <summary><b>🚀 Version 5.0 (Mai 2026) - Durcissement, Sécurisation & Portabilité</b></summary>
 
 - **Portabilité & Déploiement Docker** : Remplacement des répertoires absolus `/opt` par un volume Docker nommé `db_data` et un montage de configuration relatif `./Caddyfile` pour assurer une reproductibilité instantanée en local sur `localhost`. Neutralisation par défaut du défi DNS DuckDNS, et création d'un fichier de surcharge de production `docker-compose.prod.yml` dédié à l'hébergement réel.

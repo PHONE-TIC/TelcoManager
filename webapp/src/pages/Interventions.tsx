@@ -161,8 +161,8 @@ function Interventions() {
       if (user?.role === "admin") {
         try {
           const [clientsData, techniciensData] = await Promise.all([
-            apiService.getClients({}),
-            apiService.getTechniciens({}),
+            apiService.getClients({ limit: 1000 }),
+            apiService.getTechniciens({ limit: 1000 }),
           ]);
           setClients(clientsData.clients);
           setTechniciens(techniciensData.techniciens);
