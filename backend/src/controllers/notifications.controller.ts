@@ -9,22 +9,24 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id;
 
     if (userRole === "technicien") {
-      // Pour les techniciens, on ne récupère que les notifications de type "new_intervention"
-      const allNotifications = await prisma.notification.findMany({
+      // Le destinataire est filtré directement en base, sur le champ JSON
+      // metadata. Le filtrage se faisait auparavant en mémoire sur les 200
+      // dernières notifications tous techniciens confondus : au-delà de ce
+      // volume, un technicien cessait de voir les siennes — les notifications
+      // de ses collègues saturant la fenêtre.
+      const notifications = await prisma.notification.findMany({
         where: {
           type: "new_intervention",
+          metadata: {
+            path: ["technicienId"],
+            equals: userId,
+          },
         },
         orderBy: { createdAt: "desc" },
-        take: 200,
+        take: 50,
       });
 
-      // Filtrage en mémoire par technicienId stocké dans metadata
-      const filtered = allNotifications.filter((n) => {
-        const metadata = n.metadata as any;
-        return metadata && metadata.technicienId === userId;
-      });
-
-      return res.json(filtered.slice(0, 50));
+      return res.json(notifications);
     } else {
       // Pour les admins et gestionnaires, on renvoie toutes les notifications (liens IP) sauf les attributions destinées aux techniciens
       const notifications = await prisma.notification.findMany({

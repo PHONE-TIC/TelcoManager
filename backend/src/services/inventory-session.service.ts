@@ -71,19 +71,32 @@ export async function finalizeInventorySession(sessionId: string) {
     };
   }
 
+  const countedItems = session.items.filter((item) => item.countedQuantity !== null);
+
+  // Les articles comptés sont regroupés par quantité constatée : un inventaire
+  // porte couramment sur plusieurs centaines de références, et les mettre à jour
+  // une par une maintenait la transaction ouverte le temps d'autant d'allers-
+  // retours. Les quantités se répétant beaucoup (0, 1, 2…), le regroupement
+  // ramène l'opération à quelques requêtes.
+  const idsByQuantity = new Map<number, string[]>();
+  for (const item of countedItems) {
+    const quantity = item.countedQuantity as number;
+    const ids = idsByQuantity.get(quantity);
+    if (ids) ids.push(item.stockId);
+    else idsByQuantity.set(quantity, [item.stockId]);
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.inventorySession.update({
       where: { id: sessionId },
       data: { status: "completed" },
     });
 
-    for (const item of session.items) {
-      if (item.countedQuantity !== null) {
-        await tx.stock.update({
-          where: { id: item.stockId },
-          data: { quantite: item.countedQuantity },
-        });
-      }
+    for (const [quantity, stockIds] of idsByQuantity) {
+      await tx.stock.updateMany({
+        where: { id: { in: stockIds } },
+        data: { quantite: quantity },
+      });
     }
   });
 

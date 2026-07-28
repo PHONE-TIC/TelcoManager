@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import JsBarcode from "jsbarcode";
-import moment from "moment";
+import dayjs from "./dayjsFrConfig";
 
 interface InventoryItemPDF {
   stock?: {
@@ -39,7 +39,7 @@ export const generateInventoryPDF = (session: InventorySessionPDF) => {
 
   doc.setFontSize(10);
   doc.text(`Réf: ${session.id}`, 14, 30);
-  doc.text(`Date: ${moment(session.date).format("DD/MM/YYYY HH:mm")}`, 14, 35);
+  doc.text(`Date: ${dayjs(session.date).format("DD/MM/YYYY HH:mm")}`, 14, 35);
   doc.text(
     `Statut: ${session.status === "completed" ? "Finalisé" : "Brouillon"}`,
     14,
@@ -137,7 +137,7 @@ export const generateInventoryPDF = (session: InventorySessionPDF) => {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.text(
-      `Page ${i} / ${totalPages} - Généré le ${moment().format(
+      `Page ${i} / ${totalPages} - Généré le ${dayjs().format(
         "DD/MM/YYYY HH:mm"
       )}`,
       pageWidth / 2,
@@ -146,5 +146,5 @@ export const generateInventoryPDF = (session: InventorySessionPDF) => {
     );
   }
 
-  doc.save(`Inventaire_${moment(session.date).format("YYYY-MM-DD")}.pdf`);
+  doc.save(`Inventaire_${dayjs(session.date).format("YYYY-MM-DD")}.pdf`);
 };

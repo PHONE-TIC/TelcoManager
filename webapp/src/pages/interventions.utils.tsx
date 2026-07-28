@@ -1,4 +1,4 @@
-import moment from "../utils/momentFrConfig";
+import dayjs from "../utils/dayjsFrConfig";
 import type { Intervention } from "../types";
 
 export function getInterventionStatusBadgeConfig(statut: string): {
@@ -24,7 +24,7 @@ export function getInterventionStatusLabel(statut: string): string {
 
 export function buildCalendarEventTitle(intervention: Intervention): string {
   const typeLabel = intervention.type === "Installation" ? "Install" : "SAV";
-  const timeLabel = moment(intervention.datePlanifiee).format("HH:mm");
+  const timeLabel = dayjs(intervention.datePlanifiee).format("HH:mm");
   const clientName = intervention.client?.nom || "Client inconnu";
   const statusLabel = getInterventionStatusLabel(intervention.statut);
 

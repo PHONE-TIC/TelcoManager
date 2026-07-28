@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Link } from "react-router-dom";
-import moment from "moment";
+import dayjs from "../utils/dayjsFrConfig";
 import type { Intervention } from "../types";
 import {
   DASHBOARD_PANEL_STYLE,
@@ -131,8 +131,8 @@ export function DashboardRecentInterventions({
                   </span>
                 </div>
                 <div className="dashboard-list-card__meta">
-                  <span>{moment(intervention.datePlanifiee).format("DD/MM/YYYY")}</span>
-                  <span>{moment(intervention.datePlanifiee).format("HH:mm")}</span>
+                  <span>{dayjs(intervention.datePlanifiee).format("DD/MM/YYYY")}</span>
+                  <span>{dayjs(intervention.datePlanifiee).format("HH:mm")}</span>
                 </div>
               </Link>
             );

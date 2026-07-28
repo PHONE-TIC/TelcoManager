@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import moment from "moment";
+import dayjs from "../utils/dayjsFrConfig";
 import { apiService } from "../services/api.service";
 import {
   ResponsiveMobileCard,
@@ -29,8 +29,8 @@ function Reports() {
   const [stats, setStats] = useState<ReportStats | null>(null);
   const [interventions, setInterventions] = useState<Intervention[]>([]);
   const [dateRange, setDateRange] = useState({
-    start: moment().subtract(30, "days").format("YYYY-MM-DD"),
-    end: moment().format("YYYY-MM-DD"),
+    start: dayjs().subtract(30, "days").format("YYYY-MM-DD"),
+    end: dayjs().format("YYYY-MM-DD"),
   });
   const [selectedTechnician, setSelectedTechnician] = useState("");
   const [technicians, setTechnicians] = useState<Technicien[]>([]);
@@ -84,8 +84,8 @@ function Reports() {
       if (withDuration.length > 0) {
         const totalMinutes = withDuration.reduce(
           (acc: number, i: { heureArrivee: string; heureDepart: string }) => {
-            const start = moment(i.heureArrivee, "HH:mm");
-            const end = moment(i.heureDepart, "HH:mm");
+            const start = dayjs(i.heureArrivee, "HH:mm");
+            const end = dayjs(i.heureDepart, "HH:mm");
             return acc + end.diff(start, "minutes");
           },
           0
@@ -120,7 +120,7 @@ function Reports() {
     const headers = ["N°", "Date", "Client", "Titre", "Technicien", "Statut", "Durée"];
     const rows = interventions.map((i) => [
       i.numero || "",
-      moment(i.datePlanifiee).format("DD/MM/YYYY"),
+      dayjs(i.datePlanifiee).format("DD/MM/YYYY"),
       i.client?.nom || "",
       i.titre || "",
       i.technicien?.nom || "",
@@ -157,7 +157,7 @@ function Reports() {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 100, 100);
     doc.text(
-      `Période: ${moment(dateRange.start).format("DD/MM/YYYY")} - ${moment(dateRange.end).format("DD/MM/YYYY")}`,
+      `Période: ${dayjs(dateRange.start).format("DD/MM/YYYY")} - ${dayjs(dateRange.end).format("DD/MM/YYYY")}`,
       pageWidth / 2,
       28,
       { align: "center" }
@@ -192,7 +192,7 @@ function Reports() {
       head: [["N°", "Date", "Client", "Titre", "Technicien", "Statut"]],
       body: interventions.slice(0, 50).map((i) => [
         i.numero || "-",
-        moment(i.datePlanifiee).format("DD/MM/YY"),
+        dayjs(i.datePlanifiee).format("DD/MM/YY"),
         i.client?.nom?.substring(0, 20) || "-",
         (i.titre || "").substring(0, 25),
         i.technicien?.nom?.substring(0, 15) || "-",
@@ -207,7 +207,7 @@ function Reports() {
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text(
-      `Généré le ${moment().format("DD/MM/YYYY HH:mm")} - TelcoManager`,
+      `Généré le ${dayjs().format("DD/MM/YYYY HH:mm")} - TelcoManager`,
       pageWidth / 2,
       pageHeight - 10,
       { align: "center" }
@@ -239,7 +239,7 @@ function Reports() {
   const selectedTechnicianName =
     technicians.find((technician) => technician.id === selectedTechnician)?.nom || "Tous les techniciens";
 
-  const periodLabel = `${moment(dateRange.start).format("DD MMM")} - ${moment(dateRange.end).format("DD MMM YYYY")}`;
+  const periodLabel = `${dayjs(dateRange.start).format("DD MMM")} - ${dayjs(dateRange.end).format("DD MMM YYYY")}`;
 
   return (
     <ResponsivePage
@@ -379,7 +379,7 @@ function Reports() {
                             #{intervention.numero || "-"}
                           </div>
                           <div className="reports-mobile-date">
-                            {moment(intervention.datePlanifiee).format("DD/MM/YYYY")}
+                            {dayjs(intervention.datePlanifiee).format("DD/MM/YYYY")}
                           </div>
                         </div>
                         <span
@@ -426,7 +426,7 @@ function Reports() {
                       return (
                         <tr key={intervention.id}>
                           <td className="reports-cell-strong">#{intervention.numero || "-"}</td>
-                          <td>{moment(intervention.datePlanifiee).format("DD/MM/YYYY")}</td>
+                          <td>{dayjs(intervention.datePlanifiee).format("DD/MM/YYYY")}</td>
                           <td>{intervention.client?.nom || "-"}</td>
                           <td className="reports-cell-muted">{intervention.titre || "-"}</td>
                           <td>{intervention.technicien?.nom || "Non assigné"}</td>

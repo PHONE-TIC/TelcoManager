@@ -293,6 +293,21 @@ Si vos compteurs de tableau de bord restent bloqués à `0` ou que le backend si
 ## 📈 Historique des Évolutions Techniques
 
 <details>
+<summary><b>⚡ Version 5.4 (Juillet 2026) - Optimisation de la charge utile, des requêtes et du poids client</b></summary>
+
+Chaque gain annoncé ci-dessous a été mesuré avant et après correction, sur des volumes réalistes.
+
+- **Charge utile des listes divisée par 25** : les vues de liste renvoyaient toutes les colonnes des interventions, dont `signature` et `signatureTechnicien` — des images manuscrites encodées en base64, jamais affichées ailleurs que sur la fiche détaillée. Elles représentaient **94 % de la charge utile**. Une page passe de 60,5 kB à 2,6 kB sur le jeu mesuré ; le tableau de bord, qui charge jusqu'à 1000 interventions, était le plus exposé. Décisif pour les techniciens en mobilité.
+- **Notifications filtrées en base** : le centre de notifications d'un technicien chargeait les 200 dernières notifications tous destinataires confondus, puis les filtrait en mémoire. Au-delà de ce volume, un technicien cessait de voir les siennes dès que celles de ses collègues saturaient la fenêtre — un défaut fonctionnel autant qu'une inefficacité. Le filtrage s'effectue désormais dans la requête.
+- **Deux index de lecture ciblés** : mesurés sur 30 000 notifications réparties entre 50 techniciens — notifications d'un technicien 7,4 ms → 0,9 ms, alertes de supervision 10,3 ms → 0,06 ms. Ces index sont partiels et portés par une migration, le schéma Prisma ne sachant exprimer ni les conditions partielles ni les index sur expression JSON.
+- **Requêtes N+1 supprimées** : le flux SSE des verrous interrogeait la base une fois par verrou actif, à chaque ouverture de flux donc à chaque connexion d'utilisateur ; les noms sont désormais résolus en une requête. La finalisation d'inventaire écrivait une mise à jour par article, séquentiellement dans une transaction — les articles sont regroupés par quantité constatée, ce qui ramène des centaines de requêtes à quelques-unes.
+- **Moment.js remplacé par Day.js** : bibliothèque en maintenance depuis plusieurs années, elle pesait 19,2 kB gzip contre 5,7 kB pour la configuration Day.js équivalente. Plusieurs modules importaient d'ailleurs `moment` brut sans la locale française ; tout passe désormais par une configuration unique.
+
+> [!NOTE]
+> Deux index initialement envisagés — sur le statut d'intervention et sur le type de notification — ont été **retirés après mesure** : PostgreSQL ne les utilisait pas, l'index de date existant suffisant. Un index inutile coûte à chaque écriture.
+</details>
+
+<details>
 <summary><b>🛡️ Version 5.3 (Juillet 2026) - Tests d'intégration, durcissement et découpage des gros modules</b></summary>
 
 - **Tests d'intégration sur base réelle (49 cas)** : toute la suite existante simulait les accès Prisma ; rien ne vérifiait le contrat HTTP réel. L'application Express complète est désormais montée contre un PostgreSQL dédié, vidé entre chaque cas. Sont verrouillés : le cloisonnement des interventions par technicien, l'anti-escalade de privilèges, la révocation immédiate d'une session (désactivation, suppression, rétrogradation de rôle) et la validation des entrées. Un garde-fou refuse toute base dont le nom ne contient pas « test ». Nouveau job CI avec service PostgreSQL éphémère.

@@ -66,19 +66,23 @@ export const locksStream = async (req: Request, res: Response) => {
       },
     });
 
-    const locksWithNames = await Promise.all(
-      activeLocks.map(async (lock) => {
-        const tech = await prisma.technicien.findUnique({
-          where: { id: lock.lockedBy! },
-          select: { nom: true },
-        });
-        return {
-          interventionId: lock.id,
-          lockedBy: tech?.nom || "Un utilisateur",
-          lockedAt: lock.lockedAt ? lock.lockedAt.toISOString() : null,
-        };
-      })
-    );
+    // Les noms des détenteurs sont résolus en une seule requête. Les interroger
+    // un par un multipliait les allers-retours par le nombre de verrous actifs,
+    // et ce à chaque ouverture de flux — donc à chaque connexion d'utilisateur.
+    const holderIds = [...new Set(activeLocks.map((lock) => lock.lockedBy!))];
+    const holders = holderIds.length
+      ? await prisma.technicien.findMany({
+          where: { id: { in: holderIds } },
+          select: { id: true, nom: true },
+        })
+      : [];
+    const nameById = new Map(holders.map((holder) => [holder.id, holder.nom]));
+
+    const locksWithNames = activeLocks.map((lock) => ({
+      interventionId: lock.id,
+      lockedBy: nameById.get(lock.lockedBy!) || "Un utilisateur",
+      lockedAt: lock.lockedAt ? lock.lockedAt.toISOString() : null,
+    }));
 
     res.write(`data: ${JSON.stringify({ type: "initial", locks: locksWithNames })}\n\n`);
   } catch (err) {

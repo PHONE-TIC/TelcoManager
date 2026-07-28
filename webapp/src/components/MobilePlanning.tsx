@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import moment from 'moment';
+import dayjs from "../utils/dayjsFrConfig";
 import { AppIcon } from './AppIcon';
 import './MobilePlanning.css';
 
@@ -23,7 +23,7 @@ type FilterType = 'today' | 'week' | 'month' | 'custom';
 export default function MobilePlanning({ interventions }: MobilePlanningProps) {
     const navigate = useNavigate();
     const [filter, setFilter] = useState<FilterType>('today');
-    const [currentDate, setCurrentDate] = useState(moment());
+    const [currentDate, setCurrentDate] = useState(dayjs());
     const [customStartDate, setCustomStartDate] = useState('');
     const [customEndDate, setCustomEndDate] = useState('');
 
@@ -34,23 +34,23 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
         switch (filter) {
             case 'today':
                 filtered = interventions.filter(int =>
-                    moment(int.datePlanifiee).isSame(currentDate, 'day')
+                    dayjs(int.datePlanifiee).isSame(currentDate, 'day')
                 );
                 break;
             case 'week':
                 filtered = interventions.filter(int =>
-                    moment(int.datePlanifiee).isSame(currentDate, 'week')
+                    dayjs(int.datePlanifiee).isSame(currentDate, 'week')
                 );
                 break;
             case 'month':
                 filtered = interventions.filter(int =>
-                    moment(int.datePlanifiee).isSame(currentDate, 'month')
+                    dayjs(int.datePlanifiee).isSame(currentDate, 'month')
                 );
                 break;
             case 'custom':
                 if (customStartDate && customEndDate) {
                     filtered = interventions.filter(int => {
-                        const intDate = moment(int.datePlanifiee);
+                        const intDate = dayjs(int.datePlanifiee);
                         return intDate.isBetween(customStartDate, customEndDate, 'day', '[]');
                     });
                 }
@@ -59,7 +59,7 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
 
         // Sort by date
         return filtered.sort((a, b) =>
-            moment(a.datePlanifiee).diff(moment(b.datePlanifiee))
+            dayjs(a.datePlanifiee).diff(dayjs(b.datePlanifiee))
         );
     };
 
@@ -67,7 +67,7 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
 
     // Group interventions by date
     const groupedInterventions = filteredInterventions.reduce((acc, intervention) => {
-        const dateKey = moment(intervention.datePlanifiee).format('YYYY-MM-DD');
+        const dateKey = dayjs(intervention.datePlanifiee).format('YYYY-MM-DD');
         if (!acc[dateKey]) {
             acc[dateKey] = [];
         }
@@ -104,7 +104,7 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
     };
 
     const goToToday = () => {
-        setCurrentDate(moment());
+        setCurrentDate(dayjs());
     };
 
     const getHeaderText = () => {
@@ -120,7 +120,7 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
                 return currentDate.format('MMMM YYYY');
             case 'custom':
                 if (customStartDate && customEndDate) {
-                    return `${moment(customStartDate).format('D MMM')} - ${moment(customEndDate).format('D MMM YYYY')}`;
+                    return `${dayjs(customStartDate).format('D MMM')} - ${dayjs(customEndDate).format('D MMM YYYY')}`;
                 }
                 return 'Période personnalisée';
         }
@@ -206,7 +206,7 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
                     Object.entries(groupedInterventions).map(([date, dayInterventions]) => (
                         <div key={date} className="day-group">
                             <div className="day-header">
-                                {moment(date).format('dddd D MMMM YYYY')}
+                                {dayjs(date).format('dddd D MMMM YYYY')}
                             </div>
                             {dayInterventions.map((intervention) => {
                                 const status = getStatusBadge(intervention.statut);
@@ -218,7 +218,7 @@ export default function MobilePlanning({ interventions }: MobilePlanningProps) {
                                     >
                                         <div className="intervention-card-header">
                                             <div className="intervention-time">
-                                                {moment(intervention.datePlanifiee).format('HH:mm')}
+                                                {dayjs(intervention.datePlanifiee).format('HH:mm')}
                                             </div>
                                             <span className={`badge ${status.className}`}>
                                                 {status.label}

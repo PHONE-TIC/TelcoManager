@@ -18,6 +18,7 @@ import {
 } from "./controller.utils";
 import {
   interventionClientListSelect,
+  interventionListSelect,
   interventionTechnicienListSelect,
 } from "./prisma-selects";
 import {
@@ -71,7 +72,8 @@ export const getAllInterventions = async (req: AuthRequest, res: Response) => {
         where,
         skip,
         take: pageSize,
-        include: {
+        select: {
+          ...interventionListSelect,
           client: {
             select: interventionClientListSelect,
           },

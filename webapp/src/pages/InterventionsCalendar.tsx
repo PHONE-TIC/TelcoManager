@@ -1,11 +1,11 @@
 import type { CSSProperties } from "react";
-import { Calendar, momentLocalizer, type View } from "react-big-calendar";
+import { Calendar, dayjsLocalizer, type View } from "react-big-calendar";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../styles/calendar-dark-theme.css";
-import moment from "../utils/momentFrConfig";
+import dayjs from "../utils/dayjsFrConfig";
 import type { Intervention } from "../types";
 
-const localizer = momentLocalizer(moment);
+const localizer = dayjsLocalizer(dayjs);
 
 type CalendarEvent = {
   id: string;
@@ -56,10 +56,10 @@ function InterventionsCalendar({
       onView={handleViewChange}
       eventPropGetter={eventStyleGetter}
       formats={{
-        dayFormat: (date: Date) => moment(date).format("dddd D"),
-        weekdayFormat: (date: Date) => moment(date).format("dddd"),
-        monthHeaderFormat: (date: Date) => moment(date).format("MMMM YYYY"),
-        dayHeaderFormat: (date: Date) => moment(date).format("dddd D MMMM"),
+        dayFormat: (date: Date) => dayjs(date).format("dddd D"),
+        weekdayFormat: (date: Date) => dayjs(date).format("dddd"),
+        monthHeaderFormat: (date: Date) => dayjs(date).format("MMMM YYYY"),
+        dayHeaderFormat: (date: Date) => dayjs(date).format("dddd D MMMM"),
       }}
       messages={{
         next: "Suivant",

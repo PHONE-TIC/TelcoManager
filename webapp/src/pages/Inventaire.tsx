@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import moment from "moment";
+import dayjs from "../utils/dayjsFrConfig";
 import { apiService } from "../services/api.service";
 import { AppIcon } from "../components/AppIcon";
 import { generateInventoryPDF } from "../utils/inventoryPdf";
@@ -239,7 +239,7 @@ function Inventaire() {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-                  Inventaire du {moment(currentSession.date).format("DD/MM/YYYY")}
+                  Inventaire du {dayjs(currentSession.date).format("DD/MM/YYYY")}
                 </h1>
                 {isCompleted ? (
                   <span
@@ -969,10 +969,10 @@ function Inventaire() {
               </div>
               <div>
                 <h3 style={{ fontWeight: 600, fontSize: "1.1rem" }}>
-                  Inventaire du {moment(session.date).format("DD/MM/YYYY")}
+                  Inventaire du {dayjs(session.date).format("DD/MM/YYYY")}
                 </h3>
                 <div className="flex gap-3 text-sm text-gray-500 mt-1">
-                  <span>{moment(session.date).format("HH:mm")}</span>
+                  <span>{dayjs(session.date).format("HH:mm")}</span>
                   {session.notes && <span>• {session.notes}</span>}
                   <span>• {session._count?.items || 0} articles</span>
                 </div>

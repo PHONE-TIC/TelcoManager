@@ -15,7 +15,7 @@ vi.mock("./db", () => {
       delete: vi.fn(),
     },
     inventoryItem: { createMany: vi.fn(), update: vi.fn() },
-    stock: { findMany: vi.fn(), update: vi.fn() },
+    stock: { findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     $transaction: vi.fn((arg) =>
       typeof arg === "function" ? arg(mockPrisma) : Promise.all(arg)
     ),
@@ -151,14 +151,41 @@ describe("finalizeInventorySession", () => {
     const result = await finalizeInventorySession("session-1");
 
     expect(result.status).toBe(200);
-    expect(prisma.stock.update).toHaveBeenCalledWith({
-      where: { id: "stock-1" },
+    expect(prisma.stock.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["stock-1"] } },
       data: { quantite: 3 },
     });
     // Un comptage à zéro est une information, pas une absence de comptage.
-    expect(prisma.stock.update).toHaveBeenCalledWith({
-      where: { id: "stock-2" },
+    expect(prisma.stock.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["stock-2"] } },
       data: { quantite: 0 },
+    });
+  });
+
+  it("regroupe les articles partageant la même quantité comptée", async () => {
+    // Les quantités se répètent beaucoup sur un inventaire réel : le
+    // regroupement ramène des centaines de mises à jour à quelques requêtes.
+    vi.mocked(prisma.inventorySession.findUnique).mockResolvedValue({
+      id: "session-1",
+      status: "draft",
+      items: [
+        { stockId: "stock-1", countedQuantity: 2 },
+        { stockId: "stock-2", countedQuantity: 2 },
+        { stockId: "stock-3", countedQuantity: 2 },
+        { stockId: "stock-4", countedQuantity: 7 },
+      ],
+    } as never);
+
+    await finalizeInventorySession("session-1");
+
+    expect(prisma.stock.updateMany).toHaveBeenCalledTimes(2);
+    expect(prisma.stock.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["stock-1", "stock-2", "stock-3"] } },
+      data: { quantite: 2 },
+    });
+    expect(prisma.stock.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["stock-4"] } },
+      data: { quantite: 7 },
     });
   });
 
@@ -174,9 +201,9 @@ describe("finalizeInventorySession", () => {
 
     await finalizeInventorySession("session-1");
 
-    expect(prisma.stock.update).toHaveBeenCalledTimes(1);
-    expect(prisma.stock.update).toHaveBeenCalledWith({
-      where: { id: "stock-2" },
+    expect(prisma.stock.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.stock.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["stock-2"] } },
       data: { quantite: 4 },
     });
   });
