@@ -17,6 +17,11 @@ import { InterventionDescription } from "../components/Intervention/Intervention
 import { useAuth } from "../contexts/useAuth";
 import PhotoZoomModal from "./PhotoZoomModal";
 import RetraitSerialModal from "../components/RetraitSerialModal";
+import {
+  clearClosureDraft,
+  loadClosureDraft,
+  saveClosureDraft,
+} from "./technician-intervention-draft";
 import "./TechnicianInterventionView.css";
 import "./detail-form-harmonization.css";
 import "./screen-harmonization.css";
@@ -89,7 +94,6 @@ interface VehicleStockItem {
 }
 
 
-const DRAFT_KEY = (interventionId: string) => `closure_draft_${interventionId}`;
 
 const TechnicianInterventionView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -258,23 +262,19 @@ const TechnicianInterventionView: React.FC = () => {
       if (data.statut === "planifiee") {
         setCurrentStep(0);
       } else if (data.statut === "en_cours") {
-        const draftRaw = id ? localStorage.getItem(DRAFT_KEY(id)) : null;
-        if (draftRaw) {
-          try {
-            const draft = JSON.parse(draftRaw);
-            if (draft.step !== undefined) setCurrentStep(draft.step);
-            if (draft.timeArrivee) setTimeArrivee(draft.timeArrivee);
-            if (draft.timeDepart) setTimeDepart(draft.timeDepart);
-            if (draft.commentaire) setCommentaire(draft.commentaire);
-            if (draft.billing) setBilling(draft.billing);
-            if (draft.systemType) setSystemType(draft.systemType);
-            if (draft.clientRemarks) setClientRemarks(draft.clientRemarks);
-            if (draft.clientSigner) setClientSigner(draft.clientSigner);
-            if (draft.signatureTechnicien) setSignatureTechnicien(draft.signatureTechnicien);
-            if (draft.signatureClient) setSignatureClient(draft.signatureClient);
-          } catch {
-            setCurrentStep(1);
-          }
+        const draft = loadClosureDraft(id);
+        if (draft) {
+          if (draft.step !== undefined) setCurrentStep(draft.step);
+          else setCurrentStep(1);
+          if (draft.timeArrivee) setTimeArrivee(draft.timeArrivee);
+          if (draft.timeDepart) setTimeDepart(draft.timeDepart);
+          if (draft.commentaire) setCommentaire(draft.commentaire);
+          if (draft.billing) setBilling(draft.billing);
+          if (draft.systemType) setSystemType(draft.systemType);
+          if (draft.clientRemarks) setClientRemarks(draft.clientRemarks);
+          if (draft.clientSigner) setClientSigner(draft.clientSigner);
+          if (draft.signatureTechnicien) setSignatureTechnicien(draft.signatureTechnicien);
+          if (draft.signatureClient) setSignatureClient(draft.signatureClient);
         } else {
           setCurrentStep(1);
         }
@@ -324,6 +324,24 @@ const TechnicianInterventionView: React.FC = () => {
       setError("");
       setSuccess("");
     }, 3000);
+  };
+
+  // Persiste la saisie en cours à chaque changement d'étape. Regrouper la
+  // sérialisation ici garantit qu'aucun champ n'est oublié : ajouter une donnée
+  // au formulaire ne demande de la déclarer qu'à un seul endroit.
+  const persistDraft = (step: number) => {
+    saveClosureDraft(id, {
+      step,
+      timeArrivee,
+      timeDepart,
+      commentaire,
+      billing,
+      systemType,
+      clientRemarks,
+      clientSigner,
+      signatureTechnicien,
+      signatureClient,
+    });
   };
 
   // === ACTIONS ===
@@ -687,7 +705,7 @@ const TechnicianInterventionView: React.FC = () => {
         await apiService.uploadInterventionArtifacts(id, formData);
       }
 
-      if (id) localStorage.removeItem(DRAFT_KEY(id));
+      clearClosureDraft(id);
       alert("Intervention clôturée avec succès !");
       navigate("/interventions");
     } catch (err: unknown) {
@@ -759,7 +777,7 @@ const TechnicianInterventionView: React.FC = () => {
             pdfDataUrl
           });
 
-          if (id) localStorage.removeItem(DRAFT_KEY(id));
+          clearClosureDraft(id);
           alert("Intervention enregistrée hors-ligne ! Elle sera synchronisée automatiquement dès le retour du réseau.");
           navigate("/interventions");
           return;
@@ -785,23 +803,7 @@ const TechnicianInterventionView: React.FC = () => {
     // Going backwards or staying on the same step is always allowed
     if (index <= currentStep) {
       setCurrentStep(index);
-      if (id) {
-        localStorage.setItem(
-          DRAFT_KEY(id),
-          JSON.stringify({
-            step: index,
-            timeArrivee,
-            timeDepart,
-            commentaire,
-            billing,
-            systemType,
-            clientRemarks,
-            clientSigner,
-            signatureTechnicien,
-            signatureClient,
-          })
-        );
-      }
+      persistDraft(index);
       return;
     }
 
@@ -861,23 +863,7 @@ const TechnicianInterventionView: React.FC = () => {
 
     // All validations passed, move to target step
     setCurrentStep(index);
-    if (id) {
-      localStorage.setItem(
-        DRAFT_KEY(id),
-        JSON.stringify({
-          step: index,
-          timeArrivee,
-          timeDepart,
-          commentaire,
-          billing,
-          systemType,
-          clientRemarks,
-          clientSigner,
-          signatureTechnicien,
-          signatureClient,
-        })
-      );
-    }
+    persistDraft(index);
   };
 
   const getStatusBadge = (statut: string) => {
@@ -1514,7 +1500,7 @@ const TechnicianInterventionView: React.FC = () => {
                 onClick={() => {
                   const step = 1;
                   setCurrentStep(step);
-                  if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
+                  persistDraft(step);
                 }}
               >
                 Suivant
@@ -1564,7 +1550,7 @@ const TechnicianInterventionView: React.FC = () => {
                   if (saved) {
                     const step = 2;
                     setCurrentStep(step);
-                    if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
+                    persistDraft(step);
                   }
                 }}
               >
@@ -1815,7 +1801,7 @@ const TechnicianInterventionView: React.FC = () => {
                 onClick={() => {
                   const step = 3;
                   setCurrentStep(step);
-                  if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
+                  persistDraft(step);
                 }}
               >
                 Suivant
@@ -2002,7 +1988,7 @@ const TechnicianInterventionView: React.FC = () => {
                   if (!isValid) return;
                   const step = 4;
                   setCurrentStep(step);
-                  if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
+                  persistDraft(step);
                 }}
               >
                 Suivant
@@ -2043,7 +2029,7 @@ const TechnicianInterventionView: React.FC = () => {
                   }
                   const step = 5;
                   setCurrentStep(step);
-                  if (id) localStorage.setItem(DRAFT_KEY(id), JSON.stringify({ step, timeArrivee, timeDepart, commentaire, billing, systemType, clientRemarks, clientSigner, signatureTechnicien, signatureClient }));
+                  persistDraft(step);
                 }}
               >
                 Suivant
