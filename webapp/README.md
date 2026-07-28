@@ -1,73 +1,42 @@
-# React + TypeScript + Vite
+# TelcoManager — Webapp
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface Single Page Application de TelcoManager : React 19, TypeScript, Vite et PWA.
 
-Currently, two official plugins are available:
+La documentation d'ensemble (architecture, déploiement, variables d'environnement, modèle de branches) se trouve dans le [README principal](../README.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Lancement
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+L'interface est servie sur `http://localhost:3000` et relaie `/api` et `/uploads` vers le backend attendu sur le port `3001`. Le backend doit donc tourner en parallèle — voir la section « Développement Local » du README principal.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+| Commande | Rôle |
+| --- | --- |
+| `npm run dev` | Serveur de développement avec rechargement à chaud. |
+| `npm run build` | Vérification des types (`tsc -b`) puis build de production. |
+| `npm run lint` | ESLint sur l'ensemble du projet. |
+| `npm test` | Tests Vitest en mode surveillance (`-- --run` pour une exécution unique). |
+
+## Organisation
+
+| Répertoire | Contenu |
+| --- | --- |
+| `src/pages/` | Écrans applicatifs et leurs utilitaires métier (`*.utils.ts`). |
+| `src/components/` | Composants réutilisables (scanner, signature, modales, navigation). |
+| `src/contexts/` | Contextes React : authentification, thème, verrous d'édition, notifications. |
+| `src/hooks/` | Hooks transverses : hors-ligne, notifications, responsive, installation PWA. |
+| `src/services/` | Client API Axios et services navigateur (géolocalisation, stockage hors-ligne). |
+| `src/utils/` | Fonctions pures : dates, génération PDF, file de synchronisation hors-ligne. |
+
+## Tests
+
+Les tests couvrent en priorité les zones où un défaut coûte cher : la file d'attente hors-ligne (`utils/offlineSync`), les règles d'édition par rôle, les écarts d'inventaire, le formatage des dates en heure locale et la génération des PDF. Ils s'exécutent sous jsdom, sans backend ni base de données.
+
+## Service Worker
+
+L'enregistrement du Service Worker est assuré **uniquement** par `vite-plugin-pwa`, via le hook `useRegisterSW` du composant `ReloadPrompt`. N'ajoutez pas d'appel manuel à `navigator.serviceWorker.register()` : plusieurs mécanismes concurrents rendent la détection de mise à jour et les notifications push instables. Pour attendre que le Service Worker soit actif, utilisez `navigator.serviceWorker.ready`.

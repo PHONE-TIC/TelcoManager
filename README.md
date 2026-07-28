@@ -2,8 +2,8 @@
 
 [![Stack](https://img.shields.io/badge/Stack-React%20%7C%20Node.js%20%7C%20PostgreSQL-blue?style=flat-square)](https://github.com/PHONE-TIC/TelcoManager)
 [![Docker Build](https://img.shields.io/badge/Docker-Compatible-blue?logo=docker&logoColor=white)](https://hub.docker.com/r/phonetic76/telcomanager-app)
-[![CI status](https://img.shields.io/badge/CI-Passed-success?logo=github-actions&logoColor=white)](https://github.com/PHONE-TIC/TelcoManager/actions)
-[![CD status](https://img.shields.io/badge/CD-Deployed-success?logo=github-actions&logoColor=white)](https://github.com/PHONE-TIC/TelcoManager/actions)
+[![CI](https://github.com/PHONE-TIC/TelcoManager/actions/workflows/ci.yml/badge.svg)](https://github.com/PHONE-TIC/TelcoManager/actions/workflows/ci.yml)
+[![CD](https://github.com/PHONE-TIC/TelcoManager/actions/workflows/cd.yml/badge.svg)](https://github.com/PHONE-TIC/TelcoManager/actions/workflows/cd.yml)
 
 **TelcoManager** est une application web d'entreprise conçue pour le suivi en temps réel des stocks, des interventions techniques, des techniciens et des inventaires. L'application intègre une architecture conteneurisée robuste et sécurisée avec base PostgreSQL et serveur inverse HTTPS automatisé.
 
@@ -25,7 +25,7 @@
 - **Zero-Trust Architecture** : Modèle de permission strict (Default-Deny) bloquant par défaut tout accès non explicite.
 - **Garde-fous de Production** : Blocage immédiat de l'application si l'environnement de production utilise des secrets faibles ou par défaut.
 - **Reverse Proxy Caddy** : Certificats TLS/SSL gérés automatiquement par Let's Encrypt & ZeroSSL, supportant le challenge `DNS-01` via DuckDNS pour les environnements non exposés publiquement.
-- **Pipeline CI/CD Robuste** : Workflows GitHub Actions pour exécuter la suite de tests et compiler les builds de production de manière sécurisée.
+- **Pipeline CI/CD Robuste** : Workflows GitHub Actions exécutant lint, typage, builds de production et suites de tests **backend et frontend** sur chaque branche. Le déploiement d'images n'est déclenché que par la branche `main`.
 
 ---
 
@@ -95,26 +95,65 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ## 🛠️ Développement Local
 
-### Installation & Lancement du Backend
+Cette section couvre le lancement **hors conteneur**, avec rechargement à chaud des deux côtés. Prérequis : Node.js 20 ou supérieur, et un PostgreSQL accessible.
+
+### 1. Base de données de développement
+Si aucune instance PostgreSQL n'est disponible localement, la plus simple est d'en lancer une dans un conteneur dédié (un port distinct de 5432 évite tout conflit avec une installation existante) :
+```bash
+docker run -d --name telco_dev_db -e POSTGRES_USER=stock_user -e POSTGRES_PASSWORD=stock_password -e POSTGRES_DB=stock_intervention_db -p 5433:5432 postgres:15-alpine
+```
+> [!NOTE]
+> La commande est identique avec `podman run` pour les environnements sans Docker.
+
+### 2. Configuration
+Créez un fichier `backend/.env` (non versionné) à partir de [.env.example](.env.example). Pour la base ci-dessus :
+```ini
+DATABASE_URL="postgresql://stock_user:stock_password@localhost:5433/stock_intervention_db?schema=public"
+NODE_ENV=development
+JWT_SECRET=une-valeur-de-developpement
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+```
+
+### 3. Backend
 ```bash
 cd backend
 npm install
-npx prisma migrate dev
+npx prisma generate
+npx prisma migrate deploy
+npm run seed
 npm run dev
 ```
+L'API écoute sur le port `3001` (`/health` pour vérifier).
 
-### Installation & Lancement du Frontend (Webapp)
+### 4. Frontend (Webapp)
 ```bash
 cd webapp
 npm install
 npm run dev
 ```
+L'interface est servie sur le port `3000` et relaie `/api` et `/uploads` vers le backend — aucune configuration CORS supplémentaire n'est requise.
 
-### Exécution des Tests Unitaires & Intégration (Backend)
+Identifiants issus du seed : `admin` / `admin123`.
+
+### 5. Exécution des tests
+Les deux suites tournent sans base de données : les accès Prisma et les appels réseau sont simulés.
 ```bash
-cd backend
-npm test
+cd backend && npm test    # services de stock, normalisation des numéros de série, authentification
+cd webapp  && npm test    # file d'attente hors-ligne, utilitaires métier, génération PDF
 ```
+> [!TIP]
+> `npm test` démarre en mode surveillance. Ajoutez `-- --run` pour une exécution unique, comme le fait la CI.
+
+---
+
+## 🌿 Modèle de Branches
+
+| Branche | Rôle | Effet sur les pipelines |
+| --- | --- | --- |
+| `develop` | Intégration et recette des évolutions. | CI complète (lint, typage, build, tests). **Aucune image publiée.** |
+| `main` | Production. | CI complète, puis CD : construction et publication des images Docker. |
+
+Toute évolution est intégrée et validée sur `develop`, puis fusionnée dans `main` lorsqu'elle est prête à être déployée. Le workflow CD étant conditionné à la branche `main`, aucun travail en cours sur `develop` ne peut atteindre la production par inadvertance.
 
 ---
 
@@ -184,18 +223,21 @@ Pour connecter l'application à un calendrier d'équipe ou de technicien partag�
 ## 🛡️ Maintenance & Résolution des Conflits de Base
 
 ### 1. Gestion des Doublons de Numéros de Série (Préflight de Migration)
-La migration d'unicité partielle des numéros de série applique un index unique insensible à la casse sur la colonne `numero_serie` de la table `stock` (excluant les chaînes vides). Si des doublons existent dans vos données historiques, la migration échouera proprement avec le code d'erreur `DB_PREFLIGHT_FAIL`.
+L'index d'unicité partielle porte sur `upper(trim(numero_serie))` dans la table `stock` (les chaînes vides sont exclues) : il est donc insensible à la casse **et** aux espaces parasites. Si des doublons existent dans vos données historiques, la migration échoue proprement avec le code d'erreur `DB_PREFLIGHT_FAIL`, en énumérant les numéros en conflit.
 
 > [!IMPORTANT]
 > **REQUÊTE D'IDENTIFICATION DES DOUBLONS**
 > Connectez-vous à PostgreSQL et exécutez la requête suivante pour lister les conflits de numéros de série :
 > ```sql
-> SELECT lower(numero_serie) AS serial, count(*), string_agg(nom_materiel, ', ') AS materiels
+> SELECT upper(trim(numero_serie)) AS serial, count(*), string_agg(nom_materiel, ', ') AS materiels
 > FROM stock
-> WHERE numero_serie <> ''
-> GROUP BY lower(numero_serie)
+> WHERE trim(numero_serie) <> ''
+> GROUP BY upper(trim(numero_serie))
 > HAVING count(*) > 1;
 > ```
+
+> [!NOTE]
+> Le préflight ne fusionne et ne supprime jamais de lignes automatiquement : l'arbitrage entre deux doublons est une décision métier qui revient à l'exploitant.
 
 #### Stratégies de nettoyage manuel :
 - **Normalisation** : Corrigez les numéros de série mal saisis ou erronés.
@@ -224,6 +266,19 @@ Si vos compteurs de tableau de bord restent bloqués à `0` ou que le backend si
 ---
 
 ## 📈 Historique des Évolutions Techniques
+
+<details>
+<summary><b>🧹 Version 5.2 (Juillet 2026) - Intégrité des données de stock, tests frontend & résorption de la dette</b></summary>
+
+- **Doublons de numéros de série corrigés (dette C3)** : le flux de retrait d'intervention insérait le numéro de série brut, sans la normalisation appliquée par le flux stock. Deux saisies du même matériel physique (`"  sn123  "` et `"SN123"`) créaient deux lignes de stock, dont l'une restait invisible aux recherches par numéro de série. Un helper `normalizeSerialNumber` centralisé est désormais appliqué à tous les flux d'écriture, et l'index unique porte sur `upper(trim(numero_serie))` — il n'est donc plus contournable par des espaces parasites, y compris en écriture SQL directe.
+- **Passage en stock HS fiabilisé (dette C2)** : l'opération enchaînait lecture, décrémentation et création hors transaction ; une coupure en cours d'exécution décrémentait le stock courant sans créditer le HS, faisant disparaître du matériel. L'ensemble est encapsulé dans une transaction Prisma. Un article sérialisé bascule désormais sa ligne d'origine en HS — ce qui conserve son numéro de série et ses attributs (marque, modèle, fournisseur), auparavant perdus — et le déplacement partiel d'un article sérialisé est refusé. Ce flux journalise enfin un `stockMovement`, jusqu'ici absent.
+- **Suite de tests frontend créée (0 → 65 tests)** : l'outillage (Vitest, Testing Library, jsdom) était installé mais aucun test n'existait et la CI ne les exécutait pas. Les cas couvrent la file d'attente hors-ligne — dont la garantie qu'un échec de synchronisation conserve la clôture au lieu de la perdre —, les règles d'édition par rôle, les écarts d'inventaire, le formatage des dates en heure locale et la génération des PDF. La CI lance désormais les tests des deux côtés.
+- **Tests backend renforcés (31 → 50 tests)** : couverture de non-régression sur la normalisation des numéros de série et sur l'ensemble des branches du passage en stock HS.
+- **Service Worker unifié (dette C1)** : trois mécanismes d'enregistrement concurrents coexistaient et se faisaient concurrence selon le mode de build, rendant les notifications push instables. Seul le hook `useRegisterSW` de `vite-plugin-pwa` est conservé.
+- **Code mort supprimé (dette C5)** : les méthodes d'API d'inventaire `startInventorySession`, `addToInventorySession` et `finishInventorySession` étaient inutilisées et pointaient vers des routes backend inexistantes.
+- **Seed exécutable hors conteneur** : `npm run seed` échouait faute de chargement de `dotenv`. Le doublon `seed.ts` est supprimé au profit du seul `seed.js`, celui qu'exécute réellement `start.sh`.
+- **Dépendances assainies** : backend de 18 vulnérabilités à **0** (`ts-node-dev`, non maintenu, remplacé par `tsx`) ; webapp de 28 à 18, dont **aucune critique**, et de 9 à 2 sur le seul périmètre de production (`jspdf` porté en 4.2.1, `vite-plugin-pwa` reclassé en dépendance de développement). Les deux vulnérabilités résiduelles concernent le mode RSC de `react-router`, non utilisé par cette application.
+</details>
 
 <details>
 <summary><b>🩹 Version 5.1 (Juin 2026) - Correction de l'affichage des clients lors de la création d'interventions</b></summary>

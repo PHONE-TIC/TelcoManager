@@ -9,8 +9,9 @@ Ce guide couvre la validation de la version web de TelcoManager.
 
 ## Option recommandée : test via Docker
 
+Depuis la racine du dépôt :
+
 ```bash
-cd /home/nath-admin/.openclaw/workspace/TelcoManager
 docker compose up -d --build
 ```
 
@@ -85,15 +86,13 @@ Accès local :
 ### Backend
 
 ```bash
-cd backend
-npm run build
+cd backend && npm run build && npm test -- --run
 ```
 
 ### Frontend
 
 ```bash
-cd webapp
-npm run build
+cd webapp && npm run lint && npm run build && npm test -- --run
 ```
 
 ### Docker
@@ -106,11 +105,14 @@ docker compose up -d --build
 
 Si tout est bon :
 
-- backend build OK
-- frontend build OK
+- backend : build OK, 50 tests verts
+- frontend : lint sans erreur, build OK, 65 tests verts
 - Docker build OK
 - application accessible sur `http://localhost:8081`
 - principaux workflows fonctionnels dans la webapp
+
+> [!NOTE]
+> Les deux suites de tests s'exécutent sans base de données ni serveur : les accès Prisma et les appels réseau sont simulés. Le lancement hors Docker est décrit dans la section « Développement Local » du [README](README.md).
 
 ## Références
 
