@@ -222,6 +222,18 @@ export const createIntervention = async (req: AuthRequest, res: Response) => {
 
     const clientNom = await getClientNomById(clientId);
     const technicienNom = await getTechnicienNomById(technicienId);
+
+    // Vérifier les références avant l'écriture : sans ce contrôle, une clé
+    // étrangère invalide remonte en violation de contrainte PostgreSQL et se
+    // traduit par une erreur 500 opaque au lieu d'un refus explicite.
+    if (!clientNom) {
+      return res.status(400).json({ error: "Client introuvable" });
+    }
+
+    if (technicienId && !technicienNom) {
+      return res.status(400).json({ error: "Technicien introuvable" });
+    }
+
     const tempNumero = buildTemporaryInterventionNumero();
 
     // 1. Create with temp number to get the auto-incremented counter
