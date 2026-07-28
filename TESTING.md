@@ -89,6 +89,12 @@ Accès local :
 cd backend && npm run build && npm test -- --run
 ```
 
+### Backend — intégration (nécessite PostgreSQL)
+
+```bash
+cd backend && npm run test:integration
+```
+
 ### Frontend
 
 ```bash
@@ -105,14 +111,18 @@ docker compose up -d --build
 
 Si tout est bon :
 
-- backend : build OK, 50 tests verts
-- frontend : lint sans erreur, build OK, 65 tests verts
+- backend : build OK, 111 tests unitaires verts
+- backend intégration : 49 tests verts
+- frontend : lint sans erreur, build OK, 79 tests verts
 - Docker build OK
 - application accessible sur `http://localhost:8081`
 - principaux workflows fonctionnels dans la webapp
 
 > [!NOTE]
-> Les deux suites de tests s'exécutent sans base de données ni serveur : les accès Prisma et les appels réseau sont simulés. Le lancement hors Docker est décrit dans la section « Développement Local » du [README](README.md).
+> Les suites unitaires s'exécutent sans base de données ni serveur : les accès Prisma et les appels réseau sont simulés. Les tests d'intégration exigent en revanche un PostgreSQL joignable — voir la section « Développement Local » du [README](README.md), qui décrit aussi le lancement hors Docker.
+
+> [!WARNING]
+> La base visée par les tests d'intégration est vidée entre chaque cas. Utilisez impérativement une base dédiée : un garde-fou refuse toute `DATABASE_URL` dont le nom de base ne contient pas « test ».
 
 ## Références
 

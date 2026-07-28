@@ -35,7 +35,11 @@ L'interface est servie sur `http://localhost:3000` et relaie `/api` et `/uploads
 
 ## Tests
 
-Les tests couvrent en priorité les zones où un défaut coûte cher : la file d'attente hors-ligne (`utils/offlineSync`), les règles d'édition par rôle, les écarts d'inventaire, le formatage des dates en heure locale et la génération des PDF. Ils s'exécutent sous jsdom, sans backend ni base de données.
+Les tests couvrent en priorité les zones où un défaut coûte cher : la file d'attente hors-ligne (`utils/offlineSync`), le brouillon de clôture d'intervention (`pages/technician-intervention-draft`), les règles d'édition par rôle, les écarts d'inventaire, le formatage des dates en heure locale et la génération des PDF. Ils s'exécutent sous jsdom, sans backend ni base de données.
+
+## Brouillon de clôture
+
+La saisie d'une fiche d'intervention par un technicien est persistée localement à chaque changement d'étape, pour survivre à une fermeture d'onglet ou à une perte de réseau en clientèle. Toute la sérialisation est centralisée dans `pages/technician-intervention-draft.ts` : un champ ajouté au formulaire de clôture doit être déclaré **dans ce module uniquement**, sans quoi il ne serait pas sauvegardé.
 
 ## Service Worker
 

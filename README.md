@@ -22,10 +22,13 @@
 - **Authentification Sécurisée** : Connexion par jeton JWT avec tolérance aux espaces accidentels (trim automatique).
 
 ### 🛡️ Sécurité & DevOps
-- **Zero-Trust Architecture** : Modèle de permission strict (Default-Deny) bloquant par défaut tout accès non explicite.
+- **Zero-Trust Architecture** : Modèle de permission strict (Default-Deny) bloquant par défaut tout accès non explicite. Le rôle et l'état d'activation sont relus en base à chaque requête : une désactivation de compte ou une rétrogradation prend effet immédiatement, sans attendre l'expiration du jeton déjà distribué.
 - **Garde-fous de Production** : Blocage immédiat de l'application si l'environnement de production utilise des secrets faibles ou par défaut.
+- **Politique de Contenu Stricte (CSP)** : Le build de production ne contenant aucun script inline, la politique interdit `unsafe-inline` et `unsafe-eval` sur les scripts. Les autorisations conservées répondent à des besoins réels (`data:` et `blob:` pour les codes-barres, QR codes et signatures ; workers `blob:` pour les scanners).
+- **Jetons hors des URL** : Le jeton de session ne circule que par l'en-tête `Authorization`. Les flux temps réel, qui ne peuvent pas en émettre, s'authentifient par un ticket dédié valable 30 secondes et sans pouvoir d'écriture — les deux types de jetons ne sont pas interchangeables.
+- **Limitation de Débit** : Plafond strict sur l'authentification (15 tentatives / 15 min) doublé d'un plafond général sur l'ensemble de l'API.
 - **Reverse Proxy Caddy** : Certificats TLS/SSL gérés automatiquement par Let's Encrypt & ZeroSSL, supportant le challenge `DNS-01` via DuckDNS pour les environnements non exposés publiquement.
-- **Pipeline CI/CD Robuste** : Workflows GitHub Actions exécutant lint, typage, builds de production et suites de tests **backend et frontend** sur chaque branche. Le déploiement d'images n'est déclenché que par la branche `main`.
+- **Pipeline CI/CD Robuste** : Workflows GitHub Actions exécutant lint, typage, builds de production et trois suites de tests — unitaires backend, unitaires frontend, et intégration backend sur un PostgreSQL éphémère. Le déploiement d'images n'est déclenché que par la branche `main`.
 
 ---
 
@@ -36,6 +39,13 @@ L'application repose sur une architecture moderne de conteneurs unifiés :
 ```text
 telcomanager/
 ├── backend/              # API REST & SSE (Node.js, Express, Prisma ORM)
+│   └── src/
+│       ├── app.ts        # Construction de l'application Express (montable en test)
+│       ├── index.ts      # Démarrage, gardes de production et arrêt gracieux
+│       ├── controllers/  # Points d'entrée HTTP, découpés par domaine
+│       ├── services/     # Logique métier et intégrations externes
+│       ├── middleware/   # Authentification, autorisations, upload
+│       └── integration/  # Tests d'intégration sur base réelle
 ├── webapp/               # Frontend Single Page App (React, Vite, PWA)
 ├── postgres/             # Scripts d'initialisation et structures PostgreSQL
 ├── Caddyfile             # Configuration du proxy inverse Caddy (HTTP/2, HTTPS & compression)
@@ -136,11 +146,26 @@ L'interface est servie sur le port `3000` et relaie `/api` et `/uploads` vers le
 Identifiants issus du seed : `admin` / `admin123`.
 
 ### 5. Exécution des tests
-Les deux suites tournent sans base de données : les accès Prisma et les appels réseau sont simulés.
+
+**Tests unitaires** — aucune base requise, les accès Prisma et les appels réseau sont simulés :
 ```bash
-cd backend && npm test    # services de stock, normalisation des numéros de série, authentification
-cd webapp  && npm test    # file d'attente hors-ligne, utilitaires métier, génération PDF
+cd backend && npm test    # services métier : stock, numéros de série, verrous, inventaire, comptes
+cd webapp  && npm test    # file d'attente hors-ligne, brouillon de clôture, utilitaires, PDF
 ```
+
+**Tests d'intégration backend** — montent l'application Express complète contre une véritable base PostgreSQL, et couvrent ce que les tests unitaires ne peuvent pas voir : routage, validation, middlewares d'autorisation et contraintes réelles de la base.
+```bash
+cd backend && npm run test:integration
+```
+
+Ces tests visent par défaut la base `telcomanager_test`, à créer une fois :
+```bash
+docker exec telco_dev_db psql -U stock_user -d postgres -c "CREATE DATABASE telcomanager_test;"
+```
+
+> [!WARNING]
+> La base ciblée est **vidée entre chaque cas de test**. Un garde-fou refuse toute `DATABASE_URL` dont le nom de base ne contient pas « test », afin d'écarter tout risque d'effacer une base de développement ou de production.
+
 > [!TIP]
 > `npm test` démarre en mode surveillance. Ajoutez `-- --run` pour une exécution unique, comme le fait la CI.
 
@@ -266,6 +291,19 @@ Si vos compteurs de tableau de bord restent bloqués à `0` ou que le backend si
 ---
 
 ## 📈 Historique des Évolutions Techniques
+
+<details>
+<summary><b>🛡️ Version 5.3 (Juillet 2026) - Tests d'intégration, durcissement et découpage des gros modules</b></summary>
+
+- **Tests d'intégration sur base réelle (49 cas)** : toute la suite existante simulait les accès Prisma ; rien ne vérifiait le contrat HTTP réel. L'application Express complète est désormais montée contre un PostgreSQL dédié, vidé entre chaque cas. Sont verrouillés : le cloisonnement des interventions par technicien, l'anti-escalade de privilèges, la révocation immédiate d'une session (désactivation, suppression, rétrogradation de rôle) et la validation des entrées. Un garde-fou refuse toute base dont le nom ne contient pas « test ». Nouveau job CI avec service PostgreSQL éphémère.
+- **Erreur 500 corrigée** : créer une intervention avec un `clientId` inexistant renvoyait une erreur serveur, la violation de clé étrangère PostgreSQL remontant telle quelle. Les références sont vérifiées avant écriture et le refus est désormais explicite. Ce défaut, invisible aux tests simulés, a été révélé par les tests d'intégration.
+- **Politique de contenu stricte** : `helmet` était monté avec `contentSecurityPolicy: false`, laissant l'application sans protection contre l'injection de scripts. La CSP appliquée interdit `unsafe-inline` et `unsafe-eval`, et a été validée dans un navigateur sur l'ensemble des écrans du frontend de production.
+- **Jeton de session sorti des URL** : le JWT était accepté en paramètre d'URL — contournement nécessaire pour `EventSource` — et se retrouvait dans les journaux d'accès du proxy et l'historique du navigateur, pour 24 heures de validité. Les flux SSE s'authentifient désormais par un ticket éphémère de 30 secondes, non interchangeable avec le jeton de session.
+- **Plafond général de l'API** : seul `/api/auth/login` était limité ; l'ensemble de `/api` dispose maintenant d'un plafond bornant l'usage automatisé abusif.
+- **Services métier couverts (111 tests unitaires)** : 13 des 18 services backend n'avaient aucun test, dont `intervention-equipment` — précisément le service corrigé en 5.2, dont la correction n'était validée que manuellement. Sont désormais couverts l'expiration des verrous d'édition, le périmètre des sessions d'inventaire, et le hachage des mots de passe.
+- **Contrôleur d'interventions découpé** : 923 lignes et cinq responsabilités réparties en quatre modules (cycle de vie, déroulé terrain, verrous, pièces jointes), sans changement fonctionnel.
+- **Brouillon de clôture centralisé** : sa sérialisation était recopiée à sept endroits de la vue technicien ; ajouter un champ au formulaire imposait de modifier ces sept endroits, et en oublier un faisait perdre des données relevées en clientèle. La logique est réunie dans un module unique, testé et durci contre un stockage saturé ou corrompu.
+</details>
 
 <details>
 <summary><b>🧹 Version 5.2 (Juillet 2026) - Intégrité des données de stock, tests frontend & résorption de la dette</b></summary>
