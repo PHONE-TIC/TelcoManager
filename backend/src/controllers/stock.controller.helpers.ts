@@ -64,11 +64,4 @@ export async function generateStockReference(
   return `${prefix}${String(maxNumber + 1).padStart(5, "0")}`;
 }
 
-export function parseSerialNumbers(numeroSerie?: string | null) {
-  return numeroSerie
-    ? String(numeroSerie)
-        .split(/[,\n]/)
-        .map((value: string) => value.trim())
-        .filter((value: string) => value.length > 0)
-    : [];
-}
+export { parseSerialNumbers } from "../utils/serial";

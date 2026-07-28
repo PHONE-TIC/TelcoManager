@@ -1,5 +1,6 @@
 import { prisma } from "../db";
 import { generateStockReference } from "../controllers/stock.controller.helpers";
+import { normalizeSerialNumber } from "../utils/serial";
 
 function buildTechnicianStockWhere(technicienId: string, stockId: string) {
   return {
@@ -33,6 +34,12 @@ export async function manageInterventionEquipment(input: {
       body: { error: "Quantité invalide" },
     };
   }
+
+  // Normalisation unique et en amont du numéro de série : tous les flux en aval
+  // (recherche de correspondance, création de stock, traçabilité) travaillent
+  // ensuite sur la même valeur canonique.
+  const normalizedSerial = normalizeSerialNumber(input.serialNumber);
+  input.serialNumber = normalizedSerial || undefined;
 
   if (!input.stockId && !input.nom && !input.marque && !input.modele) {
     return {
@@ -73,20 +80,17 @@ export async function manageInterventionEquipment(input: {
   if (input.action === "retrait") {
     let resolvedStockId: string | undefined = undefined;
 
-    if (input.serialNumber) {
-      const trimmedSerial = input.serialNumber.trim();
-      if (trimmedSerial.length > 0) {
-        const existing = await prisma.stock.findFirst({
-          where: {
-            numeroSerie: {
-              equals: trimmedSerial,
-              mode: "insensitive",
-            },
+    if (normalizedSerial) {
+      const existing = await prisma.stock.findFirst({
+        where: {
+          numeroSerie: {
+            equals: normalizedSerial,
+            mode: "insensitive",
           },
-        });
-        if (existing) {
-          resolvedStockId = existing.id;
-        }
+        },
+      });
+      if (existing) {
+        resolvedStockId = existing.id;
       }
     }
 
@@ -259,7 +263,7 @@ export async function manageInterventionEquipment(input: {
           marque: input.marque,
           modele: input.modele,
           reference,
-          numeroSerie: input.serialNumber || "",
+          numeroSerie: normalizedSerial,
           categorie: input.categorie || "Retrait technicien",
           fournisseur: input.fournisseur || null,
           quantite: 0,
@@ -294,7 +298,7 @@ export async function manageInterventionEquipment(input: {
           nom: nomMateriel,
           marque: input.marque,
           modele: input.modele,
-          serialNumber: input.serialNumber,
+          serialNumber: normalizedSerial || null,
         },
       });
 
@@ -319,7 +323,7 @@ export async function manageInterventionEquipment(input: {
         nom: input.nom,
         marque: input.marque,
         modele: input.modele,
-        serialNumber: input.serialNumber,
+        serialNumber: normalizedSerial || null,
       },
     });
 

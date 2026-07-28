@@ -323,6 +323,7 @@ export const moveToHS = async (req: AuthRequest, res: Response) => {
       stockId: id,
       quantite: req.body.quantite,
       notes: req.body.notes,
+      performedById: req.user?.id,
     });
 
     return res.status(result.status).json(result.body);

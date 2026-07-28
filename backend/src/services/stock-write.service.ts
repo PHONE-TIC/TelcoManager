@@ -72,7 +72,7 @@ export async function createStockItems(input: StockWriteInput) {
     nomMateriel ||
     (modele ? `${marque ?? ""} ${modele}` : `${marque ?? ""} ${categorie ?? ""}`);
 
-  const serialNumbers = parseSerialNumbers(numeroSerie).map((s) => s.trim().toUpperCase());
+  const serialNumbers = parseSerialNumbers(numeroSerie);
   const uniqueSerials = [...new Set(serialNumbers)];
   if (uniqueSerials.length !== serialNumbers.length) {
     return {
@@ -83,9 +83,8 @@ export async function createStockItems(input: StockWriteInput) {
     };
   }
 
-  const nonEmptySerialNumbers = serialNumbers.filter(
-    (serial) => serial && serial.trim() !== ""
-  );
+  // parseSerialNumbers normalise et écarte déjà les entrées vides
+  const nonEmptySerialNumbers = serialNumbers;
 
   if (nonEmptySerialNumbers.length > 0) {
     const existingItems = await prisma.stock.findMany({
@@ -195,6 +194,7 @@ export async function moveStockToHs(input: {
   stockId: string;
   quantite?: number;
   notes?: string;
+  performedById?: string;
 }) {
   const stockCourant = await prisma.stock.findUnique({
     where: { id: input.stockId },
@@ -229,40 +229,106 @@ export async function moveStockToHs(input: {
     };
   }
 
-  await prisma.stock.update({
-    where: { id: input.stockId },
-    data: {
-      quantite: stockCourant.quantite - qteADeplacer,
-    },
-  });
+  const isSerialized = stockCourant.numeroSerie.trim() !== "";
 
-  const stockHS = await prisma.stock.findFirst({
-    where: {
-      reference: stockCourant.reference,
-      statut: "hs",
-    },
-  });
+  // Un article sérialisé désigne un objet physique unique : il ne peut pas être
+  // scindé entre stock courant et stock HS, et son numéro de série ne peut pas
+  // être dupliqué sur une seconde ligne (index unique partiel en base).
+  if (isSerialized && qteADeplacer !== stockCourant.quantite) {
+    return {
+      status: 400 as const,
+      body: {
+        error:
+          "Article sérialisé : le déplacement partiel vers le stock HS est impossible, la totalité doit être déplacée.",
+      },
+    };
+  }
 
-  if (stockHS) {
-    await prisma.stock.update({
+  // L'ensemble des écritures est encapsulé dans une transaction : une coupure en
+  // cours d'opération ne peut plus décrémenter le stock courant sans créditer le HS.
+  await prisma.$transaction(async (tx) => {
+    if (isSerialized) {
+      // Article sérialisé : on bascule la ligne d'origine en HS pour conserver
+      // le numéro de série et l'historique, comme le fait le flux stock véhicule.
+      await tx.stock.update({
+        where: { id: input.stockId },
+        data: {
+          statut: "hs",
+          notes: input.notes || stockCourant.notes,
+        },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          stockId: input.stockId,
+          type: "hs",
+          quantite: qteADeplacer,
+          quantiteAvant: stockCourant.quantite,
+          quantiteApres: stockCourant.quantite,
+          reason: input.notes || "Matériel passé hors service",
+          performedById: input.performedById,
+        },
+      });
+      return;
+    }
+
+    // Article non sérialisé : on décrémente le stock courant et on agrège la
+    // quantité sur la ligne HS correspondante (créée si elle n'existe pas).
+    await tx.stock.update({
+      where: { id: input.stockId },
+      data: {
+        quantite: { decrement: qteADeplacer },
+      },
+    });
+
+    let stockHS = await tx.stock.findFirst({
+      where: {
+        reference: stockCourant.reference,
+        statut: "hs",
+        nomMateriel: stockCourant.nomMateriel,
+      },
+    });
+
+    if (!stockHS) {
+      stockHS = await tx.stock.create({
+        data: {
+          nomMateriel: stockCourant.nomMateriel,
+          marque: stockCourant.marque,
+          modele: stockCourant.modele,
+          reference: stockCourant.reference,
+          categorie: stockCourant.categorie,
+          fournisseur: stockCourant.fournisseur,
+          statut: "hs",
+          quantite: 0,
+          codeBarre: null,
+          lowStockThreshold: 0,
+          notes: input.notes || "Matériel hors service",
+        },
+      });
+    }
+
+    const quantiteAvantHs = stockHS.quantite;
+
+    await tx.stock.update({
       where: { id: stockHS.id },
       data: {
-        quantite: stockHS.quantite + qteADeplacer,
+        quantite: { increment: qteADeplacer },
         notes: input.notes || stockHS.notes,
       },
     });
-  } else {
-    await prisma.stock.create({
+
+    await tx.stockMovement.create({
       data: {
-        nomMateriel: stockCourant.nomMateriel,
-        reference: stockCourant.reference,
-        categorie: stockCourant.categorie,
-        statut: "hs",
+        stockId: stockHS.id,
+        type: "hs",
         quantite: qteADeplacer,
-        notes: input.notes || "Matériel hors service",
+        quantiteAvant: quantiteAvantHs,
+        quantiteApres: quantiteAvantHs + qteADeplacer,
+        reason: `${input.notes || "Matériel passé hors service"} - Origine: ${input.stockId}`,
+        performedById: input.performedById,
       },
     });
-  }
+  });
 
   return {
     status: 200 as const,
