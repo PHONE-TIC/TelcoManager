@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { body, param } from "express-validator";
 import * as interventionController from "../controllers/interventions.controller";
+import * as workflowController from "../controllers/interventions-workflow.controller";
+import * as locksController from "../controllers/interventions-locks.controller";
+import * as artifactsController from "../controllers/interventions-artifacts.controller";
 import {
   authenticate,
   authenticateStreamTicket,
@@ -18,7 +21,7 @@ const router = Router();
 router.get(
   "/locks/stream",
   authenticateStreamTicket,
-  interventionController.locksStream
+  locksController.locksStream
 );
 
 // Toutes les autres routes nécessitent une authentification par jeton de session
@@ -90,7 +93,7 @@ router.put(
     body("statut").isIn(["planifiee", "en_cours", "terminee", "annulee"]),
     body("datePriseEnCharge").optional().isISO8601(),
   ],
-  interventionController.updateInterventionStatus
+  workflowController.updateInterventionStatus
 );
 
 // Valider les heures (cloisonné)
@@ -103,7 +106,7 @@ router.put(
     body("heureArrivee").isISO8601(),
     body("heureDepart").isISO8601(),
   ],
-  interventionController.validateHours
+  workflowController.validateHours
 );
 
 // Signer l'intervention (cloisonné)
@@ -116,7 +119,7 @@ router.put(
     body("type").isIn(["technicien", "client"]),
     body("signature").notEmpty(),
   ],
-  interventionController.signIntervention
+  workflowController.signIntervention
 );
 
 // Ajouter/Gérer du matériel (cloisonné)
@@ -140,7 +143,7 @@ router.post(
     body("fournisseur").optional().isString(),
     body("dryRun").optional().isBoolean().toBoolean(),
   ],
-  interventionController.manageEquipement
+  workflowController.manageEquipement
 );
 
 // Verrouillage (Concurrency - cloisonné)
@@ -149,14 +152,14 @@ router.post(
   requireTechnicienOrAdmin,
   param("id").isUUID(),
   requireInterventionAccess,
-  interventionController.lockIntervention
+  locksController.lockIntervention
 );
 router.post(
   "/:id/unlock",
   requireTechnicienOrAdmin,
   param("id").isUUID(),
   requireInterventionAccess,
-  interventionController.unlockIntervention
+  locksController.unlockIntervention
 );
 
 // Upload Artifacts (Photos + PDF - cloisonné en amont du chargement fichier)
@@ -166,7 +169,7 @@ router.post(
   param("id").isUUID(),
   requireInterventionAccess,
   upload.array("files"), // 'files' is the field name matching FormData
-  interventionController.uploadArtifacts
+  artifactsController.uploadArtifacts
 );
 
 // Get Artifacts (cloisonné)
@@ -174,7 +177,7 @@ router.get(
   "/:id/artifacts",
   param("id").isUUID(),
   requireInterventionAccess,
-  interventionController.getArtifacts
+  artifactsController.getArtifacts
 );
 
 export default router;
