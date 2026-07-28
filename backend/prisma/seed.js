@@ -1,10 +1,15 @@
+// Charge backend/.env pour les exécutions hors conteneur (développement local).
+// En conteneur, les variables sont déjà injectées par l'environnement et
+// dotenv ne les écrase pas : l'appel est sans effet de bord.
+require('dotenv').config();
+
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🌱 Démarrage du seed (JS - Admin Only)...');
+    console.log('🌱 Démarrage du seed...');
 
     if (process.env.NODE_ENV === 'production') {
         if (!process.env.DEFAULT_ADMIN_PASSWORD || process.env.DEFAULT_ADMIN_PASSWORD === 'admin123') {

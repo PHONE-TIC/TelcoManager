@@ -334,29 +334,6 @@ class ApiService {
     return response.data;
   }
 
-  async startInventorySession() {
-    const response = await this.api.post("/inventaire/session/start");
-    return response.data;
-  }
-
-  async addToInventorySession(
-    sessionId: string,
-    codeBarre: string,
-    quantite = 1
-  ) {
-    const response = await this.api.post(
-      `/inventaire/session/${sessionId}/add`,
-      { codeBarre, quantite }
-    );
-    return response.data;
-  }
-
-  async finishInventorySession(sessionId: string) {
-    const response = await this.api.post(
-      `/inventaire/sessions/${sessionId}/finish`
-    );
-    return response.data;
-  }
 
   // Technician Stock (Vehicle Stock)
   async getTechnicianStock(technicienId: string) {

@@ -79,16 +79,18 @@ function Stock() {
     }
   }, [filter, selectedTechnicianId]);
 
-  // Parse serial numbers from comma or newline separated input
   // Handle serial numbers change with auto-quantity update
   const handleSerialNumbersChange = (value: string) => {
-    const serialNumbers = parseSerialNumbers(value);
+    // Même mise en majuscules que le formulaire de stock : la saisie affichée
+    // reflète la forme canonique enregistrée en base.
+    const uppercaseValue = value.toUpperCase();
+    const serialNumbers = parseSerialNumbers(uppercaseValue);
     const count = serialNumbers.length;
     setSerialNumbersCount(count);
 
     setFormData((prev) => ({
       ...prev,
-      numeroSerie: value,
+      numeroSerie: uppercaseValue,
       // Auto-update quantity only for new items (not editing) and only if > 0 serial numbers
       quantite: !selectedItem && count > 0 ? count : prev.quantite,
     }));

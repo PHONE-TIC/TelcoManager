@@ -4,19 +4,10 @@ import "./index.css";
 import "./styles/global.css";
 import App from "./App.tsx";
 
-// Register service worker for PWA
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").then(
-      () => {
-
-      },
-      () => {
-
-      }
-    );
-  });
-}
+// L'enregistrement du Service Worker est délégué à vite-plugin-pwa via le hook
+// useRegisterSW du composant ReloadPrompt (monté dans App). Un enregistrement
+// manuel de /sw.js ici entrerait en concurrence avec celui du plugin et rendait
+// la détection de mise à jour et les notifications push instables.
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

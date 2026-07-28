@@ -9,6 +9,7 @@ import {
   STOCK_SUPPLIERS,
   generateReferencePreview,
 } from "../constants/stock.constants";
+import { parseSerialNumbers } from "./stock.utils";
 import "./detail-form-harmonization.css";
 
 interface StockModelOption {
@@ -105,14 +106,6 @@ function StockForm() {
   }, [formData.marque, allModels]);
 
   // Reference preview uses the shared generateReferencePreview utility
-
-  // Parse serial numbers from comma or newline separated input
-  const parseSerialNumbers = (input: string): string[] => {
-    return input
-      .split(/[,\n]/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-  };
 
   // Handle serial numbers change with auto-quantity update
   const handleSerialNumbersChange = (value: string) => {

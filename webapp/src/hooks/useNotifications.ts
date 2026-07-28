@@ -37,14 +37,10 @@ export const useNotifications = (): UseNotificationsReturn => {
         getNotificationPermission()
     );
 
-    // Register service worker on mount
-    useEffect(() => {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch((error) => {
-                console.error('Service Worker registration failed:', error);
-            });
-        }
-    }, []);
+    // Pas d'enregistrement du Service Worker ici : il est centralisé dans
+    // vite-plugin-pwa (hook useRegisterSW du composant ReloadPrompt). Les
+    // fonctions ci-dessous s'appuient sur navigator.serviceWorker.ready, qui
+    // se résout une fois cet enregistrement unique effectué.
 
     // Subscribe to server push after permission is granted
     const subscribeToServerPush = useCallback(async () => {

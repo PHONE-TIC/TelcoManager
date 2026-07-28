@@ -6,10 +6,15 @@ export type StockWithRelations = StockType & {
   etat?: "ok" | "hs";
 };
 
+/**
+ * Découpe une saisie multi-séries et applique la même normalisation que le
+ * backend (trim + majuscules), afin que le décompte affiché et l'aperçu
+ * correspondent exactement à ce qui sera enregistré en base.
+ */
 export function parseSerialNumbers(input: string): string[] {
   return input
     .split(/[,\n]/)
-    .map((s) => s.trim())
+    .map((s) => s.trim().toUpperCase())
     .filter((s) => s.length > 0);
 }
 
