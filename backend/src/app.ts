@@ -33,10 +33,39 @@ import { authenticate, AuthRequest } from "./middleware/auth.middleware";
 export function createApp() {
   const app = express();
 
-  // Global Security Middleware with Helmet (disabling default CSP to avoid breaking SPA)
+  // En-têtes de sécurité, dont une politique de contenu (CSP) taillée pour
+  // cette application. Le build de production ne contient aucun script inline,
+  // ce qui permet un script-src strict, sans 'unsafe-inline' ni 'unsafe-eval'.
   app.use(
     helmet({
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          scriptSrc: ["'self'"],
+          // React applique de nombreux styles en ligne : les interdire
+          // dégraderait l'interface sans bénéfice de sécurité réel.
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          // data: pour les codes-barres, QR codes et signatures rendus en
+          // canvas ; blob: pour les pièces jointes récupérées en binaire.
+          imgSrc: ["'self'", "data:", "blob:"],
+          mediaSrc: ["'self'", "blob:"],
+          fontSrc: ["'self'", "data:"],
+          connectSrc: ["'self'"],
+          // blob: est requis par les scanners de codes-barres, qui instancient
+          // leurs workers de décodage à la volée.
+          workerSrc: ["'self'", "blob:"],
+          manifestSrc: ["'self'"],
+          formAction: ["'self'"],
+          frameAncestors: ["'none'"],
+          objectSrc: ["'none'"],
+          upgradeInsecureRequests: process.env.NODE_ENV === "production" ? [] : null,
+        },
+      },
+      // Le service est consommé par une application web tierce servie par
+      // Caddy : une politique d'ouverture stricte casserait le chargement des
+      // ressources en environnement mixte.
+      crossOriginEmbedderPolicy: false,
     })
   );
 
@@ -75,10 +104,26 @@ export function createApp() {
     skip: () => process.env.NODE_ENV === "test",
   });
 
+  // Plafond général de l'API. Il ne vise pas la force brute — c'est le rôle du
+  // limiteur de connexion ci-dessus — mais borne l'usage automatisé abusif
+  // (aspiration de données, boucle client emballée). Le seuil est volontairement
+  // large : un technicien en tournée enchaîne les requêtes légitimement.
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000,
+    message: {
+      error: "Trop de requêtes. Veuillez patienter quelques minutes.",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === "test",
+  });
+
   app.get("/health", (req: Request, res: Response) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  app.use("/api", apiLimiter);
   app.use("/api/auth/login", loginLimiter);
   app.use("/api/auth", authRoutes);
   app.use("/api/clients", clientRoutes);

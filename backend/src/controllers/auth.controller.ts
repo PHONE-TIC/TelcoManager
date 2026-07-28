@@ -1,8 +1,14 @@
 import { Response } from 'express';
 import { validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { respondValidationError } from './controller.utils';
 import { authenticateUser, refreshJwtToken } from '../services/auth.service';
+import {
+    getJwtSecret,
+    STREAM_TICKET_EXPIRES_IN_SECONDS,
+    STREAM_TICKET_TYPE,
+} from '../config/jwt';
 import { prisma } from '../db';
 
 export const login = async (req: AuthRequest, res: Response) => {
@@ -33,6 +39,41 @@ export const refreshToken = async (req: AuthRequest, res: Response) => {
         return res.json({ token: newToken });
     } catch (error) {
         return res.status(401).json({ error: 'Token invalide ou expiré' });
+    }
+};
+
+/**
+ * Délivre un ticket éphémère permettant d'ouvrir un flux SSE.
+ *
+ * L'appel est authentifié par le jeton de session habituel (en-tête
+ * Authorization). Le ticket renvoyé est valable quelques secondes et ne sert
+ * qu'à ouvrir le flux : c'est lui, et non le jeton de session, qui transite
+ * dans l'URL de l'EventSource.
+ */
+export const createStreamTicket = async (req: AuthRequest, res: Response) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Non authentifié' });
+        }
+
+        const ticket = jwt.sign(
+            {
+                id: req.user.id,
+                username: req.user.username,
+                role: req.user.role,
+                typ: STREAM_TICKET_TYPE,
+            },
+            getJwtSecret(),
+            { expiresIn: STREAM_TICKET_EXPIRES_IN_SECONDS }
+        );
+
+        return res.json({
+            ticket,
+            expiresIn: STREAM_TICKET_EXPIRES_IN_SECONDS,
+        });
+    } catch (error) {
+        console.error('Erreur lors de la création du ticket de flux:', error);
+        return res.status(500).json({ error: 'Erreur lors de la création du ticket' });
     }
 };
 

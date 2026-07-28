@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { prisma } from '../db';
-import { getJwtSecret } from '../config/jwt';
+import { getJwtSecret, STREAM_TICKET_TYPE } from '../config/jwt';
 
 export interface AuthRequest extends Request {
     user?: {
@@ -12,52 +12,113 @@ export interface AuthRequest extends Request {
     };
 }
 
-export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-        const authHeader = req.headers.authorization;
-        let token = '';
+type DecodedToken = {
+    id: string;
+    username: string;
+    role: string;
+    typ?: string;
+};
 
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            token = authHeader.substring(7);
-        } else if (req.query.token && typeof req.query.token === 'string') {
-            token = req.query.token;
-        }
+/**
+ * Vérifie un jeton et réconcilie l'identité avec la base.
+ *
+ * Le rôle et l'état d'activation sont relus à chaque requête plutôt que lus
+ * dans le jeton : une désactivation de compte ou une rétrogradation prend ainsi
+ * effet immédiatement, sans attendre l'expiration du jeton déjà distribué.
+ */
+async function resolveTokenUser(
+    token: string,
+    expectedType: typeof STREAM_TICKET_TYPE | null
+) {
+    const decoded = jwt.verify(token, getJwtSecret()) as DecodedToken;
 
-        if (!token) {
-            return res.status(401).json({ error: 'Token manquant ou invalide' });
-        }
+    // Un ticket de flux n'ouvre que le flux ; un jeton de session ne peut pas
+    // être présenté à la place d'un ticket. Les deux sens sont refusés.
+    if ((decoded.typ ?? null) !== expectedType) {
+        return { error: 'forbidden-type' as const };
+    }
 
-        const secret = getJwtSecret();
+    const dbUser = await prisma.technicien.findUnique({
+        where: { id: decoded.id }
+    });
 
-        const decoded = jwt.verify(token, secret) as {
-            id: string;
-            username: string;
-            role: string;
-        };
+    if (!dbUser) {
+        return { error: 'unknown-user' as const };
+    }
 
-        // Vérifier si l'utilisateur existe toujours en base de données et s'il est actif
-        const dbUser = await prisma.technicien.findUnique({
-            where: { id: decoded.id }
-        });
+    if (!dbUser.active) {
+        return { error: 'inactive' as const };
+    }
 
-        if (!dbUser) {
-            return res.status(401).json({ error: 'Utilisateur introuvable ou session expirée' });
-        }
-
-        if (!dbUser.active) {
-            return res.status(403).json({ error: 'Compte désactivé. Accès refusé.' });
-        }
-
-        // Réconcilier et utiliser les données réelles de la base (dont le rôle mis à jour)
-        req.user = {
+    return {
+        user: {
             id: dbUser.id,
             username: dbUser.username,
             role: dbUser.role
-        };
+        }
+    };
+}
+
+export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+        const authHeader = req.headers.authorization;
+
+        // Le jeton de session ne transite que par l'en-tête Authorization :
+        // le passer en paramètre d'URL l'exposerait aux journaux d'accès et à
+        // l'historique du navigateur. Les flux SSE utilisent un ticket dédié.
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Token manquant ou invalide' });
+        }
+
+        const result = await resolveTokenUser(authHeader.substring(7), null);
+
+        if (result.error === 'inactive') {
+            return res.status(403).json({ error: 'Compte désactivé. Accès refusé.' });
+        }
+
+        if (result.error) {
+            return res.status(401).json({ error: 'Utilisateur introuvable ou session expirée' });
+        }
+
+        req.user = result.user;
         next();
     } catch (error) {
         console.error('Auth middleware error:', error);
         return res.status(401).json({ error: 'Token invalide ou expiré' });
+    }
+};
+
+/**
+ * Authentifie un flux SSE au moyen d'un ticket éphémère passé en paramètre
+ * d'URL, seule option praticable avec l'API EventSource.
+ */
+export const authenticateStreamTicket = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const ticket = typeof req.query.ticket === 'string' ? req.query.ticket : '';
+
+        if (!ticket) {
+            return res.status(401).json({ error: 'Ticket de flux manquant' });
+        }
+
+        const result = await resolveTokenUser(ticket, STREAM_TICKET_TYPE);
+
+        if (result.error === 'inactive') {
+            return res.status(403).json({ error: 'Compte désactivé. Accès refusé.' });
+        }
+
+        if (result.error) {
+            return res.status(401).json({ error: 'Ticket de flux invalide ou expiré' });
+        }
+
+        req.user = result.user;
+        next();
+    } catch (error) {
+        console.error('Stream ticket middleware error:', error);
+        return res.status(401).json({ error: 'Ticket de flux invalide ou expiré' });
     }
 };
 

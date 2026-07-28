@@ -3,6 +3,7 @@ import { body, param } from "express-validator";
 import * as interventionController from "../controllers/interventions.controller";
 import {
   authenticate,
+  authenticateStreamTicket,
   requireGestionnaireOrAdmin,
   requireTechnicienOrAdmin,
   requireInterventionAccess,
@@ -11,14 +12,20 @@ import { upload } from "../middleware/upload.middleware";
 
 const router = Router();
 
-// Toutes les routes nécessitent une authentification
+// Stream temps réel des verrous d'interventions.
+// Déclaré avant l'authentification globale car EventSource ne peut pas émettre
+// d'en-tête Authorization : ce flux s'authentifie par ticket éphémère.
+router.get(
+  "/locks/stream",
+  authenticateStreamTicket,
+  interventionController.locksStream
+);
+
+// Toutes les autres routes nécessitent une authentification par jeton de session
 router.use(authenticate);
 
 // Obtenir toutes les interventions avec filtres
 router.get("/", interventionController.getAllInterventions);
-
-// Stream temps réel des verrous d'interventions
-router.get("/locks/stream", interventionController.locksStream);
 
 // Obtenir une intervention par ID (cloisonné)
 router.get(
