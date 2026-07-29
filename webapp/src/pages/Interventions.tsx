@@ -559,7 +559,7 @@ function Interventions() {
           </>
         }
         filters={
-          viewMode === "all" ? (
+          viewMode !== "calendar" ? (
             <FilterBar
               options={[
                 { value: "all", label: "Tous" },
@@ -572,7 +572,7 @@ function Interventions() {
               onChange={(v) => setStatusFilter(v as typeof statusFilter)}
               resultCount={{
                 shown: listeAffichee.length,
-                total: allInterventions.length,
+                total: listeCourante.length,
               }}
             />
           ) : null

@@ -261,3 +261,15 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+
+/* Rappel du raccourci, effacé dès qu'une recherche est en cours. */
+.ui-search__raccourci {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  white-space: nowrap;
+  flex: none;
+}

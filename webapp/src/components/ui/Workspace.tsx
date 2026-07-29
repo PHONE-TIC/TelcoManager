@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import "./workspace.css";
 
 /**
@@ -90,6 +90,23 @@ export function SearchInput({
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
+  const champ = useRef<HTMLInputElement>(null);
+
+  // Ctrl+K place le curseur dans la recherche sans quitter le clavier, et
+  // Échap la vide : deux gestes attendus dans un outil qu'on utilise à
+  // longueur de journée.
+  useEffect(() => {
+    const auClavier = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        champ.current?.focus();
+        champ.current?.select();
+      }
+    };
+    document.addEventListener("keydown", auClavier);
+    return () => document.removeEventListener("keydown", auClavier);
+  }, []);
+
   return (
     <div className="ui-search">
       <svg
@@ -103,10 +120,17 @@ export function SearchInput({
         <path d="M9.5 9.5L13 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
       <input
+        ref={champ}
         type="search"
         className="ui-search__champ"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && value) {
+            e.stopPropagation();
+            onChange("");
+          }
+        }}
         placeholder={placeholder}
         aria-label={placeholder}
       />
@@ -119,7 +143,11 @@ export function SearchInput({
         >
           ✕
         </button>
-      ) : null}
+      ) : (
+        <kbd className="ui-search__raccourci" aria-hidden="true">
+          Ctrl K
+        </kbd>
+      )}
     </div>
   );
 }
