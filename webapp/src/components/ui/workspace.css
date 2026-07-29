@@ -14,9 +14,10 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  /* Hauteur du cadre : tout l'espace sous la barre supérieure de
-     l'application, moins la respiration autour. */
-  height: calc(100vh - var(--header-height) - var(--space-6));
+  /* Le cadre occupe toute la hauteur de la fenêtre, moins la respiration
+     que la zone de contenu ménage autour de lui. La barre supérieure ayant
+     disparu, il n'y a plus rien à déduire au-dessus. */
+  height: calc(100vh - var(--space-5) - var(--space-6));
   min-height: 480px;
 }
 

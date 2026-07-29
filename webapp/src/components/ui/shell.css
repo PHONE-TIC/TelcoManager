@@ -37,14 +37,65 @@
 }
 
 .sidebar {
-  background: var(--surface);
+  /* Plus étroite que la colonne d'origine : les libellés tiennent, et l'espace
+     rendu profite à la surface de travail. */
+  width: 224px;
+
+  /* Un fond légèrement en retrait de la surface de travail : la colonne se
+     distingue sans qu'un trait épais soit nécessaire. */
+  background: var(--surface-2);
   border-right: 1px solid var(--line);
   box-shadow: none;
-  padding: var(--space-3) var(--space-2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --------------------------------------------------------------- Marque */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* Le dégradé du logotype, réduit à sa plus simple expression. */
+.sidebar-brand__marque {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: linear-gradient(135deg, #f0a83c, #e4402a);
+  flex: none;
+}
+
+.sidebar--collapsed .sidebar-brand__nom {
+  display: none;
+}
+
+.sidebar--collapsed .sidebar-brand {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ------------------------------------------------------------ Recherche */
+.sidebar-search {
+  padding: var(--space-3) var(--space-2) 0;
+}
+
+.sidebar--collapsed .sidebar-search {
+  display: none;
 }
 
 .sidebar-nav-shell {
-  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-2);
 }
 
 /* Les icônes de la navigation portaient chacune leurs propres couleurs, ce qui
@@ -119,8 +170,8 @@
 
 .sidebar-footer {
   border-top: 1px solid var(--line);
-  padding-top: var(--space-3);
-  margin-top: var(--space-3);
+  padding: var(--space-2);
+  margin-top: 0;
 }
 
 .sidebar-collapse-toggle {
@@ -133,66 +184,6 @@
 .sidebar-collapse-toggle:hover {
   background: var(--surface-2);
   color: var(--ink);
-}
-
-/* ==================================================================
-   BARRE SUPÉRIEURE
-   ================================================================== */
-
-.app-topbar {
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
-.app-topbar__inner {
-  padding: 0 var(--space-4);
-}
-
-.search-notifications-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  height: 100%;
-}
-
-.topbar-brand-cluster {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.topbar-brand-logo {
-  height: 26px;
-  width: auto;
-}
-
-/* Le nom du produit et sa signature figurent déjà dans le logotype : les
-   répéter en toutes lettres occupait le tiers de la barre sans rien apprendre. */
-.topbar-brand-block {
-  display: none;
-}
-
-.search-notifications-bar__center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  min-width: 0;
-}
-
-/* La recherche globale est réduite : chaque écran porte désormais son propre
-   champ de filtrage, et deux champs côte à côte ne se distinguaient pas. */
-.search-notifications-bar__search {
-  width: 100%;
-  max-width: 320px;
-}
-
-.search-notifications-bar__right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-left: auto;
 }
 
 /* ==================================================================
@@ -229,5 +220,16 @@
 }
 
 .sidebar--collapsed .nav-link-count {
+  display: none;
+}
+
+/* La barre supérieure ayant disparu, le contenu remonte en haut de l'écran. */
+.main-content--with-topbar,
+.app-container--with-topbar {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.app-topbar {
   display: none;
 }

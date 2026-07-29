@@ -49,7 +49,8 @@ import { useNavCounts } from "./hooks/useNavCounts";
 import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
 import { NotificationToastOverlay } from "./components/NotificationToastOverlay";
-import { SearchAndNotifications } from "./components/SearchAndNotifications";
+import { SidebarAccount } from "./components/SidebarAccount";
+import GlobalSearch from "./components/GlobalSearch";
 import { IpLinksNotificationWatcher } from "./components/IpLinksNotificationWatcher";
 import { useNotifications } from "./hooks/useNotifications";
 import { NotificationCenterProvider } from "./contexts/NotificationCenterContext";
@@ -68,6 +69,8 @@ function Navigation({
   const location = useLocation();
   const { user } = useAuth();
   const compteurs = useNavCounts();
+  const canSearch =
+    !!user && (user.role === "admin" || user.role === "gestionnaire");
   const { isSupported, isEnabled, requestPermission } = useNotifications();
 
   const isActive = (path: string) => {
@@ -170,6 +173,21 @@ function Navigation({
 
   return (
     <div className={`sidebar ${sidebarCollapsed ? "sidebar--collapsed" : ""}`}>
+      {/* La marque ouvre la colonne, comme dans la maquette : elle situe
+          l'application sans occuper une barre entière en haut de l'écran. */}
+      <div className="sidebar-brand">
+        <span className="sidebar-brand__marque" aria-hidden="true" />
+        <span className="sidebar-brand__nom">TelcoManager</span>
+      </div>
+
+      {canSearch ? (
+        <div className="sidebar-search">
+          <Suspense fallback={null}>
+            <GlobalSearch />
+          </Suspense>
+        </div>
+      ) : null}
+
       <nav className="sidebar-nav-shell" aria-label="Navigation principale">
         {groupesVisibles.map((groupe) => (
           <div className="nav-group" key={groupe.titre}>
@@ -203,6 +221,9 @@ function Navigation({
         ))}
       </nav>
       <div className="sidebar-footer">
+        <div className="sidebar-account">
+          <SidebarAccount />
+        </div>
         {/* PWA Install button for desktop */}
         <Suspense fallback={null}>
           <div className="sidebar-footer__block">
@@ -298,7 +319,6 @@ function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
   const pageTransitionKey = `${location.pathname}${location.search}${location.hash}`;
-  const hasDesktopTopbar = !!user;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("sidebar-collapsed") === "true";
@@ -326,7 +346,7 @@ function AppContent() {
   }
 
   return (
-    <div className={`app-container ${hasDesktopTopbar ? "app-container--with-topbar" : ""}`}>
+    <div className="app-container">
       {syncMessage && (
         <div 
           style={{
@@ -363,17 +383,10 @@ function AppContent() {
           <NotificationToastOverlay />
         </>
       )}
-      {hasDesktopTopbar ? (
-        <div className="app-topbar">
-          <div className="app-topbar__inner">
-            <SearchAndNotifications />
-          </div>
-        </div>
-      ) : null}
       {user && (
         <Navigation sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
       )}
-      <div className={`main-content ${hasDesktopTopbar ? "main-content--with-topbar" : ""} ${user?.role === "technicien" ? "main-content--technician" : ""}`}>
+      <div className={`main-content ${user?.role === "technicien" ? "main-content--technician" : ""}`}>
         <div key={pageTransitionKey} className="fade-in app-route-shell">
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
