@@ -5,10 +5,41 @@ import { AppIcon } from "../components/AppIcon";
 import "./detail-form-harmonization.css";
 import "./screen-harmonization.css";
 
-function ClientForm() {
-  const { id } = useParams<{ id: string }>();
+/**
+ * Formulaire client.
+ *
+ * Sert deux usages sans être dupliqué : une page à part entière via les routes
+ * /clients/new et /clients/:id/edit, et un panneau latéral ouvert depuis la
+ * liste. En panneau, l'identifiant et les retours arrivent par les propriétés
+ * plutôt que par l'URL, et le composant n'affiche ni en-tête ni bouton de
+ * retour — le panneau les porte déjà.
+ */
+interface ClientFormProps {
+  /** Identifiant à modifier, en panneau. Absent : création. */
+  clientId?: string;
+  /** Fourni en panneau : appelé après enregistrement. */
+  onSuccess?: () => void;
+  /** Fourni en panneau : ferme sans enregistrer. */
+  onCancel?: () => void;
+}
+
+function ClientForm({ clientId, onSuccess, onCancel }: ClientFormProps = {}) {
+  const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  // En panneau, aucun paramètre d'URL n'est disponible.
+  const enPanneau = Boolean(onSuccess || onCancel);
+  const id = clientId ?? params.id;
   const isEditing = !!id;
+
+  const terminer = () => {
+    if (onSuccess) onSuccess();
+    else navigate("/clients");
+  };
+
+  const annuler = () => {
+    if (onCancel) onCancel();
+    else navigate("/clients");
+  };
 
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
@@ -109,7 +140,7 @@ function ClientForm() {
       } else {
         await apiService.createClient(formData);
       }
-      navigate("/clients");
+      terminer();
     } catch (err) {
       console.error("Erreur sauvegarde:", err);
       setError(
@@ -184,13 +215,12 @@ function ClientForm() {
     );
   }
 
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-      <div className="page-container mobile-form-shell harmonized-shell" style={{ maxWidth: '800px', width: '100%' }}>
-      {/* Header */}
+  const contenu = (
+    <>
+      {!enPanneau && (
       <div className="harmonized-detail-header">
         <button
-          onClick={() => navigate("/clients")}
+          onClick={annuler}
           className="harmonized-back-button"
         >
           ← Retour aux clients
@@ -210,9 +240,9 @@ function ClientForm() {
             : "Renseignez les informations du nouveau client"}
         </p>
       </div>
+      )}
 
-      {/* Form */}
-      <div className="harmonized-card">
+      <div className={enPanneau ? "" : "harmonized-card"}>
         {error && (
           <div className="harmonized-error-box" style={{ marginBottom: "20px" }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="warning" size={18} /> {error}</span>
@@ -356,7 +386,7 @@ function ClientForm() {
           <div className="mobile-form-actions harmonized-form-actions">
             <button
               type="button"
-              onClick={() => navigate("/clients")}
+              onClick={annuler}
               className="btn btn-secondary"
               disabled={saving}
             >
@@ -377,8 +407,20 @@ function ClientForm() {
           </div>
         </form>
       </div>
+    </>
+  );
+
+  if (enPanneau) return contenu;
+
+  return (
+    <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+      <div
+        className="page-container mobile-form-shell harmonized-shell"
+        style={{ maxWidth: "800px", width: "100%" }}
+      >
+        {contenu}
+      </div>
     </div>
-  </div>
   );
 }
 

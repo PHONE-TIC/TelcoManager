@@ -6,10 +6,12 @@ import UserAvatar from "../components/UserAvatar";
 import {
   Button,
   DataTable,
+  Drawer,
   FilterBar,
   SearchInput,
   Workspace,
 } from "../components/ui";
+import UserForm from "./UserForm";
 import type { Technicien } from "../types";
 import "./screen-harmonization.css";
 
@@ -25,6 +27,9 @@ function Techniciens() {
   const [loading, setLoading] = useState(true);
 
   const [recherche, setRecherche] = useState("");
+  const [panneau, setPanneau] = useState<{ ouvert: boolean; id?: string }>({
+    ouvert: false,
+  });
   const [roleFilter, setRoleFilter] = useState<
     "all" | "admin" | "gestionnaire" | "technicien"
   >("all");
@@ -102,7 +107,7 @@ function Techniciens() {
           />
         }
         actions={
-          <Button variant="primary" onClick={() => navigate("/techniciens/new")}>
+          <Button variant="primary" onClick={() => setPanneau({ ouvert: true })}>
             Nouvel utilisateur
           </Button>
         }
@@ -189,7 +194,7 @@ function Techniciens() {
                     size="sm"
                     variant="quiet"
                     title="Modifier"
-                    onClick={() => navigate(`/techniciens/${t.id}/edit`)}
+                    onClick={() => setPanneau({ ouvert: true, id: t.id })}
                   >
                     <AppIcon name="edit" size={15} />
                   </Button>
@@ -207,6 +212,27 @@ function Techniciens() {
           ]}
         />
       </Workspace>
+
+      <Drawer
+        open={panneau.ouvert}
+        onClose={() => setPanneau({ ouvert: false })}
+        title={panneau.id ? "Modifier l'utilisateur" : "Nouvel utilisateur"}
+        subtitle={
+          panneau.id
+            ? techniciens.find((t) => t.id === panneau.id)?.nom
+            : "Créez un compte et son niveau d'accès"
+        }
+        width="lg"
+      >
+        <UserForm
+          userId={panneau.id}
+          onSuccess={() => {
+            setPanneau({ ouvert: false });
+            loadTechniciens();
+          }}
+          onCancel={() => setPanneau({ ouvert: false })}
+        />
+      </Drawer>
     </div>
   );
 }

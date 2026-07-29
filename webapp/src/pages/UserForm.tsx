@@ -4,8 +4,21 @@ import { apiService } from '../services/api.service';
 import { AppIcon } from '../components/AppIcon';
 import './detail-form-harmonization.css';
 
-function UserForm() {
-    const { id } = useParams<{ id: string }>();
+/**
+ * Formulaire utilisateur, monté en page ou en panneau latéral. En panneau,
+ * l'identifiant et les retours arrivent par les propriétés, et l'en-tête est
+ * porté par le panneau.
+ */
+interface UserFormProps {
+    userId?: string;
+    onSuccess?: () => void;
+    onCancel?: () => void;
+}
+
+function UserForm({ userId, onSuccess, onCancel }: UserFormProps = {}) {
+    const params = useParams<{ id: string }>();
+    const enPanneau = Boolean(onSuccess || onCancel);
+    const id = userId ?? params.id;
     const navigate = useNavigate();
     const isEditing = !!id;
 
@@ -105,7 +118,8 @@ function UserForm() {
                     active: formData.active
                 });
             }
-            navigate('/techniciens');
+            if (onSuccess) onSuccess();
+            else navigate('/techniciens');
         } catch (err) {
             console.error('Erreur sauvegarde:', err);
             setError('Erreur lors de la sauvegarde. Nom d\'utilisateur peut-être déjà pris.');
@@ -135,10 +149,9 @@ function UserForm() {
         );
     }
 
-    return (
-        <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-            <div className="page-container mobile-form-shell harmonized-shell" style={{ maxWidth: '800px', width: '100%' }}>
-            {/* Header */}
+    const contenu = (
+        <>
+            {!enPanneau && (
             <div className="harmonized-detail-header">
                 <button onClick={() => navigate('/techniciens')} className="harmonized-back-button">
                     ← Retour à la liste
@@ -150,9 +163,9 @@ function UserForm() {
                     {isEditing ? 'Modifiez les informations du compte' : 'Créez un nouveau compte utilisateur'}
                 </p>
             </div>
+            )}
 
-            {/* Form */}
-            <div className="harmonized-card">
+            <div className={enPanneau ? '' : 'harmonized-card'}>
                 <form onSubmit={handleSubmit}>
                     {error && (
                         <div className="error-message">
@@ -288,7 +301,7 @@ function UserForm() {
                         <button
                             type="button"
                             className="btn btn-secondary"
-                            onClick={() => navigate('/techniciens')}
+                            onClick={() => (onCancel ? onCancel() : navigate('/techniciens'))}
                             disabled={saving}
                         >
                             Annuler
@@ -304,8 +317,20 @@ function UserForm() {
                     </div>
                 </form>
             </div>
+        </>
+    );
+
+    if (enPanneau) return contenu;
+
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+            <div
+                className="page-container mobile-form-shell harmonized-shell"
+                style={{ maxWidth: '800px', width: '100%' }}
+            >
+                {contenu}
+            </div>
         </div>
-    </div>
     );
 }
 

@@ -10,11 +10,13 @@ import SkeletonLoader from "../components/SkeletonLoader";
 import {
   Button,
   DataTable,
+  Drawer,
   FilterBar,
   Pagination,
   SearchInput,
   Workspace,
 } from "../components/ui";
+import ClientForm from "./ClientForm";
 
 
 interface ApiErrorResponse {
@@ -32,6 +34,11 @@ function Clients() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [cityFilter, setCityFilter] = useState<string>("");
   const [recherche, setRecherche] = useState("");
+  // Création et modification se font par-dessus la liste, qui conserve ses
+  // filtres, son tri et sa page.
+  const [panneau, setPanneau] = useState<{ ouvert: boolean; id?: string }>({
+    ouvert: false,
+  });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -268,7 +275,7 @@ function Clients() {
                 {syncing ? "Synchronisation…" : "Synchroniser UNYC"}
               </Button>
             )}
-            <Button variant="primary" onClick={() => navigate("/clients/new")}>
+            <Button variant="primary" onClick={() => setPanneau({ ouvert: true })}>
               Nouveau client
             </Button>
           </>
@@ -342,7 +349,7 @@ function Clients() {
                     size="sm"
                     variant="quiet"
                     title="Modifier"
-                    onClick={() => navigate(`/clients/${c.id}/edit`)}
+                    onClick={() => setPanneau({ ouvert: true, id: c.id })}
                   >
                     <AppIcon name="edit" size={15} />
                   </Button>
@@ -367,6 +374,27 @@ function Clients() {
           totalItems={clientsAffiches.length}
         />
       </Workspace>
+
+      <Drawer
+        open={panneau.ouvert}
+        onClose={() => setPanneau({ ouvert: false })}
+        title={panneau.id ? "Modifier le client" : "Nouveau client"}
+        subtitle={
+          panneau.id
+            ? clients.find((c) => c.id === panneau.id)?.nom
+            : "Renseignez les informations du client"
+        }
+        width="lg"
+      >
+        <ClientForm
+          clientId={panneau.id}
+          onSuccess={() => {
+            setPanneau({ ouvert: false });
+            loadClients();
+          }}
+          onCancel={() => setPanneau({ ouvert: false })}
+        />
+      </Drawer>
 
       {/* Delete Confirmation Modal */}
       {deleteModal.show && deleteModal.client && (

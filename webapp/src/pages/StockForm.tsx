@@ -31,8 +31,21 @@ interface StockFormData {
   statut: Stock["statut"];
 }
 
-function StockForm() {
-  const { id } = useParams<{ id: string }>();
+/**
+ * Formulaire de matériel, monté en page ou en panneau latéral. En panneau,
+ * l'identifiant et les retours arrivent par les propriétés, et l'en-tête est
+ * porté par le panneau.
+ */
+interface StockFormProps {
+  stockId?: string;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+function StockForm({ stockId, onSuccess, onCancel }: StockFormProps = {}) {
+  const params = useParams<{ id: string }>();
+  const enPanneau = Boolean(onSuccess || onCancel);
+  const id = stockId ?? params.id;
   const navigate = useNavigate();
   const isEditing = !!id;
 
@@ -213,7 +226,8 @@ function StockForm() {
       } else {
         await apiService.createStock(payload);
       }
-      navigate("/stock");
+      if (onSuccess) onSuccess();
+      else navigate("/stock");
     } catch (err: unknown) {
       console.error("Erreur sauvegarde:", err);
       const axiosError = err as {
@@ -310,10 +324,9 @@ function StockForm() {
     );
   }
 
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-      <div className="space-y-6 mobile-form-shell harmonized-shell" style={{ maxWidth: '800px', width: '100%' }}>
-      {/* Header */}
+  const contenu = (
+    <>
+      {!enPanneau && (
       <div className="harmonized-detail-header">
         <button
           onClick={() => navigate("/stock")}
@@ -330,9 +343,9 @@ function StockForm() {
             : "Ajoutez un nouveau matériel au stock"}
         </p>
       </div>
+      )}
 
-      {/* Form */}
-      <div className="harmonized-card">
+      <div className={enPanneau ? "" : "harmonized-card"}>
         {error && (
           <div
             style={{
@@ -596,7 +609,7 @@ function StockForm() {
           <div className="mobile-form-actions harmonized-form-actions">
             <button
               type="button"
-              onClick={() => navigate("/stock")}
+              onClick={() => (onCancel ? onCancel() : navigate("/stock"))}
               style={{
                 padding: "12px 24px",
                 borderRadius: "8px",
@@ -634,6 +647,18 @@ function StockForm() {
           </div>
         </form>
       </div>
+    </>
+  );
+
+  if (enPanneau) return contenu;
+
+  return (
+    <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+      <div
+        className="space-y-6 mobile-form-shell harmonized-shell"
+        style={{ maxWidth: "800px", width: "100%" }}
+      >
+        {contenu}
       </div>
     </div>
   );

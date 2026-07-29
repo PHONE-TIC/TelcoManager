@@ -11,7 +11,14 @@ import {
   type StockWithRelations,
 } from "./stock.utils";
 import { buildStockCsvRows, getFilteredStockItems } from "./stock-list.utils";
-import { Button, FilterBar, SearchInput, Workspace } from "../components/ui";
+import {
+  Button,
+  Drawer,
+  FilterBar,
+  SearchInput,
+  Workspace,
+} from "../components/ui";
+import StockForm from "./StockForm";
 import "./mobile-refactor.css";
 import "./screen-harmonization.css";
 
@@ -29,6 +36,9 @@ function Stock() {
 
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [recherche, setRecherche] = useState("");
+  const [panneau, setPanneau] = useState<{ ouvert: boolean; id?: string }>({
+    ouvert: false,
+  });
   const [sortColumn, setSortColumn] = useState<string>("nomMateriel");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedItem, setSelectedItem] = useState<StockWithRelations | null>(
@@ -298,7 +308,10 @@ function Stock() {
                 <Button onClick={() => navigate("/stock/transfer")}>
                   Transférer
                 </Button>
-                <Button variant="primary" onClick={() => navigate("/stock/new")}>
+                <Button
+                  variant="primary"
+                  onClick={() => setPanneau({ ouvert: true })}
+                >
                   Nouveau matériel
                 </Button>
               </>
@@ -869,6 +882,27 @@ function Stock() {
           )}
         </div>
       </Workspace>
+
+      <Drawer
+        open={panneau.ouvert}
+        onClose={() => setPanneau({ ouvert: false })}
+        title={panneau.id ? "Modifier le matériel" : "Nouveau matériel"}
+        subtitle={
+          panneau.id
+            ? stock.find((i) => i.id === panneau.id)?.nomMateriel
+            : "Renseignez la fiche du matériel"
+        }
+        width="lg"
+      >
+        <StockForm
+          stockId={panneau.id}
+          onSuccess={() => {
+            setPanneau({ ouvert: false });
+            loadStock();
+          }}
+          onCancel={() => setPanneau({ ouvert: false })}
+        />
+      </Drawer>
 
       {/* Modal Form */}
       {showForm && (
