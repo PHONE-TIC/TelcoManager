@@ -1,0 +1,227 @@
+/**
+ * Zone de travail.
+ *
+ * Un cadre unique qui occupe la hauteur disponible, au lieu d'une succession
+ * de panneaux qui allongent la page. C'est la liste qui défile à l'intérieur,
+ * l'en-tête et les filtres restant en place — sans quoi filtrer une longue
+ * liste oblige à remonter pour changer de critère.
+ */
+
+.ui-workspace {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  /* Hauteur du cadre : tout l'espace sous la barre supérieure de
+     l'application, moins la respiration autour. */
+  height: calc(100vh - var(--header-height) - var(--space-6));
+  min-height: 480px;
+}
+
+/* ------------------------------------------------------- Barre de commandes */
+.ui-workspace__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.ui-workspace__titre {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.ui-workspace__meta {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* La recherche occupe l'espace libre : elle sépare le titre des actions et
+   reste atteignable sans quitter des yeux la liste. */
+.ui-workspace__recherche {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 180px;
+}
+
+.ui-workspace__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+/* --------------------------------------------------------------- Recherche */
+.ui-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  width: 100%;
+  max-width: 340px;
+}
+
+.ui-search:focus-within {
+  border-color: transparent;
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: -1px;
+}
+
+.ui-search__icone {
+  color: var(--ink-3);
+  flex: none;
+}
+
+.ui-search__champ {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--ink);
+  padding: 7px 0;
+  outline: none;
+}
+
+.ui-search__champ::-webkit-search-cancel-button {
+  display: none;
+}
+
+.ui-search__vider {
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.ui-search__vider:hover {
+  color: var(--ink);
+  background: var(--line-2);
+}
+
+/* ------------------------------------------------------------- Vues/filtres */
+.ui-workspace__filtres {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  flex-wrap: wrap;
+}
+
+/* La barre de filtres est déjà bordée : à l'intérieur du cadre, on retire son
+   propre trait pour ne pas doubler les lignes. */
+.ui-workspace__filtres .ui-filters {
+  border-bottom: 0;
+  flex: 1;
+}
+
+.ui-workspace__vues {
+  display: flex;
+  gap: 2px;
+  padding: var(--space-2) 0 var(--space-2) var(--space-4);
+}
+
+.ui-viewtab {
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  padding: 5px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ui-viewtab:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.ui-viewtab[aria-pressed="true"] {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.ui-viewtab:focus-visible {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------------- Corps */
+.ui-workspace__corps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* La vue scindée et la liste héritent de la hauteur du cadre : c'est leur
+   contenu qui défile, pas la page. */
+.ui-workspace__corps > .ui-split {
+  flex: 1;
+  min-height: 0;
+}
+
+.ui-workspace__corps .ui-split__liste {
+  overflow-y: auto;
+}
+
+.ui-workspace__corps .ui-split__detail {
+  overflow-y: auto;
+}
+
+.ui-workspace__corps > .ui-table {
+  overflow-y: auto;
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .ui-workspace {
+    /* Sur mobile, la barre de navigation basse occupe le bas de l'écran. */
+    height: auto;
+    min-height: 0;
+  }
+
+  .ui-workspace__corps > .ui-split,
+  .ui-workspace__corps .ui-split__liste,
+  .ui-workspace__corps .ui-split__detail,
+  .ui-workspace__corps > .ui-table {
+    overflow: visible;
+  }
+
+  .ui-workspace__recherche {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+
+  .ui-search {
+    max-width: none;
+  }
+
+  .ui-workspace__vues {
+    padding-left: var(--space-3);
+  }
+}

@@ -348,3 +348,21 @@
     gap: 4px;
   }
 }
+
+/* Bandeau hors-ligne, à l'intérieur de la zone de travail. */
+.interventions-hors-ligne {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--state-wait-weak);
+  color: var(--state-wait);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.ui-detail__texte {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  line-height: var(--leading-normal);
+}

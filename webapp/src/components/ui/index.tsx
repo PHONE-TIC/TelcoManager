@@ -213,3 +213,12 @@ export { DataTable, type Column } from "./DataTable";
 export { FilterBar, type FilterOption } from "./FilterBar";
 export { SplitView } from "./SplitView";
 export { Pagination } from "./Pagination";
+export { Workspace, ViewTab, SearchInput } from "./Workspace";
+export {
+  DetailPane,
+  DetailFacts,
+  DetailFact,
+  DetailSection,
+  DetailTimeline,
+  type TimelineStep,
+} from "./DetailPane";

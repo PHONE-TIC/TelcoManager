@@ -12,22 +12,23 @@ import { useResponsive } from "../hooks/useResponsive";
 import { AppIcon } from "../components/AppIcon";
 import {
   Button,
-  Figure,
-  Figures,
-  PageHeader,
+  type Column,
   DataTable,
+  DetailFact,
+  DetailFacts,
+  DetailPane,
+  DetailSection,
+  DetailTimeline,
   FilterBar,
-  Panel,
-  PanelSection,
-  Row,
-  Rows,
-  Stack,
+  SearchInput,
+  SplitView,
   Status,
+  ViewTab,
+  Workspace,
 } from "../components/ui";
 import {
   buildCalendarEventTitle,
   getCalendarTransitionClass,
-  getInterventionStatusBadgeConfig,
 } from "./interventions.utils";
 import {
   filterClientsForSelection,
@@ -35,15 +36,12 @@ import {
   findInterventionConflict,
 } from "./interventions-form.utils";
 import {
-  getOverdueInterventionsCount,
   getStatusFilteredInterventions,
   getTodayInterventions,
   sortInterventionsList,
   type InterventionSortColumn,
 } from "./interventions-list.utils";
 import {
-  getInterventionPriorityIndicator,
-  getInterventionProgressLine,
 } from "./interventions-ui.utils";
 
 import { QuickCreateClientModal } from "../components/QuickCreateClientModal";
@@ -72,7 +70,6 @@ function Interventions() {
   } = useOffline();
   const { scheduleForInterventions } = useReminders();
   const { isMobile } = useResponsive();
-  const useCardLayout = isMobile;
 
   // Restore viewMode from navigation state if present
   const initialViewMode =
@@ -90,6 +87,9 @@ function Interventions() {
   const [techniciens, setTechniciens] = useState<Technicien[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  // Fiche ouverte dans le panneau de détail, à droite de la liste.
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [recherche, setRecherche] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
 
   const [statusFilter, setStatusFilter] = useState<
@@ -313,89 +313,6 @@ function Interventions() {
     });
   };
 
-  const getStatusBadge = (statut: string) => {
-    const badge = getInterventionStatusBadgeConfig(statut);
-    return (
-      <span
-        className={`px-2 py-1 rounded-full text-xs font-semibold ${badge.className}`}
-      >
-        {badge.label}
-      </span>
-    );
-  };
-
-  const formatInterventionDate = (dateValue: string) =>
-    new Date(dateValue).toLocaleDateString("fr-FR", {
-      weekday: isMobile ? undefined : "short",
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-  const renderMobileInterventionCard = (
-    intervention: Intervention,
-    detailState?: { from?: "all" | "calendar" }
-  ) => (
-    <article
-      key={intervention.id}
-      className="interventions-mobile-card"
-      onClick={() => navigate(`/interventions/${intervention.id}`, detailState ? { state: detailState } : undefined)}
-    >
-      <div className="interventions-mobile-card-top">
-        <div>
-          <div className="interventions-mobile-number">
-            {getInterventionPriorityIndicator(
-              intervention.datePlanifiee,
-              intervention.statut
-            )}
-            <span>{intervention.numero}</span>
-          </div>
-          <h3 className="interventions-mobile-title">{intervention.titre}</h3>
-        </div>
-        <div>{getStatusBadge(intervention.statut)}</div>
-      </div>
-
-      <div className="interventions-mobile-meta">
-        <div className="interventions-mobile-meta-row">
-          <span className="interventions-mobile-label">Quand</span>
-          <span className="interventions-mobile-value">
-            {formatInterventionDate(intervention.datePlanifiee)}
-          </span>
-        </div>
-        <div className="interventions-mobile-meta-row">
-          <span className="interventions-mobile-label">Client</span>
-          <span className="interventions-mobile-value">
-            {intervention.client?.nom || "Non renseigné"}
-          </span>
-        </div>
-        {user?.role === "admin" && (
-          <div className="interventions-mobile-meta-row">
-            <span className="interventions-mobile-label">Technicien</span>
-            <span className="interventions-mobile-value">
-              {intervention.technicien?.nom || "Non assigné"}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="interventions-mobile-footer">
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold ${intervention.type === "Installation"
-            ? "bg-blue-100 text-blue-800"
-            : intervention.type === "SAV"
-              ? "bg-orange-100 text-orange-800"
-              : "bg-gray-100 text-gray-800"
-            }`}
-        >
-          {intervention.type || "SAV"}
-        </span>
-        <div className="interventions-mobile-status">
-          {getInterventionProgressLine(intervention.statut)}
-        </div>
-      </div>
-    </article>
-  );
 
   const filteredClients = useMemo(
     () => filterClientsForSelection(clients, clientSearch),
@@ -412,44 +329,7 @@ function Interventions() {
     [interventions]
   );
 
-  const interventionStats = useMemo(
-    () =>
-      user?.role === "technicien"
-        ? [
-            {
-              value: todayInterventions.length,
-              label: "Aujourd'hui",
-              tone: undefined,
-            },
-          ]
-        : [
-            { value: interventions.length, label: "Total", tone: undefined },
-            {
-              value: interventions.filter((intervention) => intervention.statut === "planifiee")
-                .length,
-              label: "Planifiées",
-              tone: "wait" as const,
-            },
-            {
-              value: interventions.filter((intervention) => intervention.statut === "en_cours")
-                .length,
-              label: "En cours",
-              tone: "run" as const,
-            },
-            {
-              value: interventions.filter((intervention) => intervention.statut === "terminee")
-                .length,
-              label: "Terminées",
-              tone: "done" as const,
-            },
-          ],
-    [interventions, todayInterventions.length, user?.role]
-  );
 
-  const overdueCount = useMemo(
-    () => getOverdueInterventionsCount(interventions),
-    [interventions]
-  );
 
   // Column sorting handler
   const sortInterventions = useCallback(
@@ -562,188 +442,128 @@ function Interventions() {
     );
   }
 
+  const interventionOuverte = detailId
+    ? [...interventions, ...todayInterventions].find((i) => i.id === detailId) ?? null
+    : null;
+
+  const listeCourante =
+    viewMode === "all" ? sortedAllInterventions : sortedTodayInterventions;
+
+  // La recherche porte sur ce qu'on a sous les yeux : numéro, intitulé, client
+  // et technicien — les quatre entrées par lesquelles on cherche une fiche.
+  const listeAffichee = recherche.trim()
+    ? listeCourante.filter((i) => {
+        const q = recherche.trim().toLowerCase();
+        return (
+          i.numero?.toLowerCase().includes(q) ||
+          i.titre?.toLowerCase().includes(q) ||
+          i.client?.nom?.toLowerCase().includes(q) ||
+          i.technicien?.nom?.toLowerCase().includes(q)
+        );
+      })
+    : listeCourante;
+
+  const colonnesInterventions: Column<Intervention>[] = [
+    {
+      key: "numero",
+      header: "Numéro",
+      width: "112px",
+      sortValue: (i) => i.numero,
+      render: (i) => <span className="ui-ref">{i.numero}</span>,
+    },
+    {
+      key: "titre",
+      header: "Intervention",
+      sortValue: (i) => i.titre,
+      render: (i) => (
+        <span className="ui-row__main">
+          <span className="ui-row__title">{i.titre}</span>
+          <span className="ui-row__meta">
+            {i.client?.nom ?? "Client inconnu"}
+            {i.type ? ` · ${i.type}` : ""}
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: "technicien",
+      header: "Technicien",
+      width: "142px",
+      hideOnNarrow: true,
+      sortValue: (i) => i.technicien?.nom ?? null,
+      render: (i) => i.technicien?.nom ?? "Non assigné",
+    },
+    {
+      key: "date",
+      header: "Planifiée",
+      width: "132px",
+      hideOnNarrow: true,
+      sortValue: (i) => new Date(i.datePlanifiee).getTime(),
+      render: (i) =>
+        new Date(i.datePlanifiee).toLocaleString("fr-FR", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+    },
+    {
+      key: "statut",
+      header: "État",
+      width: "112px",
+      sortValue: (i) => i.statut,
+      render: (i) => <Status statut={i.statut} />,
+    },
+  ];
+
   return (
-    <div className="space-y-6 interventions-page harmonized-page">
-      {/* Header */}
-      <Panel>
-        <PanelSection>
-          <Stack>
-        <PageHeader
-          title={`Interventions${user?.role === "technicien" ? ` (${sortedTodayInterventions.length})` : ""}`}
-          subtitle="Gestion des interventions et planning"
-          actions={
-            user?.role === "admin" && !showForm ? (
-              <Button variant="primary" onClick={() => setShowForm(true)}>
-                Nouvelle intervention
-              </Button>
-            ) : null
-          }
-        />
-
-      {/* Offline indicator */}
-      {!isOnline && (
-        <div
-          style={{
-            backgroundColor: "rgba(245, 158, 11, 0.15)",
-            borderLeft: "4px solid #f59e0b",
-            padding: "16px",
-            borderRadius: "8px",
-            border: "1px solid rgba(245, 158, 11, 0.3)",
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-xl">Hors ligne</span>
-            <div>
-              <strong>Mode hors-ligne</strong>
-              <span style={{ color: "var(--text-secondary)" }}>
-                {" "}
-                - Vous consultez les données mises en cache.
-              </span>
-              {pendingSyncCount > 0 && (
-                <span
-                  style={{
-                    marginLeft: "8px",
-                    padding: "4px 10px",
-                    borderRadius: "12px",
-                    fontSize: "0.75rem",
-                    fontWeight: 600,
-                    backgroundColor: "rgba(245, 158, 11, 0.2)",
-                    color: "#d97706",
-                  }}
-                >
-                  {pendingSyncCount} action{pendingSyncCount > 1 ? "s" : ""} en
-                  attente
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stats Cards (show only when not in form) */}
-      {!showForm && (
-        <Figures>
-          {interventionStats.map((stat, idx) => (
-            <Figure key={idx} value={stat.value} label={stat.label} tone={stat.tone} />
-          ))}
-          {overdueCount > 0 && (
-            <Figure value={overdueCount} label="En retard" tone="alert" />
-          )}
-        </Figures>
-      )}
-          </Stack>
-        </PanelSection>
-      </Panel>
-
-      {/* Main Content Card */}
-      <div className="interventions-surface">
-        {/* Tabs with Search */}
-        {!showForm && (
-          <div className="interventions-toolbar">
-            <div className="interventions-view-switcher screen-chip-scroll">
+    <div className="interventions-page">
+      <Workspace
+        title="Interventions"
+        meta={`${listeAffichee.length} ${listeAffichee.length > 1 ? "fiches" : "fiche"}`}
+        search={
+          !showForm && viewMode !== "calendar" ? (
+            <SearchInput
+              value={recherche}
+              onChange={setRecherche}
+              placeholder="Rechercher un numéro, un client, un technicien…"
+            />
+          ) : null
+        }
+        actions={
+          user?.role === "admin" && !showForm ? (
+            <Button variant="primary" onClick={() => setShowForm(true)}>
+              Nouvelle intervention
+            </Button>
+          ) : null
+        }
+        views={
+          !showForm ? (
+            <>
               {user?.role !== "technicien" && (
-                <button
-                  className={`interventions-tab ${viewMode === "calendar" ? "active" : ""}`}
+                <ViewTab
+                  active={viewMode === "calendar"}
                   onClick={() => setViewMode("calendar")}
                 >
-                  <span className="interventions-tab-meta">
-                    <span>Calendrier</span>
-                    <span className="interventions-tab-count">{interventions.length}</span>
-                  </span>
-                </button>
+                  Calendrier
+                </ViewTab>
               )}
-              <button
-                className={`interventions-tab ${viewMode === "list" ? "active" : ""}`}
-                onClick={() => setViewMode("list")}
-              >
-                <span className="interventions-tab-meta">
-                  <span>Liste du jour</span>
-                  <span className="interventions-tab-count">{sortedTodayInterventions.length}</span>
-                </span>
-              </button>
+              <ViewTab active={viewMode === "list"} onClick={() => setViewMode("list")}>
+                Aujourd'hui
+              </ViewTab>
               {user?.role === "admin" && (
-                <button
-                  className={`interventions-tab ${viewMode === "all" ? "active" : ""}`}
-                  onClick={() => setViewMode("all")}
-                >
-                  <span className="interventions-tab-meta">
-                    <span>Toutes</span>
-                    <span className="interventions-tab-count">{sortedAllInterventions.length}</span>
-                  </span>
-                </button>
+                <ViewTab active={viewMode === "all"} onClick={() => setViewMode("all")}>
+                  Toutes
+                </ViewTab>
               )}
-            </div>
-            {user?.role === "admin" && (
-              <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", alignSelf: "center" }}>
-                {useCardLayout ? "Appuyez sur une carte pour ouvrir le détail." : "Cliquez sur une ligne pour ouvrir le détail."}
-              </div>
-            )}
-          </div>
-        )}
-
-        {viewMode === "list" && !showForm && (
-          <div className="fade-in">
-            <div className="interventions-mobile-list">
-              <div className="interventions-mobile-summary">
-                <span>Aujourd'hui</span>
-                <strong>{sortedTodayInterventions.length} intervention{sortedTodayInterventions.length > 1 ? "s" : ""}</strong>
-              </div>
-              {sortedTodayInterventions.length > 0 ? (
-                useCardLayout ? (
-                  sortedTodayInterventions.map((intervention) =>
-                    renderMobileInterventionCard(intervention)
-                  )
-                ) : (
-                  <Rows bleed="20px">
-                    {sortedTodayInterventions.map((intervention) => {
-                      const verrou = locks[intervention.id];
-                      const technicien =
-                        intervention.technicien?.nom ?? "Non assigné";
-                      const client = intervention.client?.nom ?? "Client inconnu";
-                      const heure = new Date(
-                        intervention.datePlanifiee
-                      ).toLocaleTimeString("fr-FR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      });
-
-                      return (
-                        <Row
-                          key={intervention.id}
-                          title={intervention.titre}
-                          meta={
-                            <>
-                              {heure} · {client} · {technicien}
-                              {verrou ? ` · verrouillé par ${verrou.lockedBy}` : ""}
-                            </>
-                          }
-                          reference={intervention.numero}
-                          statut={intervention.statut}
-                          onClick={() =>
-                            navigate(`/interventions/${intervention.id}`)
-                          }
-                        />
-                      );
-                    })}
-                  </Rows>
-                )
-              ) : (
-                <div className="interventions-mobile-empty">
-                  <div className="text-4xl mb-4" style={{ display: "flex", justifyContent: "center" }}><AppIcon name="interventions" size={36} /></div>
-                  <div className="font-medium">Aucune intervention aujourd'hui</div>
-                  <div className="mt-2">Utilisez le calendrier pour voir toutes les interventions.</div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* All Interventions View (Admin only) */}
-        {viewMode === "all" && !showForm && user?.role === "admin" && (
-          <div className="fade-in">
+            </>
+          ) : null
+        }
+        filters={
+          !showForm && viewMode === "all" ? (
             <FilterBar
               options={[
-                { value: "all", label: "Toutes" },
+                { value: "all", label: "Tous" },
                 { value: "planifiee", label: "Planifiées", tone: "wait" },
                 { value: "en_cours", label: "En cours", tone: "run" },
                 { value: "terminee", label: "Terminées", tone: "done" },
@@ -752,75 +572,144 @@ function Interventions() {
               value={statusFilter}
               onChange={(v) => setStatusFilter(v as typeof statusFilter)}
               resultCount={{
-                shown: sortedAllInterventions.length,
+                shown: listeAffichee.length,
                 total: allInterventions.length,
               }}
             />
-            <DataTable
-              rows={sortedAllInterventions}
-              rowKey={(i) => i.id}
-              onRowClick={(i) =>
-                navigate(`/interventions/${i.id}`, { state: { from: "all" } })
-              }
-              emptyLabel="Aucune intervention ne correspond à ce filtre."
-              columns={[
-                {
-                  key: "numero",
-                  header: "Numéro",
-                  width: "116px",
-                  sortValue: (i) => i.numero,
-                  render: (i) => <span className="ui-ref">{i.numero}</span>,
-                },
-                {
-                  key: "titre",
-                  header: "Intervention",
-                  sortValue: (i) => i.titre,
-                  render: (i) => (
-                    <span className="ui-row__main">
-                      <span className="ui-row__title">{i.titre}</span>
-                      <span className="ui-row__meta">
-                        {i.client?.nom ?? "Client inconnu"}
-                        {i.type ? ` · ${i.type}` : ""}
-                      </span>
-                    </span>
-                  ),
-                },
-                {
-                  key: "technicien",
-                  header: "Technicien",
-                  width: "150px",
-                  hideOnNarrow: true,
-                  sortValue: (i) => i.technicien?.nom ?? null,
-                  render: (i) => i.technicien?.nom ?? "Non assigné",
-                },
-                {
-                  key: "date",
-                  header: "Planifiée",
-                  width: "148px",
-                  sortValue: (i) => new Date(i.datePlanifiee).getTime(),
-                  render: (i) =>
-                    new Date(i.datePlanifiee).toLocaleString("fr-FR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }),
-                },
-                {
-                  key: "statut",
-                  header: "État",
-                  width: "116px",
-                  sortValue: (i) => i.statut,
-                  render: (i) => <Status statut={i.statut} />,
-                },
-              ]}
-            />
-          </div>
+          ) : null
+        }
+      >
+        {!isOnline && (
+          <p className="interventions-hors-ligne">
+            Mode hors-ligne — données mises en cache.
+            {pendingSyncCount > 0
+              ? ` ${pendingSyncCount} action${pendingSyncCount > 1 ? "s" : ""} en attente de synchronisation.`
+              : ""}
+          </p>
         )}
 
+        {!showForm && viewMode !== "calendar" && (
+          <SplitView
+            detailOpen={Boolean(interventionOuverte)}
+            onCloseDetail={() => setDetailId(null)}
+            detailLabel="Détail de l'intervention"
+            list={
+              <DataTable
+                rows={listeAffichee}
+                rowKey={(i) => i.id}
+                onRowClick={(i) => setDetailId(i.id)}
+                selectedKey={detailId}
+                columns={colonnesInterventions}
+                emptyLabel={
+                  recherche.trim()
+                    ? "Aucune intervention ne correspond à cette recherche."
+                    : viewMode === "list"
+                      ? "Aucune intervention aujourd'hui."
+                      : "Aucune intervention ne correspond à ce filtre."
+                }
+              />
+            }
+            detail={
+              interventionOuverte ? (
+                <DetailPane
+                  title={interventionOuverte.titre}
+                  reference={interventionOuverte.numero}
+                  onClose={() => setDetailId(null)}
+                  actions={
+                    <>
+                      <Button
+                        variant="primary"
+                        onClick={() =>
+                          navigate(`/interventions/${interventionOuverte.id}`)
+                        }
+                      >
+                        Ouvrir la fiche
+                      </Button>
+                      {locks[interventionOuverte.id] ? (
+                        <span className="ui-state" data-tone="wait">
+                          Verrouillée par {locks[interventionOuverte.id].lockedBy}
+                        </span>
+                      ) : null}
+                    </>
+                  }
+                >
+                  <DetailFacts>
+                    <DetailFact label="État">
+                      <Status statut={interventionOuverte.statut} />
+                    </DetailFact>
+                    <DetailFact label="Type">
+                      {interventionOuverte.type || "SAV"}
+                    </DetailFact>
+                    <DetailFact label="Client">
+                      {interventionOuverte.client?.nom ?? "Client inconnu"}
+                    </DetailFact>
+                    <DetailFact label="Technicien">
+                      {interventionOuverte.technicien?.nom ?? "Non assigné"}
+                    </DetailFact>
+                    <DetailFact label="Planifiée">
+                      {new Date(interventionOuverte.datePlanifiee).toLocaleString(
+                        "fr-FR",
+                        {
+                          day: "2-digit",
+                          month: "long",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </DetailFact>
+                    <DetailFact label="Adresse">
+                      {interventionOuverte.client
+                        ? `${interventionOuverte.client.ville ?? ""}`
+                        : "—"}
+                    </DetailFact>
+                  </DetailFacts>
 
-        {/* Mobile Planning View - Only show in calendar mode */}
+                  {interventionOuverte.description ? (
+                    <DetailSection title="Description">
+                      <p className="ui-detail__texte">
+                        {interventionOuverte.description}
+                      </p>
+                    </DetailSection>
+                  ) : null}
+
+                  <DetailSection title="Déroulé">
+                    <DetailTimeline
+                      steps={[
+                        {
+                          label: "Planifiée",
+                          hint: "Créée et datée",
+                          done: true,
+                        },
+                        {
+                          label: "Prise en charge",
+                          hint: "Le technicien démarre",
+                          done: interventionOuverte.statut !== "planifiee",
+                          current: interventionOuverte.statut === "en_cours",
+                        },
+                        {
+                          label: "Heures et matériel",
+                          hint: "Saisie sur place",
+                          done: interventionOuverte.statut === "terminee",
+                        },
+                        {
+                          label: "Signatures",
+                          hint: "Technicien puis client",
+                          done: interventionOuverte.statut === "terminee",
+                        },
+                        {
+                          label: "Clôturée",
+                          hint: "Rapport disponible",
+                          done: interventionOuverte.statut === "terminee",
+                        },
+                      ]}
+                    />
+                  </DetailSection>
+                </DetailPane>
+              ) : null
+            }
+          />
+        )}
+
         {user?.role !== "technicien" && viewMode === "calendar" && !showForm && (
           <div className="mobile-only">
             <MobilePlanning interventions={mobilePlanningInterventions} />
@@ -1427,7 +1316,7 @@ function Interventions() {
             </div>
           </div>
         )}
-      </div>
+      </Workspace>
 
       {showConflictModal && conflictingIntervention && (
         <ConfirmConflictModal
