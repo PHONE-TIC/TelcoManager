@@ -50,11 +50,9 @@ import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
 import { NotificationToastOverlay } from "./components/NotificationToastOverlay";
 import { SidebarAccount } from "./components/SidebarAccount";
-import GlobalSearch from "./components/GlobalSearch";
 import { IpLinksNotificationWatcher } from "./components/IpLinksNotificationWatcher";
 import { useNotifications } from "./hooks/useNotifications";
 import { NotificationCenterProvider } from "./contexts/NotificationCenterContext";
-import { AppIcon } from "./components/AppIcon";
 import { useOfflineSync } from "./hooks/useOfflineSync";
 
 
@@ -69,8 +67,6 @@ function Navigation({
   const location = useLocation();
   const { user } = useAuth();
   const compteurs = useNavCounts();
-  const canSearch =
-    !!user && (user.role === "admin" || user.role === "gestionnaire");
   const { isSupported, isEnabled, requestPermission } = useNotifications();
 
   const isActive = (path: string) => {
@@ -91,20 +87,17 @@ function Navigation({
       items: [
         {
           path: "/",
-          icon: <AppIcon name="dashboard" />,
           label: "Tableau de bord",
           roles: ["admin", "gestionnaire"],
         },
         {
           path: "/interventions",
-          icon: <AppIcon name="interventions" />,
           label: "Interventions",
           roles: ["admin", "gestionnaire", "technicien"],
           count: compteurs.interventions,
         },
         {
           path: "/supervision-liens-ip",
-          icon: <AppIcon name="ip-links" />,
           label: "Liens IP",
           roles: ["admin", "gestionnaire"],
         },
@@ -115,27 +108,23 @@ function Navigation({
       items: [
         {
           path: "/clients",
-          icon: <AppIcon name="clients" />,
           label: "Clients",
           roles: ["admin", "gestionnaire"],
           count: compteurs.clients,
         },
         {
           path: "/stock",
-          icon: <AppIcon name="stock" />,
           label: "Stock",
           roles: ["admin", "gestionnaire"],
           count: compteurs.stock,
         },
         {
           path: "/inventaire",
-          icon: <AppIcon name="inventory" />,
           label: "Inventaire",
           roles: ["admin", "gestionnaire"],
         },
         {
           path: "/mon-stock",
-          icon: <AppIcon name="vehicle" />,
           label: "Mon stock",
           roles: ["technicien"],
         },
@@ -146,13 +135,11 @@ function Navigation({
       items: [
         {
           path: "/techniciens",
-          icon: <AppIcon name="users" />,
           label: "Utilisateurs",
           roles: ["admin"],
         },
         {
           path: "/rapports",
-          icon: <AppIcon name="reports" />,
           label: "Rapports",
           roles: ["admin"],
         },
@@ -180,14 +167,6 @@ function Navigation({
         <span className="sidebar-brand__nom">TelcoManager</span>
       </div>
 
-      {canSearch ? (
-        <div className="sidebar-search">
-          <Suspense fallback={null}>
-            <GlobalSearch />
-          </Suspense>
-        </div>
-      ) : null}
-
       <nav className="sidebar-nav-shell" aria-label="Navigation principale">
         {groupesVisibles.map((groupe) => (
           <div className="nav-group" key={groupe.titre}>
@@ -204,12 +183,7 @@ function Navigation({
                     aria-label={item.label}
                     aria-current={isActive(item.path) ? "page" : undefined}
                   >
-                    <span className="nav-link-content">
-                      <span className="nav-link-icon" aria-hidden="true">
-                        {item.icon}
-                      </span>
-                      <span className="nav-link-label">{item.label}</span>
-                    </span>
+                    <span className="nav-link-label">{item.label}</span>
                     {typeof item.count === "number" ? (
                       <span className="nav-link-count">{item.count}</span>
                     ) : null}

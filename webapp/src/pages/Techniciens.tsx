@@ -7,6 +7,7 @@ import {
   Button,
   DataTable,
   FilterBar,
+  SearchInput,
   Workspace,
 } from "../components/ui";
 import type { Technicien } from "../types";
@@ -23,6 +24,7 @@ function Techniciens() {
   const [techniciens, setTechniciens] = useState<TechnicienWithCounts[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [recherche, setRecherche] = useState("");
   const [roleFilter, setRoleFilter] = useState<
     "all" | "admin" | "gestionnaire" | "technicien"
   >("all");
@@ -68,6 +70,17 @@ function Techniciens() {
     return matchesRole;
   });
 
+  // La recherche s'ajoute au filtre de rôle plutôt que de s'y substituer.
+  const comptesAffiches = recherche.trim()
+    ? filteredTechniciens.filter((t) => {
+        const q = recherche.trim().toLowerCase();
+        return (
+          t.nom?.toLowerCase().includes(q) ||
+          t.username?.toLowerCase().includes(q)
+        );
+      })
+    : filteredTechniciens;
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -80,7 +93,14 @@ function Techniciens() {
     <div className="harmonized-page">
       <Workspace
         title="Utilisateurs"
-        meta={`${filteredTechniciens.length} ${filteredTechniciens.length > 1 ? "comptes" : "compte"}`}
+        meta={`${comptesAffiches.length} ${comptesAffiches.length > 1 ? "comptes" : "compte"}`}
+        search={
+          <SearchInput
+            value={recherche}
+            onChange={setRecherche}
+            placeholder="Rechercher un nom, un identifiant…"
+          />
+        }
         actions={
           <Button variant="primary" onClick={() => navigate("/techniciens/new")}>
             Nouvel utilisateur
@@ -97,14 +117,14 @@ function Techniciens() {
             value={roleFilter}
             onChange={(v) => setRoleFilter(v as typeof roleFilter)}
             resultCount={{
-              shown: filteredTechniciens.length,
+              shown: comptesAffiches.length,
               total: techniciens.length,
             }}
           />
         }
       >
         <DataTable
-          rows={filteredTechniciens}
+          rows={comptesAffiches}
           rowKey={(t) => t.id}
           onRowClick={(t) => navigate(`/techniciens/${t.id}`)}
           emptyLabel="Aucun utilisateur pour ce rôle."

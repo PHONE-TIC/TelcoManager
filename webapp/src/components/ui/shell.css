@@ -27,13 +27,26 @@
 
 /* Repliée, la colonne n'a plus la place d'un intitulé : il se réduit à un
    filet, qui conserve la séparation entre groupes. */
-.sidebar--collapsed .nav-group__titre {
-  height: 1px;
-  margin: var(--space-3) var(--space-2) var(--space-2);
+.sidebar.sidebar--collapsed {
+  /* La colonne est un élément flex : sans min-width nul, son contenu lui
+     impose une largeur plancher et la largeur nulle reste sans effet. */
+  width: 0;
+  min-width: 0;
+  flex: 0 0 0;
   padding: 0;
+  border-right: 0;
   overflow: hidden;
-  color: transparent;
-  background: var(--line);
+}
+
+/* Le bouton de rappel reste accessible, posé sur la surface de travail. */
+.sidebar.sidebar--collapsed .sidebar-collapse-toggle {
+  position: fixed;
+  left: var(--space-2);
+  bottom: var(--space-4);
+  width: 34px;
+  height: 34px;
+  z-index: 30;
+  overflow: visible;
 }
 
 .sidebar {
@@ -83,39 +96,10 @@
   padding-right: 0;
 }
 
-/* ------------------------------------------------------------ Recherche */
-.sidebar-search {
-  padding: var(--space-3) var(--space-2) 0;
-}
-
-.sidebar--collapsed .sidebar-search {
-  display: none;
-}
-
 .sidebar-nav-shell {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-3) var(--space-2);
-}
-
-/* Les icônes de la navigation portaient chacune leurs propres couleurs, ce qui
-   donnait une colonne bariolée où rien ne ressortait. Elles reprennent la
-   couleur du texte : c'est l'écran actif qui doit se distinguer, pas l'icône. */
-.sidebar .nav-link-icon svg [stroke]:not([stroke="none"]) {
-  stroke: currentColor;
-}
-
-.sidebar .nav-link-icon svg [fill]:not([fill="none"]) {
-  fill: color-mix(in srgb, currentColor 16%, transparent);
-}
-
-.sidebar .nav-link-icon {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  flex: none;
-  color: inherit;
 }
 
 .sidebar .nav-menu {
@@ -137,13 +121,6 @@
   font-weight: var(--weight-medium);
   text-decoration: none;
   transition: background-color var(--transition), color var(--transition);
-}
-
-.sidebar .nav-link-content {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-width: 0;
 }
 
 .sidebar .nav-link-label {

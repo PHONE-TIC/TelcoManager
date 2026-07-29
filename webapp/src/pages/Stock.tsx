@@ -11,7 +11,7 @@ import {
   type StockWithRelations,
 } from "./stock.utils";
 import { buildStockCsvRows, getFilteredStockItems } from "./stock-list.utils";
-import { Button, FilterBar, Workspace } from "../components/ui";
+import { Button, FilterBar, SearchInput, Workspace } from "../components/ui";
 import "./mobile-refactor.css";
 import "./screen-harmonization.css";
 
@@ -28,6 +28,7 @@ function Stock() {
   const [filter, setFilter] = useState("all");
 
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [recherche, setRecherche] = useState("");
   const [sortColumn, setSortColumn] = useState<string>("nomMateriel");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedItem, setSelectedItem] = useState<StockWithRelations | null>(
@@ -125,8 +126,21 @@ function Stock() {
     [stock, categoryFilter, sortColumn, sortDirection]
   );
 
+  // La recherche couvre les identifiants par lesquels on retrouve un article.
+  const stockAffiche = useMemo(() => {
+    const q = recherche.trim().toLowerCase();
+    if (!q) return filteredStock;
+    return filteredStock.filter(
+      (item) =>
+        item.nomMateriel?.toLowerCase().includes(q) ||
+        item.reference?.toLowerCase().includes(q) ||
+        item.numeroSerie?.toLowerCase().includes(q) ||
+        item.codeBarre?.toLowerCase().includes(q) ||
+        item.marque?.toLowerCase().includes(q)
+    );
+  }, [filteredStock, recherche]);
+
   // Stock statistics
-  const totalItems = stock.length;
   // const lowStockItems = stock.filter((item) => item.quantite <= 2).length; // Unused
   const totalQuantity = stock.reduce((sum, item) => sum + item.quantite, 0);
 
@@ -152,7 +166,7 @@ function Stock() {
       "Quantité",
       "Statut",
     ];
-    const rows = buildStockCsvRows(filteredStock, filter);
+    const rows = buildStockCsvRows(stockAffiche, filter);
     const csvContent = [
       headers.join(";"),
       ...rows.map((r) => r.join(";")),
@@ -268,7 +282,14 @@ function Stock() {
     <div className="harmonized-page">
       <Workspace
         title="Stock"
-        meta={`${totalItems} ${totalItems > 1 ? "articles" : "article"} · ${totalQuantity} unités`}
+        meta={`${stockAffiche.length} ${stockAffiche.length > 1 ? "articles" : "article"} · ${totalQuantity} unités`}
+        search={
+          <SearchInput
+            value={recherche}
+            onChange={setRecherche}
+            placeholder="Rechercher un nom, une référence, un numéro de série…"
+          />
+        }
         actions={
           <>
             <Button onClick={exportToCSV}>Exporter CSV</Button>
@@ -374,8 +395,8 @@ function Stock() {
               </tr>
             </thead>
             <tbody>
-              {filteredStock.length > 0 ? (
-                filteredStock.map((item) => (
+              {stockAffiche.length > 0 ? (
+                stockAffiche.map((item) => (
                   <tr key={item.id}>
                     <td>
                       <div className="flex flex-col">
@@ -711,7 +732,7 @@ function Stock() {
 
         <div className="mobile-list">
           {filteredStock.length > 0 ? (
-            filteredStock.map((item) => {
+            stockAffiche.map((item) => {
               const totalQty =
                 (item as unknown as { _totalQuantityForReference?: number })
                   ._totalQuantityForReference || item.quantite;

@@ -12,6 +12,7 @@ import {
   DataTable,
   FilterBar,
   Pagination,
+  SearchInput,
   Workspace,
 } from "../components/ui";
 
@@ -30,6 +31,7 @@ function Clients() {
   const [sortField, setSortField] = useState<ClientSortField>("nom");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [cityFilter, setCityFilter] = useState<string>("");
+  const [recherche, setRecherche] = useState("");
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -80,8 +82,21 @@ function Clients() {
     });
 
   // Pagination
-  const totalPages = Math.ceil(sortedClients.length / itemsPerPage);
-  const paginatedClients = sortedClients.slice(
+  // La recherche porte sur les champs par lesquels on cherche un client.
+  const clientsAffiches = recherche.trim()
+    ? sortedClients.filter((c) => {
+        const q = recherche.trim().toLowerCase();
+        return (
+          c.nom?.toLowerCase().includes(q) ||
+          c.contact?.toLowerCase().includes(q) ||
+          c.ville?.toLowerCase().includes(q) ||
+          c.telephone?.toLowerCase().includes(q)
+        );
+      })
+    : sortedClients;
+
+  const totalPages = Math.ceil(clientsAffiches.length / itemsPerPage);
+  const paginatedClients = clientsAffiches.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -222,7 +237,14 @@ function Clients() {
     <div className="harmonized-page">
       <Workspace
         title="Clients"
-        meta={`${sortedClients.length} ${sortedClients.length > 1 ? "clients" : "client"}`}
+        meta={`${clientsAffiches.length} ${clientsAffiches.length > 1 ? "clients" : "client"}`}
+        search={
+          <SearchInput
+            value={recherche}
+            onChange={setRecherche}
+            placeholder="Rechercher un nom, un contact, une ville…"
+          />
+        }
         actions={
           <>
             <Button onClick={exportCSV} title="Exporter en CSV">
@@ -259,7 +281,7 @@ function Clients() {
             ]}
             value={cityFilter}
             onChange={setCityFilter}
-            resultCount={{ shown: sortedClients.length, total: clients.length }}
+            resultCount={{ shown: clientsAffiches.length, total: clients.length }}
           />
         }
       >
@@ -342,7 +364,7 @@ function Clients() {
           page={currentPage}
           totalPages={totalPages}
           onChange={setCurrentPage}
-          totalItems={sortedClients.length}
+          totalItems={clientsAffiches.length}
         />
       </Workspace>
 
