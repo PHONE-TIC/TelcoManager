@@ -10,14 +10,9 @@ import SkeletonLoader from "../components/SkeletonLoader";
 import {
   Button,
   DataTable,
-  Figure,
-  Figures,
   FilterBar,
-  PageHeader,
   Pagination,
-  Panel,
-  PanelSection,
-  Stack,
+  Workspace,
 } from "../components/ui";
 
 
@@ -224,64 +219,50 @@ function Clients() {
   }
 
   return (
-    <div className="space-y-6 screen-shell harmonized-page">
-      <Panel>
-        <PanelSection>
-          <Stack>
-            <PageHeader
-              title="Clients"
-              subtitle="Gestion de la base client"
-              actions={
-                <>
-                  <Button onClick={exportCSV} title="Exporter en CSV">
-                    Exporter
-                  </Button>
-                  <label className="ui-btn" title="Importer depuis CSV">
-                    Importer
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={handleImportCSV}
-                      style={{ display: "none" }}
-                    />
-                  </label>
-                  {user?.role === "admin" && (
-                    <Button
-                      onClick={handleUnycSync}
-                      disabled={syncing}
-                      title="Synchroniser les clients depuis UNYC Atlas"
-                    >
-                      {syncing ? "Synchronisation…" : "Synchroniser UNYC"}
-                    </Button>
-                  )}
-                  <Button variant="primary" onClick={() => navigate("/clients/new")}>
-                    Nouveau client
-                  </Button>
-                </>
-              }
-            />
-            <Figures>
-              <Figure value={clients.length} label="Total clients" />
-              <Figure
-                value={new Set(clients.map((c) => c.ville)).size}
-                label="Villes"
+    <div className="harmonized-page">
+      <Workspace
+        title="Clients"
+        meta={`${sortedClients.length} ${sortedClients.length > 1 ? "clients" : "client"}`}
+        actions={
+          <>
+            <Button onClick={exportCSV} title="Exporter en CSV">
+              Exporter
+            </Button>
+            <label className="ui-btn" title="Importer depuis CSV">
+              Importer
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleImportCSV}
+                style={{ display: "none" }}
               />
-            </Figures>
-          </Stack>
-        </PanelSection>
-      </Panel>
-
-      <Panel>
-        <FilterBar
-          options={[
-            { value: "", label: "Toutes les villes" },
-            ...uniqueCities.map((city) => ({ value: city, label: city })),
-          ]}
-          value={cityFilter}
-          onChange={setCityFilter}
-          resultCount={{ shown: sortedClients.length, total: clients.length }}
-        />
-
+            </label>
+            {user?.role === "admin" && (
+              <Button
+                onClick={handleUnycSync}
+                disabled={syncing}
+                title="Synchroniser les clients depuis UNYC Atlas"
+              >
+                {syncing ? "Synchronisation…" : "Synchroniser UNYC"}
+              </Button>
+            )}
+            <Button variant="primary" onClick={() => navigate("/clients/new")}>
+              Nouveau client
+            </Button>
+          </>
+        }
+        filters={
+          <FilterBar
+            options={[
+              { value: "", label: "Toutes les villes" },
+              ...uniqueCities.map((city) => ({ value: city, label: city })),
+            ]}
+            value={cityFilter}
+            onChange={setCityFilter}
+            resultCount={{ shown: sortedClients.length, total: clients.length }}
+          />
+        }
+      >
         <DataTable
           rows={paginatedClients}
           rowKey={(c) => c.id}
@@ -363,7 +344,7 @@ function Clients() {
           onChange={setCurrentPage}
           totalItems={sortedClients.length}
         />
-      </Panel>
+      </Workspace>
 
       {/* Delete Confirmation Modal */}
       {deleteModal.show && deleteModal.client && (

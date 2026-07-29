@@ -7,9 +7,7 @@ import {
   Button,
   DataTable,
   FilterBar,
-  PageHeader,
-  Panel,
-  PanelSection,
+  Workspace,
 } from "../components/ui";
 import type { Technicien } from "../types";
 import "./screen-harmonization.css";
@@ -79,37 +77,32 @@ function Techniciens() {
   }
 
   return (
-    <div className="space-y-6 harmonized-page">
-      <Panel>
-        <PanelSection>
-          <PageHeader
-            title="Utilisateurs"
-            subtitle="Administration des comptes"
-            actions={
-              <Button variant="primary" onClick={() => navigate("/techniciens/new")}>
-                Nouvel utilisateur
-              </Button>
-            }
+    <div className="harmonized-page">
+      <Workspace
+        title="Utilisateurs"
+        meta={`${filteredTechniciens.length} ${filteredTechniciens.length > 1 ? "comptes" : "compte"}`}
+        actions={
+          <Button variant="primary" onClick={() => navigate("/techniciens/new")}>
+            Nouvel utilisateur
+          </Button>
+        }
+        filters={
+          <FilterBar
+            options={[
+              { value: "all", label: "Tous les rôles" },
+              { value: "admin", label: "Administrateurs" },
+              { value: "gestionnaire", label: "Gestionnaires" },
+              { value: "technicien", label: "Techniciens" },
+            ]}
+            value={roleFilter}
+            onChange={(v) => setRoleFilter(v as typeof roleFilter)}
+            resultCount={{
+              shown: filteredTechniciens.length,
+              total: techniciens.length,
+            }}
           />
-        </PanelSection>
-      </Panel>
-
-      <Panel>
-        <FilterBar
-          options={[
-            { value: "all", label: "Tous les rôles" },
-            { value: "admin", label: "Administrateurs" },
-            { value: "gestionnaire", label: "Gestionnaires" },
-            { value: "technicien", label: "Techniciens" },
-          ]}
-          value={roleFilter}
-          onChange={(v) => setRoleFilter(v as typeof roleFilter)}
-          resultCount={{
-            shown: filteredTechniciens.length,
-            total: techniciens.length,
-          }}
-        />
-
+        }
+      >
         <DataTable
           rows={filteredTechniciens}
           rowKey={(t) => t.id}
@@ -193,7 +186,7 @@ function Techniciens() {
             },
           ]}
         />
-      </Panel>
+      </Workspace>
     </div>
   );
 }

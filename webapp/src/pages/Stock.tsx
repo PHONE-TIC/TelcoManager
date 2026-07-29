@@ -11,16 +11,7 @@ import {
   type StockWithRelations,
 } from "./stock.utils";
 import { buildStockCsvRows, getFilteredStockItems } from "./stock-list.utils";
-import {
-  Button,
-  Figure,
-  Figures,
-  FilterBar,
-  PageHeader,
-  Panel,
-  PanelSection,
-  Stack,
-} from "../components/ui";
+import { Button, FilterBar, Workspace } from "../components/ui";
 import "./mobile-refactor.css";
 import "./screen-harmonization.css";
 
@@ -274,96 +265,71 @@ function Stock() {
   }
 
   return (
-    <div className="space-y-6 screen-shell harmonized-page">
-      <Panel>
-        <PanelSection>
-          <Stack>
-            <PageHeader
-              title="Stock"
-              subtitle="Gestion du matériel et des équipements"
-              actions={
-                <>
-                  <Button onClick={exportToCSV}>Exporter CSV</Button>
-                  {canManageStock && (
-                    <>
-                      <Button onClick={() => navigate("/stock/transfer")}>
-                        Transférer
-                      </Button>
-                      <Button variant="primary" onClick={() => navigate("/stock/new")}>
-                        Nouveau matériel
-                      </Button>
-                    </>
-                  )}
-                </>
-              }
-            />
-            <Figures>
-              <Figure
-                value={totalItems}
-                label={`Articles ${
-                  filter === "hs"
-                    ? "HS"
-                    : filter === "retour_fournisseur"
-                      ? "en retour"
-                      : filter === "all"
-                        ? "au total"
-                        : "en stock"
-                }`}
-              />
-              <Figure value={totalQuantity} label="Quantité totale" />
-              <Figure value={categories.length} label="Catégories" />
-            </Figures>
-          </Stack>
-        </PanelSection>
-      </Panel>
-
-      <Panel>
-        <FilterBar
-          options={[
-            { value: "all", label: "Vue générale" },
-            { value: "courant", label: "Stock courant", tone: "done" },
-            { value: "hs", label: "Stock HS", tone: "off" },
-            { value: "retour_fournisseur", label: "Retour fournisseur", tone: "wait" },
-            ...(canManageStock
-              ? [{ value: "technician", label: "Stock technicien" }]
-              : []),
-          ]}
-          value={filter}
-          onChange={(v) => setFilter(v as typeof filter)}
-        >
-          {/* Le filtre de catégorie reste une liste déroulante : le nombre de
-              catégories est ouvert, des pastilles déborderaient. */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="ui-field__saisie ui-field__select ui-filters__select"
-            aria-label="Filtrer par catégorie"
+    <div className="harmonized-page">
+      <Workspace
+        title="Stock"
+        meta={`${totalItems} ${totalItems > 1 ? "articles" : "article"} · ${totalQuantity} unités`}
+        actions={
+          <>
+            <Button onClick={exportToCSV}>Exporter CSV</Button>
+            {canManageStock && (
+              <>
+                <Button onClick={() => navigate("/stock/transfer")}>
+                  Transférer
+                </Button>
+                <Button variant="primary" onClick={() => navigate("/stock/new")}>
+                  Nouveau matériel
+                </Button>
+              </>
+            )}
+          </>
+        }
+        filters={
+          <FilterBar
+            options={[
+              { value: "all", label: "Vue générale" },
+              { value: "courant", label: "Stock courant", tone: "done" },
+              { value: "hs", label: "Stock HS", tone: "off" },
+              { value: "retour_fournisseur", label: "Retour fournisseur", tone: "wait" },
+              ...(canManageStock
+                ? [{ value: "technician", label: "Stock technicien" }]
+                : []),
+            ]}
+            value={filter}
+            onChange={(v) => setFilter(v as typeof filter)}
           >
-            <option value="all">Toutes catégories</option>
-            {categories.map((cat, i) => (
-              <option key={i} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
-
-          {filter === "technician" && (
             <select
-              value={selectedTechnicianId}
-              onChange={(e) => setSelectedTechnicianId(e.target.value)}
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
               className="ui-field__saisie ui-field__select ui-filters__select"
-              aria-label="Choisir un technicien"
+              aria-label="Filtrer par catégorie"
             >
-              <option value="">Sélectionner un technicien…</option>
-              {technicians.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nom}
+              <option value="all">Toutes catégories</option>
+              {categories.map((cat, i) => (
+                <option key={i} value={cat}>
+                  {cat}
                 </option>
               ))}
             </select>
-          )}
-        </FilterBar>
 
+            {filter === "technician" && (
+              <select
+                value={selectedTechnicianId}
+                onChange={(e) => setSelectedTechnicianId(e.target.value)}
+                className="ui-field__saisie ui-field__select ui-filters__select"
+                aria-label="Choisir un technicien"
+              >
+                <option value="">Sélectionner un technicien…</option>
+                {technicians.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nom}
+                  </option>
+                ))}
+              </select>
+            )}
+          </FilterBar>
+        }
+      >
         {/* Stock Table */}
         <div className="responsive-scroll desktop-table-only">
           <table className="table">
@@ -881,7 +847,7 @@ function Stock() {
             </div>
           )}
         </div>
-      </Panel>
+      </Workspace>
 
       {/* Modal Form */}
       {showForm && (
