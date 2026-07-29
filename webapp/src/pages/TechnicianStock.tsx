@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/useAuth";
 import { apiService } from "../services/api.service";
 import { AppIcon } from "../components/AppIcon";
+import { Workspace } from "../components/ui";
 import "./TechnicianStock.css";
 import "./screen-harmonization.css";
 import "./detail-form-harmonization.css";
@@ -61,13 +62,12 @@ export default function TechnicianStock() {
   }
 
   return (
-    <div className="technician-stock-page harmonized-shell">
-      <div className="harmonized-header">
-        <h1 className="page-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}><AppIcon name="vehicle" size={26} /> Mon Stock Véhicule</h1>
-        <p className="page-subtitle">Gérez les articles dans votre véhicule</p>
-      </div>
-
-      <div className="harmonized-card">
+    <div className="technician-stock-page">
+      <Workspace
+        title="Mon stock véhicule"
+        meta={`${filteredStock.length} ${filteredStock.length > 1 ? "articles" : "article"}`}
+      >
+        <div className="technician-stock-contenu">
         {filteredStock.length > 0 ? (
           <div className="stock-list">
             {filteredStock.map((item) => (
@@ -153,9 +153,8 @@ export default function TechnicianStock() {
             <small>Votre stock véhicule est vide</small>
           </div>
         )}
-      </div>
-
-      {/* Assignment and retrieval is now done through intervention closure only */}
+        </div>
+      </Workspace>
     </div>
   );
 }

@@ -273,3 +273,11 @@
   white-space: nowrap;
   flex: none;
 }
+
+/* Stock véhicule du technicien : liste de fiches qui défile dans le cadre. */
+.technician-stock-contenu {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
