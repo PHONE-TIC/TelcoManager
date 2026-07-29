@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import dayjs from "../utils/dayjsFrConfig";
 import { apiService } from "../services/api.service";
 import { AppIcon } from "../components/AppIcon";
-import { PageHeader } from "../components/ui";
+import { Button, Drawer, TextField, Workspace } from "../components/ui";
 import { generateInventoryPDF } from "../utils/inventoryPdf";
 import InventoryDiscrepancyModal from "./InventoryDiscrepancyModal";
 import type { FilterType, InventorySession } from "./inventory.types";
@@ -21,6 +21,7 @@ function Inventaire() {
 
   // Notes pour la nouvelle session
   const [newSessionNotes, setNewSessionNotes] = useState("");
+  const [showNewSession, setShowNewSession] = useState(false);
   // const [showNewSessionModal, setShowNewSessionModal] = useState(false); // REMOVED: Inline UI instead
   const [showDiscrepancyModal, setShowDiscrepancyModal] = useState(false);
 
@@ -852,83 +853,17 @@ function Inventaire() {
 
   // --- VIEW: LIST SESSIONS (START) ---
   return (
-    <div className="space-y-6 screen-shell harmonized-page">
-      {/* Header & Start Action */}
-      <div className="harmonized-header" style={{ alignItems: "flex-start" }}>
-        <PageHeader
-          title="Inventaires"
-          subtitle="Comptages périodiques pour maintenir la justesse du stock"
-        />
-
-        {/* Start Inventory Card */}
-        <div
-          className="harmonized-surface"
-          style={{
-            backgroundColor: "var(--bg-secondary)",
-            width: "100%",
-            maxWidth: "min(560px, 100%)",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "1.1rem",
-              fontWeight: 600,
-              marginBottom: "15px",
-            }}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}><AppIcon name="plus" size={18} /> Lancer un nouvel inventaire</span>
-          </h3>
-          <div
-            style={{ display: "flex", gap: "10px", flexDirection: "column" }}
-          >
-            <input
-              type="text"
-              placeholder="Note optionnelle (ex: Inventaire fin d'année)..."
-              value={newSessionNotes}
-              onChange={(e) => setNewSessionNotes(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                backgroundColor: "var(--bg-primary)",
-                color: "var(--text-primary)",
-              }}
-            />
-            <button
-              onClick={handleCreateSession}
-              className="harmonized-primary-action"
-              style={{
-                width: "100%",
-                boxShadow: "0 4px 12px rgba(249, 115, 22, 0.25)",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <AppIcon name="image" size={18} /> Prendre un instantané & Démarrer
-            </button>
-            <p
-              style={{
-                fontSize: "0.8rem",
-                color: "var(--text-secondary)",
-                textAlign: "center",
-                marginTop: "5px",
-              }}
-            >
-              Cela figera l'état théorique du stock à l'instant T.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Sessions List */}
-      <h2 style={{ fontSize: "1.25rem", fontWeight: 700, marginTop: "30px" }}>
-        Historique
-      </h2>
-
-      <div className="grid gap-4">
+    <div className="harmonized-page">
+      <Workspace
+        title="Inventaires"
+        meta={`${sessions.length} ${sessions.length > 1 ? "sessions" : "session"}`}
+        actions={
+          <Button variant="primary" onClick={() => setShowNewSession(true)}>
+            Nouvel inventaire
+          </Button>
+        }
+      >
+        <div className="inventaire-liste">
         {sessions.map((session) => (
           <div
             key={session.id}
@@ -1019,7 +954,39 @@ function Inventaire() {
             Aucun inventaire pour le moment
           </div>
         )}
-      </div>
+        </div>
+      </Workspace>
+
+      {/* Création : panneau latéral plutôt qu'un encart permanent qui occupe
+          l'écran même lorsqu'on ne lance pas d'inventaire. */}
+      <Drawer
+        open={showNewSession}
+        onClose={() => setShowNewSession(false)}
+        title="Nouvel inventaire"
+        subtitle="L'état théorique du stock sera figé à cet instant"
+        footer={
+          <>
+            <Button onClick={() => setShowNewSession(false)}>Annuler</Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                handleCreateSession();
+                setShowNewSession(false);
+              }}
+            >
+              Prendre l'instantané
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          label="Note"
+          hint="Facultative — par exemple « inventaire de fin d'année »"
+          value={newSessionNotes}
+          onChange={(e) => setNewSessionNotes(e.target.value)}
+          placeholder="Inventaire fin d'année"
+        />
+      </Drawer>
     </div>
   );
 }

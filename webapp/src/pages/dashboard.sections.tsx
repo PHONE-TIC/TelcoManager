@@ -17,7 +17,7 @@ import {
   type StockCategorySummary,
 } from "./dashboard.utils";
 import { AppIcon } from "../components/AppIcon";
-import { Figure, Figures, PageHeader } from "../components/ui";
+import { Figure, Figures } from "../components/ui";
 
 const SECTION_TITLE_STYLE: CSSProperties = {
   fontSize: "1.05rem",
@@ -29,10 +29,6 @@ export function DashboardHeader({ stats }: { stats: DashboardStats | null }) {
   return (
     <section style={DASHBOARD_PANEL_STYLE} className="dashboard-panel dashboard-header-card animate-fade-in-1">
       <div className="dashboard-header-top">
-        <PageHeader
-          title="Tableau de bord"
-          subtitle="Vue rapide des interventions, du stock et des points d'attention"
-        />
         <div className="dashboard-quick-links">
           {QUICK_LINKS.map((link) => (
             <Link key={link.to} to={link.to} className="dashboard-quick-link">

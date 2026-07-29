@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { Workspace } from "../components/ui";
 import { apiService } from "../services/api.service";
 import type { Intervention } from "../types";
 import type { IpLink } from "../types";
@@ -94,7 +95,12 @@ function Dashboard() {
   }
 
   return (
-    <div className="dashboard-container dashboard-shell" style={{ color: "var(--text-primary)" }}>
+    <div className="dashboard-container dashboard-shell">
+      <Workspace
+        title="Tableau de bord"
+        meta="Vue rapide des interventions, du stock et des points d'attention"
+      >
+        <div className="dashboard-contenu">
       <DashboardHeader stats={stats} />
 
       <div className="dashboard-main-grid animate-fade-in-3">
@@ -117,6 +123,8 @@ function Dashboard() {
         <DashboardIpLinksPanel stats={stats?.ipLinks} items={ipLinksAlerts} />
         <DashboardLowStockAlerts items={stats?.stock?.stockFaible ?? []} />
       </div>
+        </div>
+      </Workspace>
     </div>
   );
 }

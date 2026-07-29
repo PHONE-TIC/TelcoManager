@@ -1,14 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useResponsive } from "../hooks/useResponsive";
-import {
-  Button,
-  Figure,
-  Figures,
-  PageHeader,
-  Panel,
-  PanelSection,
-  Stack,
-} from "./ui";
+import { Button, Figure, Figures, Workspace } from "./ui";
 import "./ResponsivePage.css";
 
 type Action = {
@@ -42,55 +34,54 @@ export function ResponsivePage({
 
   return (
     <div className="responsive-page">
-      <Panel>
-        <PanelSection>
-          <Stack>
-            <PageHeader
-              title={title}
-              subtitle={subtitle}
-              actions={
-                actions.length > 0
-                  ? actions.map((action) => (
-                      <Button
-                        key={action.label}
-                        onClick={action.onClick}
-                        disabled={action.disabled}
-                        variant={action.variant === "primary" ? "primary" : "default"}
-                      >
-                        {action.label}
-                      </Button>
-                    ))
-                  : null
-              }
-            />
+      <Workspace
+        title={title}
+        meta={subtitle}
+        actions={
+          actions.length > 0
+            ? actions.map((action) => (
+                <Button
+                  key={action.label}
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                  variant={action.variant === "primary" ? "primary" : "default"}
+                >
+                  {action.label}
+                </Button>
+              ))
+            : null
+        }
+      >
+        {headerAside || headerStats ? (
+          <div className="responsive-page__resume">
             {headerAside}
             {headerStats}
-          </Stack>
-        </PanelSection>
-      </Panel>
-
-      {filters ? (
-        <section className="responsive-page__filters">
-          {isMobile ? (
-            <button
-              type="button"
-              className="responsive-page__filters-toggle"
-              onClick={() => setFiltersOpen((prev) => !prev)}
-            >
-              {filtersOpen ? "Masquer les filtres" : "Afficher les filtres"}
-            </button>
-          ) : null}
-          <div
-            className={`responsive-page__filters-body ${
-              !isMobile || filtersOpen ? "is-open" : ""
-            }`}
-          >
-            {filters}
           </div>
-        </section>
-      ) : null}
+        ) : null}
 
-      {children}
+        {filters ? (
+          <section className="responsive-page__filters">
+            {isMobile ? (
+              <button
+                type="button"
+                className="responsive-page__filters-toggle"
+                onClick={() => setFiltersOpen((prev) => !prev)}
+              >
+                {filtersOpen ? "Masquer les filtres" : "Afficher les filtres"}
+              </button>
+            ) : null}
+            <div
+              className={`responsive-page__filters-body ${
+                !isMobile || filtersOpen ? "is-open" : ""
+              }`}
+            >
+              {filters}
+            </div>
+          </section>
+        ) : null}
+
+        <div className="responsive-page__contenu">{children}</div>
+      </Workspace>
     </div>
   );
 }
