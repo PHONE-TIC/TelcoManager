@@ -44,9 +44,11 @@ export function SidebarAccount() {
           className="sb-account__bouton"
           onClick={toggleTheme}
           aria-label={theme === "dark" ? "Passer au thème clair" : "Passer au thème sombre"}
-          title={theme === "dark" ? "Thème clair" : "Thème sombre"}
         >
           <AppIcon name={theme === "dark" ? "sun" : "moon"} size={16} />
+          {/* Le libellé nomme la destination, pas l'état courant : un bouton
+              dit ce qu'il fait, pas où l'on se trouve. */}
+          <span>{theme === "dark" ? "Clair" : "Sombre"}</span>
         </button>
       </div>
 

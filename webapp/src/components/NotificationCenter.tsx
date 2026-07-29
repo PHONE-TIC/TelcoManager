@@ -60,7 +60,11 @@ export function NotificationCenter() {
   const latestUnread = useMemo(() => notifications.find((item) => !item.read), [notifications]);
 
   return (
-    <div className="notification-center" ref={panelRef}>
+    <div
+      className="notification-center"
+      data-non-lus={unreadCount > 0 ? "1" : undefined}
+      ref={panelRef}
+    >
       <button
         type="button"
         className={`notification-bell ${open ? "is-open" : ""}`}
