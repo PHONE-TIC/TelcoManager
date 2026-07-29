@@ -1,0 +1,107 @@
+/** Barre de filtres. */
+
+.ui-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-5);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  flex-wrap: wrap;
+}
+
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.ui-chip:hover {
+  color: var(--ink);
+  border-color: var(--ink-3);
+}
+
+/* L'inversion marque l'état actif sans recourir à l'accent, réservé aux
+   actions : un filtre coché n'est pas une action, c'est un état. */
+.ui-chip[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+.ui-chip:focus-visible {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ui-chip__pastille {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  flex: none;
+}
+
+.ui-chip__pastille[data-tone="run"] {
+  background: var(--state-run);
+}
+.ui-chip__pastille[data-tone="wait"] {
+  background: var(--state-wait);
+}
+.ui-chip__pastille[data-tone="done"] {
+  background: var(--state-done);
+}
+.ui-chip__pastille[data-tone="off"] {
+  background: var(--state-off);
+}
+
+.ui-chip__compte {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  opacity: 0.7;
+}
+
+.ui-filters__sep {
+  width: 1px;
+  height: 18px;
+  background: var(--line);
+  flex: none;
+}
+
+.ui-filters__compte {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .ui-filters {
+    padding: var(--space-2) var(--space-4);
+    /* Les filtres défilent latéralement plutôt que de repousser la liste
+       vers le bas de l'écran. */
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .ui-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ui-filters__compte {
+    margin-left: var(--space-2);
+  }
+}

@@ -1,0 +1,172 @@
+/**
+ * Tableau de données.
+ *
+ * Construit en grille plutôt qu'en <table> : les colonnes restent alignées
+ * d'une ligne à l'autre, et le repli en cartes sur écran étroit ne demande pas
+ * de dupliquer le balisage — ce que les tableaux existants réglaient par un
+ * défilement horizontal, inutilisable sur un téléphone.
+ */
+
+.ui-table {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ui-table__entete,
+.ui-table__tr {
+  display: grid;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+}
+
+.ui-table__entete {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: var(--weight-semibold);
+}
+
+.ui-table__th {
+  min-width: 0;
+}
+
+.ui-table__tri {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.ui-table__tri:hover {
+  color: var(--ink);
+}
+
+.ui-table__tri:focus-visible {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.ui-table__fleche {
+  font-size: 8px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.ui-table__corps {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-table__tr {
+  border-bottom: 1px solid var(--line-2);
+  font-size: var(--text-sm);
+  text-align: left;
+  width: 100%;
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  font-family: inherit;
+  color: inherit;
+}
+
+.ui-table__tr--cliquable {
+  cursor: pointer;
+}
+
+.ui-table__tr--cliquable:hover {
+  background: var(--surface-2);
+}
+
+.ui-table__tr--cliquable:focus-visible {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* La ligne ouverte dans le panneau de détail : un liseré plutôt qu'un aplat,
+   pour rester lisible sans écraser le contenu de la ligne. */
+.ui-table__tr--active {
+  background: var(--accent-weak);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.ui-table__td {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-table__cell--end {
+  text-align: right;
+  justify-self: end;
+}
+
+.ui-table--compact .ui-table__entete,
+.ui-table--compact .ui-table__tr {
+  padding: var(--space-2) var(--space-5);
+  gap: var(--space-3);
+}
+
+.ui-table__vide {
+  margin: 0;
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+
+/* ------------------------------------------------------------------ Étroit
+   En dessous de cette largeur, la grille est abandonnée : chaque ligne
+   devient une fiche empilée, avec l'intitulé de colonne en regard de la
+   valeur. C'est ce qui évite le défilement horizontal sur téléphone.     */
+@media (max-width: 720px) {
+  .ui-table__entete {
+    display: none;
+  }
+
+  .ui-table__tr {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    align-items: start;
+  }
+
+  .ui-table__td {
+    white-space: normal;
+  }
+
+  /* La première cellule porte l'information principale : elle garde sa
+     prééminence, les suivantes reçoivent leur intitulé. */
+  .ui-table__td:not(:first-child)[data-label]::before {
+    content: attr(data-label) " · ";
+    color: var(--ink-3);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .ui-table__cell--large {
+    display: none;
+  }
+
+  .ui-table__cell--end {
+    text-align: left;
+    justify-self: start;
+  }
+}

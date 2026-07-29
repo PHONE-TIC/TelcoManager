@@ -1,0 +1,77 @@
+/** Liste et détail côte à côte. */
+
+.ui-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.ui-split[data-open="1"] {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 400px);
+}
+
+.ui-split__liste {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.ui-split__detail {
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-split__detail:focus {
+  outline: none;
+}
+
+/* Le retour n'a de sens que lorsque le détail occupe tout l'écran ; en vue
+   large, la liste reste visible et le panneau se ferme par sa croix. */
+.ui-split__retour {
+  display: none;
+}
+
+/* En dessous de cette largeur, faire cohabiter les deux colonnes réduirait
+   chacune à une bande illisible : le détail prend toute la place. */
+@media (max-width: 900px) {
+  .ui-split[data-open="1"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ui-split[data-open="1"] .ui-split__liste {
+    display: none;
+  }
+
+  .ui-split__detail {
+    border-left: 0;
+  }
+
+  .ui-split__retour {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--ink-2);
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    padding: var(--space-3) var(--space-4);
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ui-split__retour:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+  }
+
+  .ui-split__retour:focus-visible {
+    outline: var(--focus-ring) solid var(--accent);
+    outline-offset: -2px;
+  }
+}

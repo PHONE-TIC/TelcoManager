@@ -201,3 +201,14 @@ export function Rows({ children, bleed }: RowsProps) {
 export function EmptyState({ children }: { children: ReactNode }) {
   return <p className="ui-empty">{children}</p>;
 }
+
+/* ============================================================ Briques
+   Réexportées ici pour que les écrans n'aient qu'un point d'entrée à
+   connaître. Les fonctions utilitaires restent dans leur propre module :
+   les mêler aux composants casse le rechargement à chaud.             */
+
+export { Drawer } from "./Drawer";
+export { TextField, SelectField, TextAreaField, FieldRow } from "./Field";
+export { DataTable, type Column } from "./DataTable";
+export { FilterBar, type FilterOption } from "./FilterBar";
+export { SplitView } from "./SplitView";

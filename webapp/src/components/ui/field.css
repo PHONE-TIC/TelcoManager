@@ -1,0 +1,102 @@
+/** Champs de formulaire. */
+
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ui-field__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink-2);
+}
+
+.ui-field__requis {
+  color: var(--accent);
+  margin-left: 2px;
+}
+
+.ui-field__aide {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+.ui-field__saisie {
+  font-family: inherit;
+  font-size: var(--text-sm);
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  width: 100%;
+  min-width: 0;
+}
+
+.ui-field__saisie::placeholder {
+  color: var(--ink-3);
+}
+
+.ui-field__saisie:hover:not(:disabled) {
+  border-color: var(--ink-3);
+}
+
+/* Le contour est tiré vers l'intérieur : sur un champ collé au bord d'un
+   panneau, un contour extérieur serait rogné. */
+.ui-field__saisie:focus {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.ui-field__saisie:disabled {
+  background: var(--surface-2);
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+.ui-field__select {
+  appearance: none;
+  padding-right: 30px;
+  /* Chevron dessiné en fond : une image externe serait bloquée par la
+     politique de sécurité, et un caractère typographique ne s'aligne pas. */
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 15px) calc(50% + 1px),
+    calc(100% - 11px) calc(50% + 1px);
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.ui-field__zone {
+  resize: vertical;
+  min-height: 72px;
+  line-height: var(--leading-normal);
+}
+
+.ui-field--erreur .ui-field__saisie {
+  border-color: var(--accent);
+}
+
+.ui-field__erreur {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--accent);
+  font-weight: var(--weight-medium);
+}
+
+.ui-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 560px) {
+  .ui-field-row {
+    grid-template-columns: 1fr;
+  }
+}
