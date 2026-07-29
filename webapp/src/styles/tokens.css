@@ -1,0 +1,235 @@
+/**
+ * TelcoManager — jeu de variables de l'interface.
+ *
+ * Source unique de vérité pour les couleurs, la typographie et les espacements.
+ * Toute valeur d'apparence écrite ailleurs qu'ici est une exception à justifier :
+ * c'est la dispersion de ces valeurs dans les écrans qui avait fait diverger
+ * l'interface, et rendu le thème sombre imprévisible.
+ *
+ * Le thème se joue exclusivement au niveau de ces variables. Un composant ne
+ * doit jamais avoir à connaître le thème courant.
+ */
+
+:root {
+  /* ---- Neutres ------------------------------------------------------
+     Légèrement bleutés. Un gris parfaitement neutre paraît terne ; une
+     pointe de froid le rend intentionnel sans le colorer.               */
+  --ink: #0e1417;
+  --ink-2: #55636a;
+  /* Contraste mesuré à 4,8:1 sur blanc. La valeur plus claire essayée d'abord
+     tombait à 3,0 : sous le seuil de lisibilité pour du texte de 13 px. */
+  --ink-3: #68747a;
+  --surface: #ffffff;
+  --surface-2: #f5f7f8;
+  --ground: #f5f7f8;
+  --line: #e4e9eb;
+  --line-2: #eef1f3;
+
+  /* ---- Accent -------------------------------------------------------
+     Hérité du logotype PHONE&TIC. Rare par construction : action
+     principale et focus clavier, rien d'autre. Employé partout, un
+     accent cesse d'être un signal.                                      */
+  --accent: #c9331f;
+  --accent-hover: #ad2b1a;
+  --accent-weak: #fbedeb;
+  --accent-contrast: #ffffff;
+
+  /* ---- États --------------------------------------------------------
+     Distincts de l'accent : une couleur sémantique n'est pas une couleur
+     de marque. Employés en points et en textes, jamais en aplats pleins. */
+  --state-run: #2f6fd0;
+  --state-wait: #9a6a08;
+  --state-done: #2a8460;
+  --state-off: #68747a;
+  --state-run-weak: #eaf1fc;
+  --state-wait-weak: #fbf3e2;
+  --state-done-weak: #e7f4ee;
+  --state-off-weak: #eef1f3;
+
+  /* ---- Typographie --------------------------------------------------
+     Inter est embarquée dans le projet (voir main.tsx) : aucune requête
+     vers un tiers, et rien à autoriser dans la politique de sécurité.
+     Quatre tailles couvrent l'intégralité des écrans.                    */
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "DejaVu Sans Mono",
+    Menlo, Consolas, monospace;
+
+  --text-xs: 0.719rem; /* 11.5px — intitulés de rubrique */
+  --text-sm: 0.813rem; /* 13px   — texte secondaire */
+  --text-md: 0.906rem; /* 14.5px — texte courant */
+  --text-lg: 1.313rem; /* 21px   — titre d'écran */
+  --text-xl: 1.625rem; /* 26px   — valeur d'indicateur */
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 650;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.55;
+
+  /* ---- Espacement ---------------------------------------------------
+     Un pas unique décliné. Toute valeur hors de cette échelle est un
+     accident : c'est ce qui produisait 30 espacements différents.        */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 40px;
+  --space-7: 64px;
+
+  /* ---- Formes -------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* Les ombres restent discrètes : la hiérarchie passe par l'espace et
+     les filets, pas par l'élévation. */
+  --shadow-sm: 0 1px 2px rgba(14, 20, 23, 0.06);
+  --shadow: 0 2px 8px -2px rgba(14, 20, 23, 0.1);
+  --shadow-lg: 0 12px 32px -12px rgba(14, 20, 23, 0.22);
+
+  /* ---- Divers -------------------------------------------------------- */
+  --focus-ring: 2px;
+  --transition: 120ms ease;
+  --header-height: 56px;
+  --sidebar-width: 236px;
+}
+
+/* Thème sombre : seules les variables changent. Aucune règle de composant
+   ne doit être redéfinie ici — si l'envie s'en fait sentir, c'est que le
+   composant lit une couleur qu'il devrait recevoir en variable. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e9eef0;
+    --ink-2: #98a5ac;
+    --ink-3: #7d8a91;
+    --surface: #15191c;
+    --surface-2: #1b2024;
+    --ground: #0d1113;
+    --line: #252c31;
+    --line-2: #1e2429;
+
+    --accent: #f2634c;
+    --accent-hover: #ff7a64;
+    --accent-weak: #2a1815;
+    --accent-contrast: #1a0d0a;
+
+    --state-run: #5b9bef;
+    --state-wait: #d9a43a;
+    --state-done: #4fb088;
+    --state-off: #7d8a91;
+    --state-run-weak: #16263c;
+    --state-wait-weak: #2e2513;
+    --state-done-weak: #142b22;
+    --state-off-weak: #1e2429;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 12px 32px -12px rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Le choix explicite de l'utilisateur prime toujours sur la préférence
+   système, dans les deux sens. */
+:root[data-theme="dark"] {
+  --ink: #e9eef0;
+  --ink-2: #98a5ac;
+  --ink-3: #7d8a91;
+  --surface: #15191c;
+  --surface-2: #1b2024;
+  --ground: #0d1113;
+  --line: #252c31;
+  --line-2: #1e2429;
+
+  --accent: #f2634c;
+  --accent-hover: #ff7a64;
+  --accent-weak: #2a1815;
+  --accent-contrast: #1a0d0a;
+
+  --state-run: #5b9bef;
+  --state-wait: #d9a43a;
+  --state-done: #4fb088;
+  --state-off: #7d8a91;
+  --state-run-weak: #16263c;
+  --state-wait-weak: #2e2513;
+  --state-done-weak: #142b22;
+  --state-off-weak: #1e2429;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* =====================================================================
+   COUCHE DE COMPATIBILITÉ — temporaire
+   ---------------------------------------------------------------------
+   Les écrans pas encore repris consomment l'ancien vocabulaire
+   (--primary-color, --card-bg, --text-primary…). Le rebrancher sur les
+   nouvelles variables fait basculer toute l'application d'un coup, sans
+   attendre que chaque écran soit refondu — et sans laisser cohabiter
+   deux palettes le temps de la migration.
+
+   Ces alias disparaissent au fur et à mesure que les écrans sont repris.
+   Un alias qui n'a plus aucun usage doit être supprimé, pas conservé.
+   ===================================================================== */
+:root,
+:root[data-theme="dark"],
+:root[data-theme="light"] {
+  --primary-color: var(--accent);
+  --primary-dark: var(--accent-hover);
+  --primary-light: var(--accent-weak);
+  --secondary-color: var(--accent);
+
+  --success-color: var(--state-done);
+  --danger-color: var(--accent);
+  --warning-color: var(--state-wait);
+  --info-color: var(--state-run);
+  --error-color: var(--accent);
+  --error-bg: var(--accent-weak);
+
+  --bg-color: var(--ground);
+  --bg-subtle: var(--surface-2);
+  --card-bg: var(--surface);
+  --bg-primary: var(--surface);
+  --bg-secondary: var(--surface-2);
+  --bg-elevated: var(--surface);
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted: var(--ink-3);
+  --text-tertiary: var(--ink-3);
+
+  --border-color: var(--line);
+  --border-light: var(--line-2);
+
+  --hover-bg: var(--surface-2);
+  --hover-primary: var(--accent-weak);
+
+  --sidebar-bg: var(--surface);
+  --sidebar-text: var(--ink-2);
+  --sidebar-border: var(--line);
+  --sidebar-hover: var(--surface-2);
+  --sidebar-active: var(--accent-weak);
+
+  --font-family: var(--font-sans);
+
+  --spacing-xs: var(--space-1);
+  --spacing-s: var(--space-2);
+  --spacing-m: var(--space-4);
+  --spacing-l: var(--space-5);
+  --spacing-xl: var(--space-6);
+
+  --font-size-xs: var(--text-xs);
+  --font-size-sm: var(--text-sm);
+  --font-size-base: var(--text-md);
+  --font-size-lg: var(--text-lg);
+  --font-size-xl: var(--text-lg);
+  --font-size-2xl: var(--text-xl);
+
+  --shadow-md: var(--shadow);
+  --shadow-xl: var(--shadow-lg);
+}

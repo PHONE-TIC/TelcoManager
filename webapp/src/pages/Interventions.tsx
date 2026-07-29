@@ -11,6 +11,14 @@ import { useReminders } from "../hooks/useReminders";
 import { useResponsive } from "../hooks/useResponsive";
 import { AppIcon } from "../components/AppIcon";
 import {
+  Button,
+  Figure,
+  Figures,
+  PageHeader,
+  Row,
+  Rows,
+} from "../components/ui";
+import {
   buildCalendarEventTitle,
   getCalendarTransitionClass,
   getInterventionStatusBadgeConfig,
@@ -405,28 +413,28 @@ function Interventions() {
             {
               value: todayInterventions.length,
               label: "Aujourd'hui",
-              color: "#f97316",
+              tone: undefined,
             },
           ]
         : [
-            { value: interventions.length, label: "Total", color: "#f97316" },
+            { value: interventions.length, label: "Total", tone: undefined },
             {
               value: interventions.filter((intervention) => intervention.statut === "planifiee")
                 .length,
               label: "Planifiées",
-              color: "#3b82f6",
+              tone: "wait" as const,
             },
             {
               value: interventions.filter((intervention) => intervention.statut === "en_cours")
                 .length,
               label: "En cours",
-              color: "#f59e0b",
+              tone: "run" as const,
             },
             {
               value: interventions.filter((intervention) => intervention.statut === "terminee")
                 .length,
               label: "Terminées",
-              color: "#10b981",
+              tone: "done" as const,
             },
           ],
     [interventions, todayInterventions.length, user?.role]
@@ -578,24 +586,17 @@ function Interventions() {
     <div className="space-y-6 interventions-page harmonized-page">
       {/* Header */}
       <div className="harmonized-header-with-stats">
-        <div className="interventions-header harmonized-header">
-          <div className="interventions-header-copy harmonized-header-copy">
-            <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-              Interventions{user?.role === "technicien" ? ` (${sortedTodayInterventions.length})` : ""}
-            </h1>
-            <p style={{ color: "var(--text-secondary)" }}>
-              Gestion des interventions et planning
-            </p>
-          </div>
-          {user?.role === "admin" && !showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="interventions-primary-action harmonized-primary-action"
-            >
-              + Nouvelle Intervention
-            </button>
-          )}
-        </div>
+        <PageHeader
+          title={`Interventions${user?.role === "technicien" ? ` (${sortedTodayInterventions.length})` : ""}`}
+          subtitle="Gestion des interventions et planning"
+          actions={
+            user?.role === "admin" && !showForm ? (
+              <Button variant="primary" onClick={() => setShowForm(true)}>
+                Nouvelle intervention
+              </Button>
+            ) : null
+          }
+        />
 
       {/* Offline indicator */}
       {!isOnline && (
@@ -639,51 +640,14 @@ function Interventions() {
 
       {/* Stats Cards (show only when not in form) */}
       {!showForm && (
-        <div
-          className="interventions-stats-grid harmonized-stats-grid screen-summary-strip"
-        >
+        <Figures>
           {interventionStats.map((stat, idx) => (
-            <div
-              key={idx}
-              className="interventions-stat-card"
-              style={{
-                borderLeft: `4px solid ${stat.color}`,
-              }}
-            >
-              <div style={{ fontSize: "1.75rem", fontWeight: 700 }}>
-                {stat.value}
-              </div>
-              <div
-                style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}
-              >
-                {stat.label}
-              </div>
-            </div>
+            <Figure key={idx} value={stat.value} label={stat.label} tone={stat.tone} />
           ))}
           {overdueCount > 0 && (
-            <div
-              className="interventions-stat-card"
-              style={{
-                borderLeft: "4px solid #ef4444",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "1.75rem",
-                  fontWeight: 700,
-                  color: "#ef4444",
-                }}
-              >
-                {overdueCount}
-              </div>
-              <div
-                style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}
-              >
-                En retard
-              </div>
-            </div>
+            <Figure value={overdueCount} label="En retard" tone="alert" />
           )}
-        </div>
+        </Figures>
       )}
       </div>
 
@@ -746,104 +710,38 @@ function Interventions() {
                     renderMobileInterventionCard(intervention)
                   )
                 ) : (
-                  <div className="responsive-scroll">
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>N°</th>
-                          {getSortableHeader("Date planifiée", "datePlanifiee")}
-                          <th>Type</th>
-                          <th>Titre</th>
-                          {getSortableHeader("Client", "client")}
-                          {user?.role === "admin" &&
-                            getSortableHeader("Technicien", "technicien")}
-                          {getSortableHeader("Statut", "statut")}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedTodayInterventions.map((intervention) => (
-                          <tr
-                            key={intervention.id}
-                            className="clickable-row"
-                            onClick={() => navigate(`/interventions/${intervention.id}`)}
-                          >
-                            <td>
-                              <div style={{ display: "flex", alignItems: "center" }}>
-                                {getInterventionPriorityIndicator(
-                                  intervention.datePlanifiee,
-                                  intervention.statut
-                                )}
-                                <span className="font-bold text-gray-800">
-                                  {intervention.numero}
-                                </span>
-                              </div>
-                            </td>
-                            <td>{new Date(intervention.datePlanifiee).toLocaleString("fr-FR")}</td>
-                            <td>
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-semibold ${intervention.type === "Installation"
-                                  ? "bg-blue-100 text-blue-800"
-                                  : intervention.type === "SAV"
-                                    ? "bg-orange-100 text-orange-800"
-                                    : "bg-gray-100 text-gray-800"
-                                  }`}
-                              >
-                                {intervention.type || "SAV"}
-                              </span>
-                            </td>
-                            <td className="font-medium">{intervention.titre}</td>
-                            <td>
-                              {intervention.client?.nom || (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                            {user?.role === "admin" && (
-                              <td>
-                                <div style={{ display: "flex", alignItems: "center" }}>
-                                  {getTechnicianAvatar(intervention.technicien)}
-                                  <span>
-                                    {intervention.technicien?.nom || (
-                                      <span className="text-gray-400">Non assigné</span>
-                                    )}
-                                  </span>
-                                </div>
-                              </td>
-                            )}
-                            <td>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                  flexWrap: "nowrap",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {getInterventionProgressLine(intervention.statut)}
-                                {getStatusBadge(intervention.statut)}
-                                {locks[intervention.id] && (
-                                   <span
-                                     className="px-2 py-1 rounded text-xs font-semibold"
-                                     style={{
-                                       display: "inline-flex",
-                                       alignItems: "center",
-                                       gap: 4,
-                                       backgroundColor: "rgba(249, 115, 22, 0.15)",
-                                       color: "#ea580c",
-                                       border: "1px solid rgba(249, 115, 22, 0.3)",
-                                     }}
-                                     title={`Verrouillé par ${locks[intervention.id].lockedBy}`}
-                                   >
-                                     🔒 {locks[intervention.id].lockedBy}
-                                   </span>
-                                 )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <Rows>
+                    {sortedTodayInterventions.map((intervention) => {
+                      const verrou = locks[intervention.id];
+                      const technicien =
+                        intervention.technicien?.nom ?? "Non assigné";
+                      const client = intervention.client?.nom ?? "Client inconnu";
+                      const heure = new Date(
+                        intervention.datePlanifiee
+                      ).toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+
+                      return (
+                        <Row
+                          key={intervention.id}
+                          title={intervention.titre}
+                          meta={
+                            <>
+                              {heure} · {client} · {technicien}
+                              {verrou ? ` · verrouillé par ${verrou.lockedBy}` : ""}
+                            </>
+                          }
+                          reference={intervention.numero}
+                          statut={intervention.statut}
+                          onClick={() =>
+                            navigate(`/interventions/${intervention.id}`)
+                          }
+                        />
+                      );
+                    })}
+                  </Rows>
                 )
               ) : (
                 <div className="interventions-mobile-empty">

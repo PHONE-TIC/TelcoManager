@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+/* La police est embarquée dans le projet et importée depuis main.tsx.
+   L'appel distant qui figurait ici était bloqué par la politique de sécurité
+   en production : l'application tournait sur la police système sans que rien
+   ne le signale. */
 
 * {
   margin: 0;
@@ -136,7 +139,7 @@ html {
 }
 
 body {
-  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-color);
@@ -3361,14 +3364,6 @@ textarea {
   height: 100vh;
 }
 
-.max-w-md {
-  max-width: 28rem;
-}
-
-.max-w-lg {
-  max-width: 32rem;
-}
-
 .max-w-2xl {
   max-width: 42rem;
 }
@@ -3421,14 +3416,6 @@ textarea {
 .py-12 {
   padding-top: 3rem;
   padding-bottom: 3rem;
-}
-
-.pl-10 {
-  padding-left: 2.5rem;
-}
-
-.pr-4 {
-  padding-right: 1rem;
 }
 
 .pt-2 {
@@ -3551,10 +3538,6 @@ textarea {
   color: #dc2626;
 }
 
-.text-blue-600 {
-  color: #2563eb;
-}
-
 .text-blue-800 {
   color: #1e40af;
 }
@@ -3588,10 +3571,6 @@ textarea {
   background-color: #fef2f2;
 }
 
-.bg-blue-50 {
-  background-color: #eff6ff;
-}
-
 .bg-blue-100 {
   background-color: #dbeafe;
 }
@@ -3616,14 +3595,6 @@ textarea {
   background-color: #f3e8ff;
 }
 
-.bg-indigo-100 {
-  background-color: #e0e7ff;
-}
-
-.text-indigo-800 {
-  color: #3730a3;
-}
-
 .bg-orange-100 {
   background-color: #ffedd5;
 }
@@ -3638,14 +3609,6 @@ textarea {
 
 .text-red-900 {
   color: #7f1d1d;
-}
-
-.bg-teal-100 {
-  background-color: #ccfbf1;
-}
-
-.text-teal-800 {
-  color: #115e59;
 }
 
 .bg-primary {
@@ -3717,25 +3680,15 @@ textarea {
   inset: 0;
 }
 
-.left-3 {
-  left: 0.75rem;
-}
-
-.top-1\/2 {
-  top: 50%;
-}
-
 .z-50 {
   z-index: 50;
 }
 
+/* Conservée pour les usages existants. La version d'origine référençait
+   --tw-transform, une variable Tailwind jamais définie ici : la règle
+   n'appliquait donc rien du tout. */
 .transform {
-  transform: var(--tw-transform);
-}
-
-.-translate-y-1\/2 {
-  --tw-translate-y: -50%;
-  transform: translateY(var(--tw-translate-y));
+  transform: translate(var(--tw-translate-x, 0), var(--tw-translate-y, 0));
 }
 
 /* Effects */
@@ -3769,10 +3722,6 @@ textarea {
   --tw-ring-color: var(--primary-color);
 }
 
-.focus\:border-transparent:focus {
-  border-color: transparent;
-}
-
 .focus\:border-primary:focus {
   border-color: var(--primary-color);
 }
@@ -3780,14 +3729,6 @@ textarea {
 /* Hover states */
 .hover\:bg-gray-200:hover {
   background-color: #e5e7eb;
-}
-
-.hover\:bg-blue-50:hover {
-  background-color: #eff6ff;
-}
-
-.hover\:bg-red-50:hover {
-  background-color: #fef2f2;
 }
 
 .hover\:bg-primary-dark:hover {
@@ -3860,11 +3801,6 @@ textarea {
 .animate-fade-in-4 {
   opacity: 0;
   animation: fadeInUp 0.5s ease-out 0.4s forwards;
-}
-
-.animate-fade-in-5 {
-  opacity: 0;
-  animation: fadeInUp 0.5s ease-out 0.5s forwards;
 }
 
 /* Border utility for spinner */
@@ -3945,11 +3881,6 @@ textarea {
   background-color: var(--bg-subtle, #fafafa);
   text-decoration: none;
   transition: all 0.2s ease;
-}
-
-.intervention-card-item:hover {
-  background-color: var(--hover-bg);
-  border-color: var(--primary-color);
 }
 
 /* Dark mode intervention card - more visible borders */

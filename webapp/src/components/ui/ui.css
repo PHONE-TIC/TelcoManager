@@ -1,0 +1,361 @@
+/**
+ * Composants de base de l'interface.
+ *
+ * Ces règles ne contiennent aucune valeur d'apparence en dur : tout vient de
+ * styles/tokens.css. C'est ce qui permet au thème de basculer sans qu'aucun
+ * composant n'ait à savoir quel thème est actif.
+ */
+
+/* ---------------------------------------------------------------- Bouton
+   Deux niveaux suffisent : une action principale par écran, le reste au
+   même rang. Les dix-huit variantes précédentes étaient surtout des
+   exceptions ponctuelles qui n'avaient jamais été refermées.            */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+  padding: 9px 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--transition), border-color var(--transition);
+  white-space: nowrap;
+}
+
+.ui-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.ui-btn:focus-visible {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ui-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ui-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.ui-btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Action de rang secondaire : lisible, mais qui ne dispute pas l'attention
+   à l'action principale. */
+.ui-btn--quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-2);
+}
+
+.ui-btn--quiet:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.ui-btn--danger {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--accent);
+}
+
+.ui-btn--danger:hover:not(:disabled) {
+  background: var(--accent-weak);
+  border-color: var(--accent);
+}
+
+.ui-btn--sm {
+  font-size: var(--text-xs);
+  padding: 6px 11px;
+}
+
+.ui-btn--block {
+  width: 100%;
+}
+
+/* ------------------------------------------------------------------ État
+   Un point et un mot. Pas d'aplat plein : une liste de vingt lignes
+   couvertes de pastilles colorées ne signale plus rien.                  */
+.ui-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--tone, var(--ink-2));
+  white-space: nowrap;
+}
+
+.ui-state::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+  flex: none;
+}
+
+.ui-state[data-tone="run"] {
+  --tone: var(--state-run);
+}
+.ui-state[data-tone="wait"] {
+  --tone: var(--state-wait);
+}
+.ui-state[data-tone="done"] {
+  --tone: var(--state-done);
+}
+.ui-state[data-tone="off"] {
+  --tone: var(--state-off);
+}
+
+/* Variante compacte pour les contextes très denses (tableaux). */
+.ui-state--dot-only::before {
+  width: 8px;
+  height: 8px;
+}
+
+/* ---------------------------------------------------------- En-tête d'écran */
+.ui-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.ui-page-header__text {
+  min-width: 0;
+}
+
+.ui-page-header__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+}
+
+.ui-page-header__subtitle {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+
+.ui-page-header__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------ Indicateurs
+   Sans boîte. Une bordure de moins, c'est une ligne de liste de plus à
+   l'écran — et le regard n'a pas à traverser un cadre pour lire un nombre. */
+.ui-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+
+.ui-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 0;
+  padding: 0;
+  background: none;
+  text-align: left;
+}
+
+.ui-figure__value {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--tone, var(--ink));
+}
+
+.ui-figure__label {
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: var(--weight-semibold);
+}
+
+.ui-figure[data-tone="alert"] {
+  --tone: var(--accent);
+}
+.ui-figure[data-tone="run"] {
+  --tone: var(--state-run);
+}
+.ui-figure[data-tone="wait"] {
+  --tone: var(--state-wait);
+}
+.ui-figure[data-tone="done"] {
+  --tone: var(--state-done);
+}
+
+/* Rendue cliquable quand elle filtre la liste : ce qui agit doit le montrer. */
+button.ui-figure {
+  cursor: pointer;
+  border-radius: var(--radius);
+  margin: calc(var(--space-2) * -1);
+  padding: var(--space-2);
+  transition: background-color var(--transition);
+}
+
+button.ui-figure:hover {
+  background: var(--surface-2);
+}
+
+button.ui-figure:focus-visible {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: 2px;
+}
+
+button.ui-figure[aria-pressed="true"] {
+  background: var(--surface-2);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* ------------------------------------------------------------------ Panneau
+   Le conteneur d'un écran. Un seul niveau d'encadrement : à l'intérieur,
+   ce sont l'espace et les filets qui séparent.                            */
+.ui-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.ui-panel__section {
+  padding: var(--space-5);
+}
+
+.ui-panel__section + .ui-panel__section {
+  border-top: 1px solid var(--line);
+}
+
+/* ------------------------------------------------------------------- Liste */
+.ui-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line-2);
+  text-align: left;
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+
+.ui-row:hover {
+  background: var(--surface-2);
+}
+
+.ui-row:focus-visible {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: -2px;
+}
+
+.ui-row__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ui-row__title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-row__meta {
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La référence métier : des chiffres qu'on cherche du regard plutôt qu'on
+   ne lit. Chasse fixe et alignement des colonnes. */
+.ui-ref {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.ui-empty {
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 640px) {
+  .ui-row {
+    grid-template-columns: 1fr auto;
+    padding: var(--space-4);
+  }
+
+  .ui-row .ui-ref {
+    display: none;
+  }
+
+  .ui-figures {
+    gap: var(--space-5);
+  }
+
+  .ui-panel__section {
+    padding: var(--space-4);
+  }
+}
+
+/* Contenu réservé aux lecteurs d'écran : retiré visuellement, mais toujours
+   annoncé. Utilisé par l'état compact, où seul le point est affiché. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
