@@ -83,7 +83,7 @@
   /* ---- Formes -------------------------------------------------------- */
   --radius-sm: 4px;
   --radius: 6px;
-  --radius-lg: 10px;
+  --radius-lg: 12px; /* rayon des panneaux, aligné sur celui des écrans existants */
   --radius-pill: 999px;
 
   /* Les ombres restent discrètes : la hiérarchie passe par l'espace et

@@ -15,6 +15,8 @@ import {
   Figure,
   Figures,
   PageHeader,
+  Panel,
+  PanelSection,
   Row,
   Rows,
   Stack,
@@ -586,7 +588,9 @@ function Interventions() {
   return (
     <div className="space-y-6 interventions-page harmonized-page">
       {/* Header */}
-      <Stack>
+      <Panel>
+        <PanelSection>
+          <Stack>
         <PageHeader
           title={`Interventions${user?.role === "technicien" ? ` (${sortedTodayInterventions.length})` : ""}`}
           subtitle="Gestion des interventions et planning"
@@ -650,7 +654,9 @@ function Interventions() {
           )}
         </Figures>
       )}
-      </Stack>
+          </Stack>
+        </PanelSection>
+      </Panel>
 
       {/* Main Content Card */}
       <div className="interventions-surface">
