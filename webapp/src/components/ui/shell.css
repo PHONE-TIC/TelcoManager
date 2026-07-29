@@ -1,0 +1,210 @@
+/**
+ * Cadre de l'application : barre latérale et barre supérieure.
+ *
+ * Chargé après les feuilles héritées pour prendre le dessus sur elles. Ce
+ * fichier remplace leur apparence sans toucher au balisage — la refonte du
+ * cadre pouvait sinon casser la navigation de tous les écrans d'un coup.
+ */
+
+/* ==================================================================
+   BARRE LATÉRALE
+   ================================================================== */
+
+/* Les groupes et leur intitulé, définis ici plutôt que dispersés. */
+.nav-group + .nav-group {
+  margin-top: var(--space-4);
+}
+
+.nav-group__titre {
+  margin: 0 0 var(--space-1);
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: var(--weight-semibold);
+}
+
+/* Repliée, la colonne n'a plus la place d'un intitulé : il se réduit à un
+   filet, qui conserve la séparation entre groupes. */
+.sidebar--collapsed .nav-group__titre {
+  height: 1px;
+  margin: var(--space-3) var(--space-2) var(--space-2);
+  padding: 0;
+  overflow: hidden;
+  color: transparent;
+  background: var(--line);
+}
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  box-shadow: none;
+  padding: var(--space-3) var(--space-2);
+}
+
+.sidebar-nav-shell {
+  padding: 0;
+}
+
+/* Les icônes de la navigation portaient chacune leurs propres couleurs, ce qui
+   donnait une colonne bariolée où rien ne ressortait. Elles reprennent la
+   couleur du texte : c'est l'écran actif qui doit se distinguer, pas l'icône. */
+.sidebar .nav-link-icon svg [stroke]:not([stroke="none"]) {
+  stroke: currentColor;
+}
+
+.sidebar .nav-link-icon svg [fill]:not([fill="none"]) {
+  fill: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.sidebar .nav-link-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: inherit;
+}
+
+.sidebar .nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar .nav-link {
+  display: flex;
+  align-items: center;
+  padding: 7px var(--space-3);
+  border-radius: var(--radius);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.sidebar .nav-link-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.sidebar .nav-link-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar .nav-link:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.sidebar .nav-link.active {
+  background: var(--accent-weak);
+  color: var(--accent);
+  font-weight: var(--weight-semibold);
+}
+
+.sidebar .nav-link:focus-visible {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: -2px;
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.sidebar-collapse-toggle {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink-3);
+}
+
+.sidebar-collapse-toggle:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* ==================================================================
+   BARRE SUPÉRIEURE
+   ================================================================== */
+
+.app-topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.app-topbar__inner {
+  padding: 0 var(--space-4);
+}
+
+.search-notifications-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: 100%;
+}
+
+.topbar-brand-cluster {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.topbar-brand-logo {
+  height: 26px;
+  width: auto;
+}
+
+/* Le nom du produit et sa signature figurent déjà dans le logotype : les
+   répéter en toutes lettres occupait le tiers de la barre sans rien apprendre. */
+.topbar-brand-block {
+  display: none;
+}
+
+.search-notifications-bar__center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* La recherche globale est réduite : chaque écran porte désormais son propre
+   champ de filtrage, et deux champs côte à côte ne se distinguaient pas. */
+.search-notifications-bar__search {
+  width: 100%;
+  max-width: 320px;
+}
+
+.search-notifications-bar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+/* ==================================================================
+   ZONE DE CONTENU
+   ================================================================== */
+
+.app-route-shell {
+  padding: var(--space-5) var(--space-5) var(--space-6);
+}
+
+@media (max-width: 900px) {
+  .app-route-shell {
+    padding: var(--space-4) var(--space-3) var(--space-6);
+  }
+}

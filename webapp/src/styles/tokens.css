@@ -95,7 +95,7 @@
   /* ---- Divers -------------------------------------------------------- */
   --focus-ring: 2px;
   --transition: 120ms ease;
-  --header-height: 56px;
+  --header-height: 72px; /* hauteur réelle de la barre supérieure */
   --sidebar-width: 236px;
 }
 

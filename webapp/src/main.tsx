@@ -13,6 +13,9 @@ import "./styles/global.css";
 // Chargé après index.css : les variables ci-dessous font autorité, y compris
 // sur l'ancien vocabulaire que les écrans pas encore repris consomment.
 import "./styles/tokens.css";
+// Refonte du cadre (barre latérale, barre supérieure) : après les feuilles
+// héritées, dont elle prend le relais.
+import "./components/ui/shell.css";
 import App from "./App.tsx";
 
 // L'enregistrement du Service Worker est délégué à vite-plugin-pwa via le hook
