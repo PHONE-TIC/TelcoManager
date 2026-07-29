@@ -11,6 +11,16 @@ import {
   type StockWithRelations,
 } from "./stock.utils";
 import { buildStockCsvRows, getFilteredStockItems } from "./stock-list.utils";
+import {
+  Button,
+  Figure,
+  Figures,
+  FilterBar,
+  PageHeader,
+  Panel,
+  PanelSection,
+  Stack,
+} from "../components/ui";
 import "./mobile-refactor.css";
 import "./screen-harmonization.css";
 
@@ -265,203 +275,94 @@ function Stock() {
 
   return (
     <div className="space-y-6 screen-shell harmonized-page">
-      {/* Header */}
-      <div className="harmonized-header-with-stats">
-        <div className="harmonized-header">
-        <div className="harmonized-header-copy">
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Stock</h1>
-          <p style={{ color: "var(--text-secondary)" }}>
-            Gestion du matériel et équipements
-          </p>
-        </div>
-        <div className="compact-header-actions">
-          <button
-            onClick={exportToCSV}
-            className="harmonized-secondary-action"
+      <Panel>
+        <PanelSection>
+          <Stack>
+            <PageHeader
+              title="Stock"
+              subtitle="Gestion du matériel et des équipements"
+              actions={
+                <>
+                  <Button onClick={exportToCSV}>Exporter CSV</Button>
+                  {canManageStock && (
+                    <>
+                      <Button onClick={() => navigate("/stock/transfer")}>
+                        Transférer
+                      </Button>
+                      <Button variant="primary" onClick={() => navigate("/stock/new")}>
+                        Nouveau matériel
+                      </Button>
+                    </>
+                  )}
+                </>
+              }
+            />
+            <Figures>
+              <Figure
+                value={totalItems}
+                label={`Articles ${
+                  filter === "hs"
+                    ? "HS"
+                    : filter === "retour_fournisseur"
+                      ? "en retour"
+                      : filter === "all"
+                        ? "au total"
+                        : "en stock"
+                }`}
+              />
+              <Figure value={totalQuantity} label="Quantité totale" />
+              <Figure value={categories.length} label="Catégories" />
+            </Figures>
+          </Stack>
+        </PanelSection>
+      </Panel>
+
+      <Panel>
+        <FilterBar
+          options={[
+            { value: "all", label: "Vue générale" },
+            { value: "courant", label: "Stock courant", tone: "done" },
+            { value: "hs", label: "Stock HS", tone: "off" },
+            { value: "retour_fournisseur", label: "Retour fournisseur", tone: "wait" },
+            ...(canManageStock
+              ? [{ value: "technician", label: "Stock technicien" }]
+              : []),
+          ]}
+          value={filter}
+          onChange={(v) => setFilter(v as typeof filter)}
+        >
+          {/* Le filtre de catégorie reste une liste déroulante : le nombre de
+              catégories est ouvert, des pastilles déborderaient. */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="ui-field__saisie ui-field__select ui-filters__select"
+            aria-label="Filtrer par catégorie"
           >
-            Exporter CSV
-          </button>
-          {canManageStock && (
-            <>
-              <button
-                onClick={() => navigate("/stock/transfer")}
-                className="harmonized-accent-action"
-                style={{
-                  background: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-                  boxShadow: "0 2px 8px rgba(139, 92, 246, 0.35)",
-                }}
-              >
-                Transférer
-              </button>
-              <button
-                onClick={() => navigate("/stock/new")}
-                className="harmonized-primary-action"
-              >
-                + Nouveau Matériel
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+            <option value="all">Toutes catégories</option>
+            {categories.map((cat, i) => (
+              <option key={i} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
 
-      {/* Stats Cards */}
-      <div className="harmonized-stats-grid screen-summary-strip">
-        {[
-          {
-            value: totalItems,
-            label: `Articles ${filter === "hs"
-              ? "HS"
-              : filter === "retour_fournisseur"
-                ? "en Retour"
-                : filter === "all"
-                  ? "au total"
-                  : "en stock"
-              }`,
-            color: "#f97316",
-          },
-          { value: totalQuantity, label: "Quantité totale", color: "#3b82f6" },
-
-          { value: categories.length, label: "Catégories", color: "#10b981" },
-        ].map((stat, idx) => (
-          <div
-            key={idx}
-            className="harmonized-stat-card"
-            style={{ borderLeft: `4px solid ${stat.color}` }}
-          >
-            <div style={{ fontSize: "1.75rem", fontWeight: 700 }}>
-              {stat.value}
-            </div>
-            <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-              {stat.label}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Filters and Search */}
-      </div>
-
-      <div className="harmonized-surface">
-        <div className="screen-filters" style={{ marginBottom: "24px" }}>
-          {/* Top Row: Buttons and Search */}
-          <div className="harmonized-toolbar">
-            {/* Status buttons */}
-            <div className="screen-chip-scroll" style={{ width: "100%" }}>
-              <button
-                className={`harmonized-chip ${filter === "all" ? "active" : ""}`}
-                onClick={() => setFilter("all")}
-                style={{
-                  background:
-                    filter === "all"
-                      ? "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
-                      : undefined,
-                }}
-              >
-                Vue générale
-              </button>
-              <button
-                className={`harmonized-chip ${filter === "courant" ? "active" : ""}`}
-                onClick={() => setFilter("courant")}
-              >
-                Stock courant
-              </button>
-              <button
-                className={`harmonized-chip ${filter === "hs" ? "active" : ""}`}
-                style={filter === "hs" ? { background: "#ef4444", color: "white", borderColor: "#ef4444" } : undefined}
-                onClick={() => setFilter("hs")}
-              >
-                Stock HS
-              </button>
-              <button
-                className={`harmonized-chip ${filter === "retour_fournisseur" ? "active" : ""}`}
-                onClick={() => setFilter("retour_fournisseur")}
-                style={{
-                  backgroundColor:
-                    filter === "retour_fournisseur" ? "#d97706" : undefined,
-                  color: filter === "retour_fournisseur" ? "white" : undefined,
-                }}
-              >
-                ↩️ Retour Fournisseur
-              </button>
-              {/* Button visible for admin AND gestionnaire */}
-              {canManageStock && (
-                <button
-                  className={`harmonized-chip ${filter === "technician" ? "active" : ""}`}
-                  onClick={() => setFilter("technician")}
-                  style={{
-                    background:
-                      filter === "technician"
-                        ? "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
-                        : undefined,
-                    whiteSpace: "normal",
-                    textAlign: "center",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  Stock technicien
-                </button>
-              )}
-              {/* Category filter - placed on the same line as Vue générale, Stock courant etc. */}
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="harmonized-select"
-                style={{
-                  cursor: "pointer",
-                  borderRadius: "999px",
-                  padding: "9px 28px 9px 14px",
-                  fontSize: "0.92rem",
-                  fontWeight: 600,
-                  border: "1px solid var(--border-color)",
-                  backgroundColor: categoryFilter !== "all" ? "var(--primary-color)" : "var(--bg-secondary)",
-                  color: categoryFilter !== "all" ? "#fff" : "var(--text-secondary)",
-                  borderColor: categoryFilter !== "all" ? "var(--primary-color)" : "var(--border-color)",
-                  boxShadow: categoryFilter !== "all" ? "0 8px 16px rgba(249, 115, 22, 0.18)" : undefined,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${categoryFilter !== 'all' ? 'white' : '%2394a3b8'}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 10px center",
-                  backgroundSize: "14px",
-                  outline: "none",
-                }}
-              >
-                <option value="all" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)" }}>
-                  Toutes catégories
-                </option>
-                {categories.map((cat, i) => (
-                  <option key={i} value={cat} style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-primary)" }}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Bottom Row: Dropdowns */}
           {filter === "technician" && (
-            <div className="harmonized-filter-group screen-select-row" style={{ marginTop: "12px" }}>
-              {/* Technician Select (Visible only when filter is technician) */}
-              <select
-                value={selectedTechnicianId}
-                onChange={(e) => setSelectedTechnicianId(e.target.value)}
-                className="harmonized-select"
-                style={{
-                  border: "2px solid #7c3aed",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                <option value="">Sélectionner un technicien...</option>
-                {technicians.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nom}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={selectedTechnicianId}
+              onChange={(e) => setSelectedTechnicianId(e.target.value)}
+              className="ui-field__saisie ui-field__select ui-filters__select"
+              aria-label="Choisir un technicien"
+            >
+              <option value="">Sélectionner un technicien…</option>
+              {technicians.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.nom}
+                </option>
+              ))}
+            </select>
           )}
-        </div>
+        </FilterBar>
 
         {/* Stock Table */}
         <div className="responsive-scroll desktop-table-only">
@@ -980,7 +881,7 @@ function Stock() {
             </div>
           )}
         </div>
-      </div>
+      </Panel>
 
       {/* Modal Form */}
       {showForm && (
