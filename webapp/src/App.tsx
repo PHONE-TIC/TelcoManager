@@ -45,6 +45,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { LockProvider } from "./contexts/LockContext";
 import { useAuth } from "./contexts/useAuth";
+import { useNavCounts } from "./hooks/useNavCounts";
 import MobileNav from "./components/MobileNav";
 import MobileHeader from "./components/MobileHeader";
 import { NotificationToastOverlay } from "./components/NotificationToastOverlay";
@@ -66,6 +67,7 @@ function Navigation({
 }) {
   const location = useLocation();
   const { user } = useAuth();
+  const compteurs = useNavCounts();
   const { isSupported, isEnabled, requestPermission } = useNotifications();
 
   const isActive = (path: string) => {
@@ -95,6 +97,7 @@ function Navigation({
           icon: <AppIcon name="interventions" />,
           label: "Interventions",
           roles: ["admin", "gestionnaire", "technicien"],
+          count: compteurs.interventions,
         },
         {
           path: "/supervision-liens-ip",
@@ -112,12 +115,14 @@ function Navigation({
           icon: <AppIcon name="clients" />,
           label: "Clients",
           roles: ["admin", "gestionnaire"],
+          count: compteurs.clients,
         },
         {
           path: "/stock",
           icon: <AppIcon name="stock" />,
           label: "Stock",
           roles: ["admin", "gestionnaire"],
+          count: compteurs.stock,
         },
         {
           path: "/inventaire",
@@ -187,6 +192,9 @@ function Navigation({
                       </span>
                       <span className="nav-link-label">{item.label}</span>
                     </span>
+                    {typeof item.count === "number" ? (
+                      <span className="nav-link-count">{item.count}</span>
+                    ) : null}
                   </Link>
                 </li>
               ))}

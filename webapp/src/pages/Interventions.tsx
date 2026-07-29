@@ -19,6 +19,7 @@ import {
   DetailPane,
   DetailSection,
   DetailTimeline,
+  Drawer,
   FilterBar,
   SearchInput,
   SplitView,
@@ -522,7 +523,7 @@ function Interventions() {
         title="Interventions"
         meta={`${listeAffichee.length} ${listeAffichee.length > 1 ? "fiches" : "fiche"}`}
         search={
-          !showForm && viewMode !== "calendar" ? (
+          viewMode !== "calendar" ? (
             <SearchInput
               value={recherche}
               onChange={setRecherche}
@@ -531,15 +532,14 @@ function Interventions() {
           ) : null
         }
         actions={
-          user?.role === "admin" && !showForm ? (
+          user?.role === "admin" ? (
             <Button variant="primary" onClick={() => setShowForm(true)}>
               Nouvelle intervention
             </Button>
           ) : null
         }
         views={
-          !showForm ? (
-            <>
+          <>
               {user?.role !== "technicien" && (
                 <ViewTab
                   active={viewMode === "calendar"}
@@ -556,11 +556,10 @@ function Interventions() {
                   Toutes
                 </ViewTab>
               )}
-            </>
-          ) : null
+          </>
         }
         filters={
-          !showForm && viewMode === "all" ? (
+          viewMode === "all" ? (
             <FilterBar
               options={[
                 { value: "all", label: "Tous" },
@@ -588,7 +587,7 @@ function Interventions() {
           </p>
         )}
 
-        {!showForm && viewMode !== "calendar" && (
+        {viewMode !== "calendar" && (
           <SplitView
             detailOpen={Boolean(interventionOuverte)}
             onCloseDetail={() => setDetailId(null)}
@@ -710,7 +709,7 @@ function Interventions() {
           />
         )}
 
-        {user?.role !== "technicien" && viewMode === "calendar" && !showForm && (
+        {user?.role !== "technicien" && viewMode === "calendar" && (
           <div className="mobile-only">
             <MobilePlanning interventions={mobilePlanningInterventions} />
           </div>
@@ -718,7 +717,7 @@ function Interventions() {
 
         {/* Desktop Calendar View */}
         <div className="desktop-only">
-          {user?.role !== "technicien" && viewMode === "calendar" && !showForm && (
+          {user?.role !== "technicien" && viewMode === "calendar" && (
             <div className="fade-in">
               <div
                 key={calendarKey}
@@ -759,23 +758,20 @@ function Interventions() {
           )}
         </div>
 
-        {showForm && (
-          <div
-            className="fade-in"
-            style={{
-              padding: isMobile ? "0" : "0 20px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              width: "100%",
-            }}
-          >
-            <div style={{ width: "100%", maxWidth: "800px" }}>
-              <div style={{ marginBottom: "30px" }}>
-                <button className="btn btn-secondary" onClick={closeForm}>
-                  ← Annuler la création
-                </button>
-              </div>
+      </Workspace>
+
+      {/* Création : panneau latéral plutôt que page pleine, pour ne pas
+          perdre les filtres, le tri et la position dans la liste. */}
+      <Drawer
+        open={showForm}
+        onClose={closeForm}
+        title="Nouvelle intervention"
+        subtitle={`Étape ${currentStep} sur 3`}
+        width="lg"
+      >
+
+          <div className="fade-in">
+            <div>
 
               <div
                 className="stepper-container"
@@ -1315,8 +1311,7 @@ function Interventions() {
               </div>
             </div>
           </div>
-        )}
-      </Workspace>
+      </Drawer>
 
       {showConflictModal && conflictingIntervention && (
         <ConfirmConflictModal
