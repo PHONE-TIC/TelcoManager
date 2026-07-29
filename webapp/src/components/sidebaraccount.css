@@ -134,17 +134,65 @@
   background: var(--accent-weak);
 }
 
-/* Colonne repliée : seuls l'avatar et les icônes subsistent. */
-.sidebar--collapsed .sb-account__identite {
-  display: none;
+/* ------------------------------------------------- Cloche de notifications
+   Elle portait un cadre, un fond propre et des couleurs d'icône figées, hérités
+   de la barre supérieure disparue. Au pied de la colonne, elle s'aligne sur le
+   bouton de thème : même taille, même sobriété, couleur du texte. */
+.sb-account__outils .notification-bell {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--ink-3);
+  transition: background-color var(--transition), color var(--transition);
 }
 
-.sidebar--collapsed .sb-account__outils {
-  flex-direction: column;
+.sb-account__outils .notification-bell:hover,
+.sb-account__outils .notification-bell.is-open {
+  background: var(--surface-2);
+  border-color: transparent;
+  color: var(--ink);
 }
 
-.sidebar--collapsed .sb-account__panneau {
-  left: 0;
-  right: auto;
-  min-width: 160px;
+.sb-account__outils .notification-bell:focus-visible {
+  outline: var(--focus-ring) solid var(--accent);
+  outline-offset: 1px;
+}
+
+.sb-account__outils .notification-bell__icon {
+  display: grid;
+  place-items: center;
+  font-size: 0;
+}
+
+.sb-account__outils .notification-bell__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sb-account__outils .notification-bell__icon svg [stroke]:not([stroke="none"]) {
+  stroke: currentColor;
+}
+
+.sb-account__outils .notification-bell__icon svg [fill]:not([fill="none"]) {
+  fill: none;
+}
+
+/* Le compteur de non-lus garde l'accent : c'est le seul point de la colonne
+   qui réclame l'attention. */
+.sb-account__outils .notification-bell__badge {
+  top: -3px;
+  right: -3px;
+  min-width: 15px;
+  height: 15px;
+  font-size: 9.5px;
+  font-weight: var(--weight-bold);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  padding: 0 3px;
 }

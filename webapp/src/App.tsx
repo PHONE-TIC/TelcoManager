@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -57,13 +57,7 @@ import { useOfflineSync } from "./hooks/useOfflineSync";
 
 
 
-function Navigation({
-  sidebarCollapsed,
-  setSidebarCollapsed,
-}: {
-  sidebarCollapsed: boolean;
-  setSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
+function Navigation() {
   const location = useLocation();
   const { user } = useAuth();
   const compteurs = useNavCounts();
@@ -159,7 +153,7 @@ function Navigation({
     .filter((g) => g.items.length > 0);
 
   return (
-    <div className={`sidebar ${sidebarCollapsed ? "sidebar--collapsed" : ""}`}>
+    <div className="sidebar">
       {/* La marque ouvre la colonne, comme dans la maquette : elle situe
           l'application sans occuper une barre entière en haut de l'écran. */}
       <div className="sidebar-brand">
@@ -220,15 +214,6 @@ function Navigation({
               : "Activer les notifications"}
           </button>
         )}
-        <button
-          type="button"
-          className="sidebar-collapse-toggle sidebar-collapse-toggle--footer"
-          onClick={() => setSidebarCollapsed((prev) => !prev)}
-          aria-label={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
-          title={sidebarCollapsed ? "Agrandir le menu" : "Réduire le menu"}
-        >
-          {sidebarCollapsed ? "»" : "«"}
-        </button>
       </div>
     </div>
   );
@@ -293,17 +278,9 @@ function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
   const pageTransitionKey = `${location.pathname}${location.search}${location.hash}`;
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("sidebar-collapsed") === "true";
-  });
 
   const { syncMessage } = useOfflineSync();
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("sidebar-collapsed", sidebarCollapsed);
-    window.localStorage.setItem("sidebar-collapsed", String(sidebarCollapsed));
-  }, [sidebarCollapsed]);
 
   // Clean screen-filling container for the login page when unauthenticated
   if (!user) {
@@ -358,7 +335,7 @@ function AppContent() {
         </>
       )}
       {user && (
-        <Navigation sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
+        <Navigation />
       )}
       <div className={`main-content ${user?.role === "technicien" ? "main-content--technician" : ""}`}>
         <div key={pageTransitionKey} className="fade-in app-route-shell">

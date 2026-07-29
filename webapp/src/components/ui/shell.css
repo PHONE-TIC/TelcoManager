@@ -25,30 +25,6 @@
   font-weight: var(--weight-semibold);
 }
 
-/* Repliée, la colonne n'a plus la place d'un intitulé : il se réduit à un
-   filet, qui conserve la séparation entre groupes. */
-.sidebar.sidebar--collapsed {
-  /* La colonne est un élément flex : sans min-width nul, son contenu lui
-     impose une largeur plancher et la largeur nulle reste sans effet. */
-  width: 0;
-  min-width: 0;
-  flex: 0 0 0;
-  padding: 0;
-  border-right: 0;
-  overflow: hidden;
-}
-
-/* Le bouton de rappel reste accessible, posé sur la surface de travail. */
-.sidebar.sidebar--collapsed .sidebar-collapse-toggle {
-  position: fixed;
-  left: var(--space-2);
-  bottom: var(--space-4);
-  width: 34px;
-  height: 34px;
-  z-index: 30;
-  overflow: visible;
-}
-
 .sidebar {
   /* Plus étroite que la colonne d'origine : les libellés tiennent, et l'espace
      rendu profite à la surface de travail. */
@@ -86,15 +62,7 @@
   flex: none;
 }
 
-.sidebar--collapsed .sidebar-brand__nom {
-  display: none;
-}
 
-.sidebar--collapsed .sidebar-brand {
-  justify-content: center;
-  padding-left: 0;
-  padding-right: 0;
-}
 
 .sidebar-nav-shell {
   flex: 1;
@@ -196,9 +164,6 @@
   color: inherit;
 }
 
-.sidebar--collapsed .nav-link-count {
-  display: none;
-}
 
 /* La barre supérieure ayant disparu, le contenu remonte en haut de l'écran. */
 .main-content--with-topbar,
