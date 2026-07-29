@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Figure, Figures } from "../components/ui";
 import { Link } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import type { IpLink, IpLinksSnapshot } from "../types";
@@ -133,24 +134,16 @@ export default function IpLinksSupervision() {
   }, [prioritizedItems]);
 
   const headerStats = (
-    <div className="harmonized-stats-grid">
-      <div className="harmonized-stat-card ip-links-kpi-card ip-links-kpi-card--total">
-        <div>{snapshot.stats.total}</div>
-        <div>Total supervisé</div>
-      </div>
-      <div className="harmonized-stat-card ip-links-kpi-card ip-links-kpi-card--connected">
-        <div>{snapshot.stats.connected}</div>
-        <div>Connectés</div>
-      </div>
-      <div className="harmonized-stat-card ip-links-kpi-card ip-links-kpi-card--disconnected">
-        <div>{snapshot.stats.disconnected}</div>
-        <div>Déconnectés</div>
-      </div>
-      <div className="harmonized-stat-card ip-links-kpi-card ip-links-kpi-card--focus">
-        <div>{disconnectedRatio}%</div>
-        <div>Taux de rupture</div>
-      </div>
-    </div>
+    <Figures>
+      <Figure value={snapshot.stats.total} label="Total supervisé" />
+      <Figure value={snapshot.stats.connected} label="Connectés" tone="done" />
+      <Figure
+        value={snapshot.stats.disconnected}
+        label="Déconnectés"
+        tone={snapshot.stats.disconnected > 0 ? "alert" : undefined}
+      />
+      <Figure value={`${disconnectedRatio}%`} label="Taux de rupture" />
+    </Figures>
   );
 
   const supervisionLegend: ReactNode = viewMode === "supervision" ? (

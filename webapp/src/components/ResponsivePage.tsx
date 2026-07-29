@@ -1,5 +1,14 @@
 import { useState, type ReactNode } from "react";
 import { useResponsive } from "../hooks/useResponsive";
+import {
+  Button,
+  Figure,
+  Figures,
+  PageHeader,
+  Panel,
+  PanelSection,
+  Stack,
+} from "./ui";
 import "./ResponsivePage.css";
 
 type Action = {
@@ -33,35 +42,32 @@ export function ResponsivePage({
 
   return (
     <div className="responsive-page">
-      <section className="responsive-page__header">
-        <div className="responsive-page__header-top">
-          <div className="responsive-page__title-wrap">
-            <h1 className="responsive-page__title">{title}</h1>
-            {subtitle ? (
-              <p className="responsive-page__subtitle">{subtitle}</p>
-            ) : null}
-          </div>
-          {actions.length > 0 ? (
-            <div className="responsive-page__header-actions-wrap">
-              <div className="responsive-page__actions">
-                {actions.map((action) => (
-                  <button
-                    key={action.label}
-                    type="button"
-                    onClick={action.onClick}
-                    disabled={action.disabled}
-                    className={`responsive-page__${action.variant || "secondary"}`}
-                  >
-                    {action.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-        {headerAside ? <div className="responsive-page__header-aside">{headerAside}</div> : null}
-        {headerStats ? <div className="responsive-page__header-stats">{headerStats}</div> : null}
-      </section>
+      <Panel>
+        <PanelSection>
+          <Stack>
+            <PageHeader
+              title={title}
+              subtitle={subtitle}
+              actions={
+                actions.length > 0
+                  ? actions.map((action) => (
+                      <Button
+                        key={action.label}
+                        onClick={action.onClick}
+                        disabled={action.disabled}
+                        variant={action.variant === "primary" ? "primary" : "default"}
+                      >
+                        {action.label}
+                      </Button>
+                    ))
+                  : null
+              }
+            />
+            {headerAside}
+            {headerStats}
+          </Stack>
+        </PanelSection>
+      </Panel>
 
       {filters ? (
         <section className="responsive-page__filters">
@@ -89,8 +95,10 @@ export function ResponsivePage({
   );
 }
 
+/** Conservés comme adaptateurs : les écrans consommateurs gardent leur appel,
+    le rendu passe par les indicateurs communs. */
 export function ResponsiveStats({ children }: { children: ReactNode }) {
-  return <section className="responsive-page__stats">{children}</section>;
+  return <Figures>{children}</Figures>;
 }
 
 export function ResponsiveStat({
@@ -100,12 +108,7 @@ export function ResponsiveStat({
   value: ReactNode;
   label: string;
 }) {
-  return (
-    <article className="responsive-stat">
-      <div className="responsive-stat__value">{value}</div>
-      <div className="responsive-stat__label">{label}</div>
-    </article>
-  );
+  return <Figure value={value} label={label} />;
 }
 
 export function ResponsiveSection({

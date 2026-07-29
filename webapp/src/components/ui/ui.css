@@ -445,3 +445,11 @@ button.ui-figure[aria-pressed="true"] {
   gap: var(--space-1);
   justify-content: flex-end;
 }
+
+/* Cellule associant une vignette et un libellé sur deux lignes. */
+.ui-cell-avatar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}

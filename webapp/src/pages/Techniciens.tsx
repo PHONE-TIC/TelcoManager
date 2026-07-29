@@ -2,8 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api.service";
 import { AppIcon } from "../components/AppIcon";
-import TableResponsive from "../components/TableResponsive";
 import UserAvatar from "../components/UserAvatar";
+import {
+  Button,
+  DataTable,
+  FilterBar,
+  PageHeader,
+  Panel,
+  PanelSection,
+} from "../components/ui";
 import type { Technicien } from "../types";
 import "./screen-harmonization.css";
 
@@ -73,221 +80,120 @@ function Techniciens() {
 
   return (
     <div className="space-y-6 harmonized-page">
-      <div className="harmonized-header-with-stats">
-        <div className="harmonized-header">
-        <div className="harmonized-header-copy">
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
-            Utilisateurs
-          </h1>
-          <p style={{ color: "var(--text-secondary)" }}>
-            Administration des comptes (Admins & Techniciens)
-          </p>
-        </div>
-        <button
-          onClick={() => navigate("/techniciens/new")}
-          className="harmonized-primary-action"
-        >
-          + Nouvel Utilisateur
-        </button>
-      </div>
-
-      </div>
-
-      <div className="harmonized-surface">
-        <div className="harmonized-toolbar">
-          {/* Role filter dropdown */}
-          <select
-            className="harmonized-select"
-            value={roleFilter}
-            onChange={(e) =>
-              setRoleFilter(
-                e.target.value as "all" | "admin" | "gestionnaire" | "technicien"
-              )
+      <Panel>
+        <PanelSection>
+          <PageHeader
+            title="Utilisateurs"
+            subtitle="Administration des comptes"
+            actions={
+              <Button variant="primary" onClick={() => navigate("/techniciens/new")}>
+                Nouvel utilisateur
+              </Button>
             }
-            style={{ cursor: "pointer" }}
-          >
-            <option value="all">Tous les rôles</option>
-            <option value="admin">Administrateurs</option>
-            <option value="gestionnaire">Gestionnaires</option>
-            <option value="technicien">Techniciens</option>
-          </select>
-        </div>
+          />
+        </PanelSection>
+      </Panel>
 
-        <TableResponsive
-          data={filteredTechniciens}
+      <Panel>
+        <FilterBar
+          options={[
+            { value: "all", label: "Tous les rôles" },
+            { value: "admin", label: "Administrateurs" },
+            { value: "gestionnaire", label: "Gestionnaires" },
+            { value: "technicien", label: "Techniciens" },
+          ]}
+          value={roleFilter}
+          onChange={(v) => setRoleFilter(v as typeof roleFilter)}
+          resultCount={{
+            shown: filteredTechniciens.length,
+            total: techniciens.length,
+          }}
+        />
+
+        <DataTable
+          rows={filteredTechniciens}
+          rowKey={(t) => t.id}
+          onRowClick={(t) => navigate(`/techniciens/${t.id}`)}
+          emptyLabel="Aucun utilisateur pour ce rôle."
+          defaultSort={{ key: "nom" }}
           columns={[
             {
               key: "nom",
-              label: "Utilisateur / Identité",
-              render: (tech) => (
-                <div className="flex items-center gap-3">
-                  <UserAvatar name={tech.nom} size="sm" />
-                  <div className="flex flex-col">
-                    <span className="font-bold text-gray-800">{tech.nom}</span>
-                    <span className="text-xs text-gray-500">
-                      {tech.username}
-                    </span>
-                  </div>
-                </div>
-              ),
-            },
-            {
-              key: "role",
-              label: "Rôle & Accès",
-              render: (tech) => (
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    tech.role === "admin"
-                      ? "bg-purple-100 text-purple-800"
-                      : tech.role === "gestionnaire"
-                      ? "bg-red-100 text-red-900"
-                      : "bg-blue-100 text-blue-800"
-                  }`}
-                >
-                  {tech.role === "admin"
-                    ? "Administrateur"
-                    : tech.role === "gestionnaire"
-                    ? "Gestionnaire"
-                    : "Technicien"}
+              header: "Utilisateur",
+              sortValue: (t) => t.nom,
+              render: (t) => (
+                <span className="ui-cell-avatar">
+                  <UserAvatar name={t.nom} size="sm" />
+                  <span className="ui-row__main">
+                    <span className="ui-row__title">{t.nom}</span>
+                    <span className="ui-row__meta">{t.username}</span>
+                  </span>
                 </span>
               ),
             },
             {
+              key: "role",
+              header: "Rôle",
+              width: "150px",
+              sortValue: (t) => t.role,
+              render: (t) =>
+                t.role === "admin"
+                  ? "Administrateur"
+                  : t.role === "gestionnaire"
+                    ? "Gestionnaire"
+                    : "Technicien",
+            },
+            {
               key: "active",
-              label: "Statut",
-              render: (tech) => (
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-semibold flex items-center w-fit gap-1 ${
-                    tech.active
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      tech.active ? "bg-green-500" : "bg-gray-500"
-                    }`}
-                  ></span>
-                  {tech.active ? "Actif" : "Inactif"}
+              header: "Compte",
+              width: "116px",
+              sortValue: (t) => (t.active ? 0 : 1),
+              render: (t) => (
+                <span className="ui-state" data-tone={t.active ? "done" : "off"}>
+                  {t.active ? "Actif" : "Inactif"}
                 </span>
               ),
             },
             {
               key: "interventions",
-              label: "Activité",
-              render: (tech) =>
-                tech.role === "technicien" ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600 font-medium">
-                      {tech._count?.interventions || 0}
-                    </span>
-                    <span className="text-xs text-gray-400">interventions</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-gray-400">—</span>
-                ),
+              header: "Interventions",
+              width: "128px",
+              hideOnNarrow: true,
+              align: "end",
+              sortValue: (t) =>
+                t.role === "technicien" ? (t._count?.interventions ?? 0) : null,
+              render: (t) =>
+                t.role === "technicien" ? (t._count?.interventions ?? 0) : "—",
+            },
+            {
+              key: "actions",
+              header: "",
+              width: "104px",
+              align: "end",
+              render: (t) => (
+                <span className="ui-actions" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    size="sm"
+                    variant="quiet"
+                    title="Modifier"
+                    onClick={() => navigate(`/techniciens/${t.id}/edit`)}
+                  >
+                    <AppIcon name="edit" size={15} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="quiet"
+                    title="Supprimer"
+                    onClick={(e) => handleDelete(e, t.id)}
+                  >
+                    <AppIcon name="trash" size={15} />
+                  </Button>
+                </span>
+              ),
             },
           ]}
-          actions={(tech) => (
-            <div style={{ display: "flex", gap: "4px" }}>
-              <button
-                style={{
-                  padding: "8px",
-                  borderRadius: "8px",
-                  border: "1.5px solid rgba(255,255,255,0.25)",
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                  color: "var(--text-primary)",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/techniciens/${tech.id}`);
-                }}
-                title="Voir détails"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "var(--primary-color)";
-                  e.currentTarget.style.color = "white";
-                  e.currentTarget.style.borderColor = "var(--primary-color)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(255,255,255,0.05)";
-                  e.currentTarget.style.color = "var(--text-primary)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
-                }}
-              >
-                <AppIcon name="eye" size={16} />
-              </button>
-              <button
-                style={{
-                  padding: "8px",
-                  borderRadius: "8px",
-                  border: "1.5px solid rgba(255,255,255,0.25)",
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                  color: "var(--text-primary)",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/techniciens/${tech.id}/edit`);
-                }}
-                title="Modifier"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#3b82f6";
-                  e.currentTarget.style.color = "white";
-                  e.currentTarget.style.borderColor = "#3b82f6";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(255,255,255,0.05)";
-                  e.currentTarget.style.color = "var(--text-primary)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
-                }}
-              >
-                <AppIcon name="edit" size={16} />
-              </button>
-              <button
-                style={{
-                  padding: "8px",
-                  borderRadius: "8px",
-                  border: "1.5px solid rgba(255,255,255,0.25)",
-                  backgroundColor: "rgba(255,255,255,0.05)",
-                  color: "var(--text-primary)",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onClick={(e) => handleDelete(e, tech.id)}
-                title="Supprimer"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#ef4444";
-                  e.currentTarget.style.color = "white";
-                  e.currentTarget.style.borderColor = "#ef4444";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(255,255,255,0.05)";
-                  e.currentTarget.style.color = "var(--text-primary)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
-                }}
-              >
-                <AppIcon name="trash" size={16} />
-              </button>
-            </div>
-          )}
         />
-      </div>
+      </Panel>
     </div>
   );
 }

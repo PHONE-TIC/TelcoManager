@@ -17,6 +17,7 @@ import {
   type StockCategorySummary,
 } from "./dashboard.utils";
 import { AppIcon } from "../components/AppIcon";
+import { Figure, Figures, PageHeader } from "../components/ui";
 
 const SECTION_TITLE_STYLE: CSSProperties = {
   fontSize: "1.05rem",
@@ -28,13 +29,10 @@ export function DashboardHeader({ stats }: { stats: DashboardStats | null }) {
   return (
     <section style={DASHBOARD_PANEL_STYLE} className="dashboard-panel dashboard-header-card animate-fade-in-1">
       <div className="dashboard-header-top">
-        <div className="dashboard-header-copy">
-          <span className="dashboard-eyebrow">Pilotage opérationnel</span>
-          <h1 className="dashboard-title">Tableau de bord</h1>
-          <p className="dashboard-subtitle">
-            Vue rapide des interventions, du stock et des points d'attention.
-          </p>
-        </div>
+        <PageHeader
+          title="Tableau de bord"
+          subtitle="Vue rapide des interventions, du stock et des points d'attention"
+        />
         <div className="dashboard-quick-links">
           {QUICK_LINKS.map((link) => (
             <Link key={link.to} to={link.to} className="dashboard-quick-link">
@@ -53,30 +51,14 @@ export function DashboardStatsCards({ stats }: { stats: DashboardStats | null })
   const lowStockCount = stats?.stock?.stockFaible?.length ?? 0;
 
   return (
-    <div className="dashboard-stats-grid animate-fade-in-2">
+    <Figures>
       {getDashboardStatCards(stats).map((stat) => (
-        <article key={stat.label} className="dashboard-stat-card">
-          <div className="dashboard-stat-accent" style={{ backgroundColor: stat.color }} />
-          <div className="dashboard-stat-content">
-            <div className="dashboard-stat-value" style={{ color: stat.color }}>
-              {stat.value}
-            </div>
-            <div className="dashboard-stat-label">{stat.label}</div>
-          </div>
-        </article>
+        <Figure key={stat.label} value={stat.value} label={stat.label} />
       ))}
       {lowStockCount > 0 ? (
-        <article className="dashboard-stat-card dashboard-stat-card--warning">
-          <div className="dashboard-stat-accent" style={{ backgroundColor: "#eab308" }} />
-          <div className="dashboard-stat-content">
-            <div className="dashboard-stat-value" style={{ color: "#eab308" }}>
-              {lowStockCount}
-            </div>
-            <div className="dashboard-stat-label">Stock faible</div>
-          </div>
-        </article>
+        <Figure value={lowStockCount} label="Stock faible" tone="alert" />
       ) : null}
-    </div>
+    </Figures>
   );
 }
 

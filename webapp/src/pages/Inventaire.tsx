@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import dayjs from "../utils/dayjsFrConfig";
 import { apiService } from "../services/api.service";
 import { AppIcon } from "../components/AppIcon";
+import { PageHeader } from "../components/ui";
 import { generateInventoryPDF } from "../utils/inventoryPdf";
 import InventoryDiscrepancyModal from "./InventoryDiscrepancyModal";
 import type { FilterType, InventorySession } from "./inventory.types";
@@ -238,7 +239,7 @@ function Inventaire() {
             </button>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>
+                <h1 className="ui-page-header__title">
                   Inventaire du {dayjs(currentSession.date).format("DD/MM/YYYY")}
                 </h1>
                 {isCompleted ? (
@@ -854,17 +855,10 @@ function Inventaire() {
     <div className="space-y-6 screen-shell harmonized-page">
       {/* Header & Start Action */}
       <div className="harmonized-header" style={{ alignItems: "flex-start" }}>
-        <div className="harmonized-header-copy">
-          <h1
-            style={{ fontSize: "1.5rem", fontWeight: 700, marginBottom: "8px" }}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}><AppIcon name="inventory" size={24} /> Inventaires</span>
-          </h1>
-          <p style={{ color: "var(--text-secondary)" }}>
-            Gérez vos inventaires périodiques pour maintenir la précision du
-            stock.
-          </p>
-        </div>
+        <PageHeader
+          title="Inventaires"
+          subtitle="Comptages périodiques pour maintenir la justesse du stock"
+        />
 
         {/* Start Inventory Card */}
         <div
