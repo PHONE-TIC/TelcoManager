@@ -6,7 +6,7 @@
  * à diverger écran par écran — ce qui avait produit un millier de styles
  * écrits directement dans les pages.
  */
-import type { ReactNode, ButtonHTMLAttributes } from "react";
+import type { ReactNode, ButtonHTMLAttributes, CSSProperties } from "react";
 import { labelForStatut, toneForStatut, type StateTone } from "./statut";
 import "./ui.css";
 
@@ -65,6 +65,19 @@ export function Status({ statut, compact = false }: StatusProps) {
       {compact ? <span className="sr-only">{label}</span> : label}
     </span>
   );
+}
+
+/* ------------------------------------------------------------ Empilement */
+
+interface StackProps {
+  children: ReactNode;
+  /** `tight` pour un bloc compact, `loose` pour séparer deux ensembles. */
+  spacing?: "tight" | "default" | "loose";
+}
+
+export function Stack({ children, spacing = "default" }: StackProps) {
+  const suffix = spacing === "default" ? "" : ` ui-stack--${spacing}`;
+  return <div className={`ui-stack${suffix}`}>{children}</div>;
 }
 
 /* --------------------------------------------------------- En-tête d'écran */
@@ -164,8 +177,25 @@ export function Row({ title, meta, reference, statut, onClick }: RowProps) {
   );
 }
 
-export function Rows({ children }: { children: ReactNode }) {
-  return <div className="ui-rows">{children}</div>;
+interface RowsProps {
+  children: ReactNode;
+  /**
+   * Padding horizontal du conteneur à neutraliser, pour que les lignes et
+   * leurs séparateurs aillent d'un bord à l'autre. Utile tant que la liste
+   * est posée dans un panneau hérité qui porte son propre padding.
+   */
+  bleed?: string;
+}
+
+export function Rows({ children, bleed }: RowsProps) {
+  return (
+    <div
+      className={`ui-rows${bleed ? " ui-rows--bleed" : ""}`}
+      style={bleed ? ({ "--rows-bleed": bleed } as CSSProperties) : undefined}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function EmptyState({ children }: { children: ReactNode }) {

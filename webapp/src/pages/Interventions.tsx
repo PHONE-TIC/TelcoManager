@@ -17,6 +17,7 @@ import {
   PageHeader,
   Row,
   Rows,
+  Stack,
 } from "../components/ui";
 import {
   buildCalendarEventTitle,
@@ -585,7 +586,7 @@ function Interventions() {
   return (
     <div className="space-y-6 interventions-page harmonized-page">
       {/* Header */}
-      <div className="harmonized-header-with-stats">
+      <Stack>
         <PageHeader
           title={`Interventions${user?.role === "technicien" ? ` (${sortedTodayInterventions.length})` : ""}`}
           subtitle="Gestion des interventions et planning"
@@ -649,7 +650,7 @@ function Interventions() {
           )}
         </Figures>
       )}
-      </div>
+      </Stack>
 
       {/* Main Content Card */}
       <div className="interventions-surface">
@@ -710,7 +711,7 @@ function Interventions() {
                     renderMobileInterventionCard(intervention)
                   )
                 ) : (
-                  <Rows>
+                  <Rows bleed="20px">
                     {sortedTodayInterventions.map((intervention) => {
                       const verrou = locks[intervention.id];
                       const technicien =

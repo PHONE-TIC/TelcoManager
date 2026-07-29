@@ -44,3 +44,7 @@ backend/uploads/*
 
 # Fichiers d'environnement de test locaux
 .env.test
+
+# Frontend compilé, copié dans le backend pour reproduire le service en
+# conditions de production (le conteneur le construit lui-même)
+backend/client/
