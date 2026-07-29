@@ -437,3 +437,11 @@ button.ui-figure[aria-pressed="true"] {
   font-weight: var(--weight-semibold);
   box-shadow: inset 2px 0 0 var(--accent);
 }
+
+/* Actions groupées en fin de ligne de tableau. Le clic ne doit pas déclencher
+   l'ouverture de la ligne : c'est au parent de l'arrêter. */
+.ui-actions {
+  display: inline-flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}

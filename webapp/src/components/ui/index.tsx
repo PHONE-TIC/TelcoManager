@@ -212,3 +212,4 @@ export { TextField, SelectField, TextAreaField, FieldRow } from "./Field";
 export { DataTable, type Column } from "./DataTable";
 export { FilterBar, type FilterOption } from "./FilterBar";
 export { SplitView } from "./SplitView";
+export { Pagination } from "./Pagination";

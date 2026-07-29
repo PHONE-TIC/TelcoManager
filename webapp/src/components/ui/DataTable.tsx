@@ -35,8 +35,15 @@ interface DataTableProps<T> {
   /** Ligne mise en évidence, typiquement celle ouverte dans le détail. */
   selectedKey?: string | null;
   emptyLabel?: ReactNode;
-  /** Colonne triée par défaut. */
+  /** Colonne triée par défaut, en mode non contrôlé. */
   defaultSort?: { key: string; direction?: SortDirection };
+  /**
+   * Tri piloté par l'écran. Indispensable dès qu'une pagination est en jeu :
+   * le tableau ne connaît que la page courante, or trier doit porter sur
+   * l'ensemble des données avant de les découper en pages.
+   */
+  sort?: { key: string; direction: SortDirection } | null;
+  onSortChange?: (sort: { key: string; direction: SortDirection }) => void;
   /** `compact` resserre les lignes pour afficher davantage de données. */
   density?: "comfortable" | "compact";
   caption?: string;
@@ -50,15 +57,27 @@ export function DataTable<T>({
   selectedKey,
   emptyLabel = "Aucun élément à afficher.",
   defaultSort,
+  sort,
+  onSortChange,
   density = "comfortable",
   caption,
 }: DataTableProps<T>) {
-  const [sortKey, setSortKey] = useState<string | null>(defaultSort?.key ?? null);
-  const [direction, setDirection] = useState<SortDirection>(
-    defaultSort?.direction ?? "asc"
-  );
+  const [triInterne, setTriInterne] = useState<{
+    key: string | null;
+    direction: SortDirection;
+  }>({
+    key: defaultSort?.key ?? null,
+    direction: defaultSort?.direction ?? "asc",
+  });
+
+  // En mode contrôlé, l'écran a déjà trié : le tableau se contente d'afficher
+  // et de signaler les changements de colonne.
+  const controle = sort !== undefined;
+  const sortKey = controle ? (sort?.key ?? null) : triInterne.key;
+  const direction = controle ? (sort?.direction ?? "asc") : triInterne.direction;
 
   const triees = useMemo(() => {
+    if (controle) return rows;
     const colonne = columns.find((c) => c.key === sortKey);
     if (!colonne?.sortValue) return rows;
 
@@ -79,15 +98,16 @@ export function DataTable<T>({
       }
       return String(va).localeCompare(String(vb), "fr", { numeric: true }) * facteur;
     });
-  }, [rows, columns, sortKey, direction]);
+  }, [rows, columns, sortKey, direction, controle]);
 
   const trierPar = (key: string) => {
-    if (sortKey === key) {
-      setDirection((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setDirection("asc");
-    }
+    const suivant: { key: string; direction: SortDirection } =
+      sortKey === key
+        ? { key, direction: direction === "asc" ? "desc" : "asc" }
+        : { key, direction: "asc" };
+
+    if (controle) onSortChange?.(suivant);
+    else setTriInterne(suivant);
   };
 
   const gabarit = columns

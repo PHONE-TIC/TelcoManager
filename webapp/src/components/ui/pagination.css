@@ -1,0 +1,27 @@
+/** Pagination. */
+
+.ui-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--line);
+}
+
+.ui-pagination__position {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ui-pagination__total {
+  color: var(--ink-3);
+}
+
+@media (max-width: 560px) {
+  .ui-pagination__total {
+    display: none;
+  }
+}
