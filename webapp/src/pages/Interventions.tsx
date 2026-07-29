@@ -15,11 +15,14 @@ import {
   Figure,
   Figures,
   PageHeader,
+  DataTable,
+  FilterBar,
   Panel,
   PanelSection,
   Row,
   Rows,
   Stack,
+  Status,
 } from "../components/ui";
 import {
   buildCalendarEventTitle,
@@ -41,7 +44,6 @@ import {
 import {
   getInterventionPriorityIndicator,
   getInterventionProgressLine,
-  getTechnicianAvatar,
 } from "./interventions-ui.utils";
 
 import { QuickCreateClientModal } from "../components/QuickCreateClientModal";
@@ -95,8 +97,9 @@ function Interventions() {
   >("all");
 
   // Column sorting state
-  const [sortColumn, setSortColumn] = useState<InterventionSortColumn>("id");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  // Ordre par défaut de la liste du jour ; le tri interactif est porté par DataTable.
+  const sortColumn: InterventionSortColumn = "id";
+  const sortDirection: "asc" | "desc" = "desc";
 
   // Conflict detection state
   const [showConflictModal, setShowConflictModal] = useState(false);
@@ -449,32 +452,6 @@ function Interventions() {
   );
 
   // Column sorting handler
-  const handleSort = (column: InterventionSortColumn) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortColumn(column);
-      setSortDirection("asc");
-    }
-  };
-
-  // Sortable header component
-  const getSortableHeader = (label: string, column: InterventionSortColumn) => (
-    <th
-      style={{ cursor: "pointer", userSelect: "none" }}
-      onClick={() => handleSort(column)}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        {label}
-        {sortColumn === column && (
-          <span style={{ fontSize: 12 }}>
-            {sortDirection === "asc" ? "▲" : "▼"}
-          </span>
-        )}
-      </div>
-    </th>
-  );
-
   const sortInterventions = useCallback(
     (list: Intervention[]) => sortInterventionsList(list, sortColumn, sortDirection),
     [sortColumn, sortDirection]
@@ -764,202 +741,84 @@ function Interventions() {
         {/* All Interventions View (Admin only) */}
         {viewMode === "all" && !showForm && user?.role === "admin" && (
           <div className="fade-in">
-            <div className="mb-4" style={{ display: "grid", gap: 14 }}>
-              <div className="flex flex-col gap-2" style={{ minWidth: 0 }}>
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                    letterSpacing: "0.3px",
-                  }}
-                >
-                  Filtrer par statut
-                </span>
-                <div className="interventions-filter-row screen-chip-scroll">
-                  <button
-                    onClick={() => setStatusFilter("all")}
-                    className={`interventions-filter-chip filter-all ${statusFilter === "all" ? "active" : ""}`}
-                  >
-                    Tous
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter("planifiee")}
-                    className={`interventions-filter-chip filter-planifiee ${statusFilter === "planifiee" ? "active" : ""}`}
-                  >
-                    Planifiées
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter("en_cours")}
-                    className={`interventions-filter-chip filter-en_cours ${statusFilter === "en_cours" ? "active" : ""}`}
-                  >
-                    En cours
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter("terminee")}
-                    className={`interventions-filter-chip filter-terminee ${statusFilter === "terminee" ? "active" : ""}`}
-                  >
-                    Terminées
-                  </button>
-                  <button
-                    onClick={() => setStatusFilter("annulee")}
-                    className={`interventions-filter-chip filter-annulee ${statusFilter === "annulee" ? "active" : ""}`}
-                  >
-                    Annulées
-                  </button>
-                </div>
-              </div>
-              <span
-                style={{ color: "var(--text-secondary)", fontSize: "14px" }}
-              >
-                {allInterventions.length} intervention
-                {allInterventions.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className="mobile-list interventions-mobile-list">
-              <div className="interventions-mobile-summary">
-                <span>Vue filtrée</span>
-                <strong>{sortedAllInterventions.length} intervention{sortedAllInterventions.length > 1 ? "s" : ""}</strong>
-              </div>
-              {sortedAllInterventions.length > 0 ? (
-                sortedAllInterventions.map((intervention) =>
-                  renderMobileInterventionCard(intervention, { from: "all" })
-                )
-              ) : (
-                <div className="interventions-mobile-empty">
-                  <div className="text-4xl mb-4" style={{ display: "flex", justifyContent: "center" }}><AppIcon name="document" size={36} /></div>
-                  <div className="font-medium">Aucune intervention</div>
-                  <div className="mt-2">Aucune intervention enregistrée pour ce filtre.</div>
-                </div>
-              )}
-            </div>
-            <div className="responsive-scroll desktop-table-only">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>N°</th>
-                    {getSortableHeader("Date planifiée", "datePlanifiee")}
-                    <th>Type</th>
-                    <th>Titre</th>
-                    {getSortableHeader("Client", "client")}
-                    {getSortableHeader("Technicien", "technicien")}
-                    {getSortableHeader("Statut", "statut")}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedAllInterventions.length > 0 ? (
-                    sortedAllInterventions.map((intervention) => (
-                      <tr
-                        key={intervention.id}
-                        className="clickable-row"
-                        onClick={() =>
-                          navigate(`/interventions/${intervention.id}`, {
-                            state: { from: "all" },
-                          })
-                        }
-                      >
-                        <td>
-                          <div
-                            style={{ display: "flex", alignItems: "center" }}
-                          >
-                            {getInterventionPriorityIndicator(
-                              intervention.datePlanifiee,
-                              intervention.statut
-                            )}
-                            <span className="font-bold text-gray-800">
-                              {intervention.numero}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          {new Date(intervention.datePlanifiee).toLocaleString(
-                            "fr-FR"
-                          )}
-                        </td>
-                        <td>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-semibold ${intervention.type === "Installation"
-                              ? "bg-blue-100 text-blue-800"
-                              : intervention.type === "SAV"
-                                ? "bg-orange-100 text-orange-800"
-                                : "bg-gray-100 text-gray-800"
-                              }`}
-                          >
-                            {intervention.type || "SAV"}
-                          </span>
-                        </td>
-                        <td className="font-medium">{intervention.titre}</td>
-                        <td>
-                          {intervention.client?.nom || (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </td>
-                        <td>
-                          <div
-                            style={{ display: "flex", alignItems: "center" }}
-                          >
-                            {getTechnicianAvatar(intervention.technicien)}
-                            <span>
-                              {intervention.technicien?.nom || (
-                                <span className="text-gray-400">
-                                  Non assigné
-                                </span>
-                              )}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                              flexWrap: "nowrap",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {getInterventionProgressLine(intervention.statut)}
-                            {getStatusBadge(intervention.statut)}
-                            {locks[intervention.id] && (
-                              <span
-                                className="px-2 py-1 rounded text-xs font-semibold"
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                  backgroundColor: "rgba(249, 115, 22, 0.15)",
-                                  color: "#ea580c",
-                                  border: "1px solid rgba(249, 115, 22, 0.3)",
-                                }}
-                                title={`Verrouillé par ${locks[intervention.id].lockedBy}`}
-                              >
-                                🔒 {locks[intervention.id].lockedBy}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={6}>
-                        <div className="text-center py-12">
-                          <div className="text-4xl mb-4" style={{ display: "flex", justifyContent: "center" }}><AppIcon name="document" size={36} /></div>
-                          <h3 className="text-lg font-medium text-gray-900">
-                            Aucune intervention
-                          </h3>
-                          <p className="text-gray-500 mt-2">
-                            "Aucune intervention enregistrée"
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <FilterBar
+              options={[
+                { value: "all", label: "Toutes" },
+                { value: "planifiee", label: "Planifiées", tone: "wait" },
+                { value: "en_cours", label: "En cours", tone: "run" },
+                { value: "terminee", label: "Terminées", tone: "done" },
+                { value: "annulee", label: "Annulées", tone: "off" },
+              ]}
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v as typeof statusFilter)}
+              resultCount={{
+                shown: sortedAllInterventions.length,
+                total: allInterventions.length,
+              }}
+            />
+            <DataTable
+              rows={sortedAllInterventions}
+              rowKey={(i) => i.id}
+              onRowClick={(i) =>
+                navigate(`/interventions/${i.id}`, { state: { from: "all" } })
+              }
+              emptyLabel="Aucune intervention ne correspond à ce filtre."
+              columns={[
+                {
+                  key: "numero",
+                  header: "Numéro",
+                  width: "116px",
+                  sortValue: (i) => i.numero,
+                  render: (i) => <span className="ui-ref">{i.numero}</span>,
+                },
+                {
+                  key: "titre",
+                  header: "Intervention",
+                  sortValue: (i) => i.titre,
+                  render: (i) => (
+                    <span className="ui-row__main">
+                      <span className="ui-row__title">{i.titre}</span>
+                      <span className="ui-row__meta">
+                        {i.client?.nom ?? "Client inconnu"}
+                        {i.type ? ` · ${i.type}` : ""}
+                      </span>
+                    </span>
+                  ),
+                },
+                {
+                  key: "technicien",
+                  header: "Technicien",
+                  width: "150px",
+                  hideOnNarrow: true,
+                  sortValue: (i) => i.technicien?.nom ?? null,
+                  render: (i) => i.technicien?.nom ?? "Non assigné",
+                },
+                {
+                  key: "date",
+                  header: "Planifiée",
+                  width: "148px",
+                  sortValue: (i) => new Date(i.datePlanifiee).getTime(),
+                  render: (i) =>
+                    new Date(i.datePlanifiee).toLocaleString("fr-FR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
+                },
+                {
+                  key: "statut",
+                  header: "État",
+                  width: "116px",
+                  sortValue: (i) => i.statut,
+                  render: (i) => <Status statut={i.statut} />,
+                },
+              ]}
+            />
           </div>
         )}
+
 
         {/* Mobile Planning View - Only show in calendar mode */}
         {user?.role !== "technicien" && viewMode === "calendar" && !showForm && (

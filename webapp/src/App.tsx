@@ -77,93 +77,122 @@ function Navigation({
 
   if (!user) return null;
 
-  // Define navigation items with role-based access
-  const navItems = [
+  // Navigation groupée par domaine métier. Une liste plate de huit entrées
+  // ne dit rien de ce qui relève de l'exploitation quotidienne, du référentiel
+  // ou de l'administration — trois usages aux fréquences très différentes.
+  const navGroups = [
     {
-      path: "/",
-      icon: <AppIcon name="dashboard" />,
-      label: "Tableau de bord",
-      roles: ["admin", "gestionnaire"],
+      titre: "Exploitation",
+      items: [
+        {
+          path: "/",
+          icon: <AppIcon name="dashboard" />,
+          label: "Tableau de bord",
+          roles: ["admin", "gestionnaire"],
+        },
+        {
+          path: "/interventions",
+          icon: <AppIcon name="interventions" />,
+          label: "Interventions",
+          roles: ["admin", "gestionnaire", "technicien"],
+        },
+        {
+          path: "/supervision-liens-ip",
+          icon: <AppIcon name="ip-links" />,
+          label: "Liens IP",
+          roles: ["admin", "gestionnaire"],
+        },
+      ],
     },
     {
-      path: "/interventions",
-      icon: <AppIcon name="interventions" />,
-      label: "Interventions",
-      roles: ["admin", "gestionnaire", "technicien"],
+      titre: "Référentiel",
+      items: [
+        {
+          path: "/clients",
+          icon: <AppIcon name="clients" />,
+          label: "Clients",
+          roles: ["admin", "gestionnaire"],
+        },
+        {
+          path: "/stock",
+          icon: <AppIcon name="stock" />,
+          label: "Stock",
+          roles: ["admin", "gestionnaire"],
+        },
+        {
+          path: "/inventaire",
+          icon: <AppIcon name="inventory" />,
+          label: "Inventaire",
+          roles: ["admin", "gestionnaire"],
+        },
+        {
+          path: "/mon-stock",
+          icon: <AppIcon name="vehicle" />,
+          label: "Mon stock",
+          roles: ["technicien"],
+        },
+      ],
     },
     {
-      path: "/clients",
-      icon: <AppIcon name="clients" />,
-      label: "Clients",
-      roles: ["admin", "gestionnaire"],
-    },
-    {
-      path: "/techniciens",
-      icon: <AppIcon name="users" />,
-      label: "Utilisateurs",
-      roles: ["admin"],
-    },
-    {
-      path: "/stock",
-      icon: <AppIcon name="stock" />,
-      label: "Stock",
-      roles: ["admin", "gestionnaire"],
-    },
-    {
-      path: "/inventaire",
-      icon: <AppIcon name="inventory" />,
-      label: "Inventaire",
-      roles: ["admin", "gestionnaire"],
-    },
-    {
-      path: "/rapports",
-      icon: <AppIcon name="reports" />,
-      label: "Rapports",
-      roles: ["admin"],
-    },
-    {
-      path: "/supervision-liens-ip",
-      icon: <AppIcon name="ip-links" />,
-      label: "Liens IP",
-      roles: ["admin", "gestionnaire"],
-    },
-    {
-      path: "/mon-stock",
-      icon: <AppIcon name="vehicle" />,
-      label: "Mon Stock",
-      roles: ["technicien"],
+      titre: "Administration",
+      items: [
+        {
+          path: "/techniciens",
+          icon: <AppIcon name="users" />,
+          label: "Utilisateurs",
+          roles: ["admin"],
+        },
+        {
+          path: "/rapports",
+          icon: <AppIcon name="reports" />,
+          label: "Rapports",
+          roles: ["admin"],
+        },
+      ],
     },
   ];
 
-  // Filter based on user role
-  const filteredNavItems = navItems.filter((item) => {
-    if (item.roles && user?.role && !item.roles.includes(user.role))
-      return false;
-    return true;
-  });
+  // Un groupe dont aucune entrée n'est accessible disparaît : un technicien ne
+  // doit pas voir un intitulé « Administration » suivi du vide.
+  const groupesVisibles = navGroups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter(
+        (item) => !item.roles || (user?.role && item.roles.includes(user.role))
+      ),
+    }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <div className={`sidebar ${sidebarCollapsed ? "sidebar--collapsed" : ""}`}>
-      <nav className="sidebar-nav-shell">
-        <ul className="nav-menu">
-          {filteredNavItems.map((item) => (
-            <li className="nav-item" key={item.path}>
-              <Link
-                to={item.path}
-                className={`nav-link ${isActive(item.path)}`}
-                title={item.label}
-                aria-label={item.label}
-              >
-                <span className="nav-link-content">
-                  <span className="nav-link-icon" aria-hidden="true">
-                    {item.icon}
-                  </span>
-                  <span className="nav-link-label">{item.label}</span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <nav className="sidebar-nav-shell" aria-label="Navigation principale">
+        {groupesVisibles.map((groupe) => (
+          <div className="nav-group" key={groupe.titre}>
+            {/* L'intitulé disparaît en mode réduit, où seules les icônes
+                restent : il n'y aurait pas la place de le lire. */}
+            <p className="nav-group__titre">{groupe.titre}</p>
+            <ul className="nav-menu">
+              {groupe.items.map((item) => (
+                <li className="nav-item" key={item.path}>
+                  <Link
+                    to={item.path}
+                    className={`nav-link ${isActive(item.path)}`}
+                    title={item.label}
+                    aria-label={item.label}
+                    aria-current={isActive(item.path) ? "page" : undefined}
+                  >
+                    <span className="nav-link-content">
+                      <span className="nav-link-icon" aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      <span className="nav-link-label">{item.label}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </nav>
       <div className="sidebar-footer">
         {/* PWA Install button for desktop */}

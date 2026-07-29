@@ -387,3 +387,53 @@ button.ui-figure[aria-pressed="true"] {
   white-space: nowrap;
   border: 0;
 }
+
+/* =================================================================== Shell
+   Navigation latérale groupée par domaine. Les règles ci-dessous prennent le
+   pas sur celles héritées : elles sont chargées après, à spécificité égale ou
+   supérieure, et disparaîtront avec l'ancien CSS de la barre latérale.     */
+
+.nav-group + .nav-group {
+  margin-top: var(--space-4);
+}
+
+.nav-group__titre {
+  margin: 0 0 var(--space-1);
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: var(--weight-semibold);
+}
+
+.sidebar--collapsed .nav-group__titre {
+  /* Réduit à un filet : le groupe reste perceptible sans intitulé lisible. */
+  height: 1px;
+  margin: var(--space-3) var(--space-3) var(--space-2);
+  padding: 0;
+  overflow: hidden;
+  color: transparent;
+  background: var(--line);
+}
+
+.sidebar .nav-link {
+  border-radius: var(--radius);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.sidebar .nav-link:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* L'écran courant est marqué par un liseré d'accent plutôt que par un aplat :
+   il se repère au premier regard sans dominer la colonne. */
+.sidebar .nav-link.active {
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
